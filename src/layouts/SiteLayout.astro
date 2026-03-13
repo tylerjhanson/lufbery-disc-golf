@@ -1,0 +1,541 @@
+---
+interface Props {
+  title?: string;
+  showBrandBar?: boolean;
+}
+
+const { title = "Lufbery Disc Golf", showBrandBar = true } = Astro.props;
+
+const logoUrl = "https://flyingaces.lufberydiscgolf.com/favicon.png";
+const singlesLinks = [
+  { href: "/singles/handicaps-tags", label: "Handicaps & Tags" },
+  { href: "/singles/weekly-results", label: "Weekly Results" },
+  { href: "/singles/weekly-winners", label: "Weekly Winners" },
+  { href: "/singles/course-records", label: "Course Records" },
+  { href: "/singles/aces", label: "Aces" },
+];
+const doublesLinks = [
+  { href: "/doubles/course-records", label: "Course Records" },
+  { href: "/doubles/aces", label: "Aces" },
+];
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <script is:inline>
+      (() => {
+        const key = "lufbery-theme";
+        const saved = localStorage.getItem(key) || "system";
+        const actual = saved === "system"
+          ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+          : saved;
+        document.documentElement.setAttribute("data-theme", actual);
+      })();
+    </script>
+    <style is:global>
+      :root {
+        --bg: #f5f7fb;
+        --bg-strong: #eef3f8;
+        --card: #ffffff;
+        --text: #111827;
+        --muted: #6b7280;
+        --line-soft: #e6edf5;
+        --line: #d8e0ea;
+        --accent: #2563eb;
+        --button-bg: #f3f5f8;
+        --button-bg-hover: #eceff4;
+        --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      }
+
+      html[data-theme="dark"] {
+        --bg: #0b1220;
+        --bg-strong: #0f172a;
+        --card: #0f172a;
+        --text: #f8fafc;
+        --muted: #94a3b8;
+        --line-soft: #1f2937;
+        --line: #334155;
+        --accent: #60a5fa;
+        --button-bg: #172235;
+        --button-bg-hover: #1d2c44;
+        --shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+      }
+
+      *, *::before, *::after { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      html { background: var(--bg-strong); }
+      body {
+        min-height: 100vh;
+        margin: 0 !important;
+        padding: 0 !important;
+        font-family: Inter, Arial, Helvetica, sans-serif;
+        background: linear-gradient(180deg, var(--bg-strong) 0%, var(--bg) 100%);
+        color: var(--text);
+        overflow-x: hidden;
+      }
+      a { color: inherit; text-decoration: none; }
+
+      .site-header {
+        width: 100%;
+        background: var(--card);
+        border-bottom: 1px solid var(--line-soft);
+      }
+      .site-header-inner {
+        width: min(100%, 1440px);
+        margin: 0 auto;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .site-brand {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 10px;
+        min-width: 0;
+        flex: 1 1 auto;
+        color: var(--text);
+      }
+      .site-brand img {
+        width: 20px;
+        height: 20px;
+        display: block;
+        flex: 0 0 20px;
+      }
+      .site-brand-text {
+        font-size: 1rem;
+        font-weight: 600;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        white-space: nowrap;
+      }
+      .site-topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 0 0 auto;
+      }
+      .site-icon-button {
+        width: 38px;
+        height: 38px;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease;
+      }
+      .site-icon-button:hover {
+        color: var(--text);
+        background: rgba(127,127,127,0.08);
+      }
+      .site-icon-button svg {
+        width: 18px;
+        height: 18px;
+        display: block;
+      }
+
+      .site-shell {
+        width: min(100%, 1440px);
+        margin: 0 auto;
+        padding: 18px 16px 24px;
+      }
+
+      .site-content {
+        min-width: 0;
+      }
+      .site-content .wrap {
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        min-width: 0 !important;
+      }
+      .site-content h1 {
+        font-size: clamp(1.6rem, 2.4vw, 2.15rem) !important;
+        font-weight: 700 !important;
+        line-height: 1.08 !important;
+        letter-spacing: -0.03em !important;
+      }
+      .site-content .page-header {
+        margin-bottom: 12px !important;
+      }
+      .site-content .card {
+        border-radius: 12px !important;
+      }
+      .site-content .card-header {
+        padding: 18px 18px 10px !important;
+      }
+      .site-content .table-wrap {
+        padding: 0 10px 8px !important;
+      }
+      .site-content thead th {
+        padding: 10px 8px !important;
+        font-size: 0.78rem !important;
+      }
+      .site-content tbody td {
+        padding: 10px 8px !important;
+        font-size: 0.95rem !important;
+      }
+      .site-content tbody td:first-child {
+        font-weight: 400 !important;
+      }
+
+      html[data-theme="dark"] body {
+        background: linear-gradient(180deg, var(--bg-strong) 0%, var(--bg) 100%) !important;
+        color: var(--text);
+      }
+      html[data-theme="dark"] .site-header {
+        background: var(--card);
+        border-bottom-color: var(--line-soft);
+      }
+      html[data-theme="dark"] .site-content .card,
+      html[data-theme="dark"] .site-menu-panel {
+        background: var(--card) !important;
+        border-color: var(--line-soft) !important;
+      }
+      html[data-theme="dark"] .site-content .card,
+      html[data-theme="dark"] .site-content h1,
+      html[data-theme="dark"] .site-content h2,
+      html[data-theme="dark"] .site-content p,
+      html[data-theme="dark"] .site-content div,
+      html[data-theme="dark"] .site-content span,
+      html[data-theme="dark"] .site-content li,
+      html[data-theme="dark"] .site-content label,
+      html[data-theme="dark"] .site-content input,
+      html[data-theme="dark"] .site-content select,
+      html[data-theme="dark"] .site-content button,
+      html[data-theme="dark"] .site-menu-panel,
+      html[data-theme="dark"] .site-menu-panel a,
+      html[data-theme="dark"] .site-menu-panel button {
+        color: var(--text);
+      }
+      html[data-theme="dark"] .site-content thead th {
+        background: #162033 !important;
+        color: var(--muted) !important;
+        border-bottom-color: var(--line) !important;
+      }
+      html[data-theme="dark"] .site-content tbody td {
+        color: var(--text) !important;
+        border-bottom-color: var(--line-soft) !important;
+      }
+      html[data-theme="dark"] .site-content tbody tr:nth-child(odd) td {
+        background: transparent !important;
+      }
+      html[data-theme="dark"] .site-content tbody tr:nth-child(even) td {
+        background: rgba(255, 255, 255, 0.03) !important;
+      }
+      html[data-theme="dark"] .site-content tbody tr:hover td {
+        background: rgba(255, 255, 255, 0.06) !important;
+      }
+      html[data-theme="dark"] .site-content .filter-select,
+      html[data-theme="dark"] .site-content .search-input,
+      html[data-theme="dark"] .site-content input,
+      html[data-theme="dark"] .site-content select {
+        background: #0f172a !important;
+        color: var(--text) !important;
+        border-color: var(--line-soft) !important;
+      }
+      html[data-theme="dark"] .site-content .link-item,
+      html[data-theme="dark"] .site-content .event-item,
+      html[data-theme="dark"] .site-content .calendar-link {
+        background: var(--button-bg) !important;
+        color: var(--text) !important;
+        border-color: var(--line-soft) !important;
+      }
+
+      .site-menu-layer {
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        display: none;
+      }
+      .site-menu-layer.open { display: block; }
+      .site-menu-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.18);
+      }
+      .site-menu-panel {
+        position: absolute;
+        top: 58px;
+        right: 16px;
+        width: min(92vw, 300px);
+        background: var(--card);
+        border: 1px solid var(--line-soft);
+        border-radius: 12px;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+        overflow: hidden;
+      }
+      .site-menu-row {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 10px 12px 8px;
+        border-bottom: 1px solid var(--line-soft);
+      }
+      .site-menu-row-closeonly { min-height: 58px; }
+      .site-menu-close {
+        width: 40px;
+        height: 40px;
+        border: 1px solid var(--line-soft);
+        background: var(--card);
+        color: var(--text);
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 1.35rem;
+        line-height: 1;
+      }
+      .site-menu-group { border-bottom: 1px solid var(--line-soft); }
+      .site-menu-group:last-child { border-bottom: 0; }
+      .site-menu-summary {
+        width: 100%;
+        background: none;
+        border: 0;
+        color: var(--text);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 16px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        text-align: left;
+      }
+      .site-menu-summary:hover,
+      .site-menu-link:hover,
+      .site-submenu a:hover {
+        background: rgba(127,127,127,0.06);
+      }
+      .site-submenu {
+        display: none;
+        padding: 0 8px 10px;
+        gap: 4px;
+      }
+      .site-menu-group.open .site-submenu { display: grid; }
+      .site-submenu a {
+        display: block;
+        padding: 10px 12px;
+        border-radius: 10px;
+        color: var(--muted);
+        font-size: 0.97rem;
+        font-weight: 500;
+      }
+      .site-menu-link {
+        display: block;
+        padding: 14px 16px;
+        font-size: 1rem;
+        font-weight: 500;
+      }
+      .site-chev { width: 14px; height: 14px; transition: transform 0.15s ease; }
+      .site-menu-group.open .site-chev { transform: rotate(90deg); }
+
+      @media (max-width: 700px) {
+        .site-header-inner {
+          padding: 10px 10px;
+        }
+        .site-shell {
+          padding: 10px 8px 18px;
+        }
+        .site-brand img { width: 18px; height: 18px; flex-basis: 18px; }
+        .site-brand-text { font-size: 0.96rem; }
+        .site-menu-panel { top: 54px; right: 8px; }
+        .site-content .card-header { padding: 14px 14px 8px !important; }
+        .site-content .table-wrap { padding: 0 4px 4px !important; }
+        .site-content thead th { padding: 8px 5px !important; font-size: 0.68rem !important; }
+        .site-content tbody td { padding: 8px 5px !important; font-size: 0.86rem !important; }
+      }
+    </style>
+  </head>
+  <body>
+    {showBrandBar && (
+      <header class="site-header">
+        <div class="site-header-inner">
+          <a class="site-brand" href="/" aria-label="Home">
+            <img src={logoUrl} alt="" />
+            <span class="site-brand-text">Lufbery Disc Golf</span>
+          </a>
+
+          <div class="site-topbar-right">
+            <button id="themeToggle" class="site-icon-button" type="button" aria-label="Theme mode"></button>
+            <button
+              id="menuButton"
+              class="site-icon-button"
+              type="button"
+              aria-label="Open menu"
+              aria-controls="siteMenuLayer"
+              aria-expanded="false"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+                <path d="M4 7h16"></path>
+                <path d="M4 12h16"></path>
+                <path d="M4 17h16"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </header>
+    )}
+
+    <div class="site-shell">
+      <main class="site-content">
+        <slot />
+      </main>
+    </div>
+
+    <aside id="siteMenuLayer" class="site-menu-layer" aria-hidden="true">
+      <div class="site-menu-backdrop" data-close-menu></div>
+      <div class="site-menu-panel" role="dialog" aria-modal="true" aria-label="Site menu">
+        <div class="site-menu-row site-menu-row-closeonly">
+          <button class="site-menu-close" type="button" aria-label="Close menu" data-close-menu>×</button>
+        </div>
+
+        <div class="site-menu-group" data-menu-group>
+          <button class="site-menu-summary" type="button">
+            <span>Singles</span>
+            <svg class="site-chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M5 3l5 5-5 5"></path>
+            </svg>
+          </button>
+          <nav class="site-submenu">
+            {singlesLinks.map((item) => <a href={item.href}>{item.label}</a>)}
+          </nav>
+        </div>
+
+        <div class="site-menu-group" data-menu-group>
+          <button class="site-menu-summary" type="button">
+            <span>Doubles</span>
+            <svg class="site-chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M5 3l5 5-5 5"></path>
+            </svg>
+          </button>
+          <nav class="site-submenu">
+            {doublesLinks.map((item) => <a href={item.href}>{item.label}</a>)}
+          </nav>
+        </div>
+
+        <a class="site-menu-link" href="/lost-and-found">Lost &amp; Found</a>
+        <a class="site-menu-link" href="https://udisc.com/leagues/lufbery-league" target="_blank" rel="noopener">Lufbery on UDisc</a>
+      </div>
+    </aside>
+
+    <script>
+      const html = document.documentElement;
+      const themeToggle = document.getElementById("themeToggle");
+      const storageKey = "lufbery-theme";
+      const themeModes = ["system", "light", "dark"];
+
+      function systemMode() {
+        return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      }
+
+      function themeIcon(mode) {
+        if (mode === "light") {
+          return `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4.2"></circle>
+              <path d="M12 2v2.5M12 19.5V22M4.93 4.93l1.77 1.77M17.3 17.3l1.77 1.77M2 12h2.5M19.5 12H22M4.93 19.07l1.77-1.77M17.3 6.7l1.77-1.77"></path>
+            </svg>
+          `;
+        }
+        if (mode === "dark") {
+          return `
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M20.4 14.7A8.5 8.5 0 0 1 9.3 3.6a.7.7 0 0 0-.9-.9A10 10 0 1 0 21.3 15.6a.7.7 0 0 0-.9-.9Z"></path>
+            </svg>
+          `;
+        }
+        return `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="12" rx="2"></rect>
+            <path d="M8 20h8"></path>
+            <path d="M12 16v4"></path>
+          </svg>
+        `;
+      }
+
+      function getStoredMode() {
+        return localStorage.getItem(storageKey) || "system";
+      }
+
+      function applyTheme(mode) {
+        const actual = mode === "system" ? systemMode() : mode;
+        html.setAttribute("data-theme", actual);
+        if (themeToggle) {
+          themeToggle.innerHTML = themeIcon(mode);
+          themeToggle.setAttribute("aria-label", `Theme mode: ${mode}`);
+          themeToggle.title = `Theme: ${mode}`;
+        }
+      }
+
+      function nextTheme(mode) {
+        const index = themeModes.indexOf(mode);
+        return themeModes[(index + 1) % themeModes.length];
+      }
+
+      let savedTheme = getStoredMode();
+      applyTheme(savedTheme);
+
+      if (themeToggle) {
+        themeToggle.addEventListener("click", () => {
+          savedTheme = nextTheme(savedTheme);
+          localStorage.setItem(storageKey, savedTheme);
+          applyTheme(savedTheme);
+        });
+      }
+
+      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+        const mode = getStoredMode();
+        if (mode === "system") applyTheme("system");
+      });
+
+      const menuButton = document.getElementById("menuButton");
+      const menuLayer = document.getElementById("siteMenuLayer");
+      const closeMenuButtons = menuLayer?.querySelectorAll("[data-close-menu]") || [];
+      const menuGroups = menuLayer?.querySelectorAll("[data-menu-group]") || [];
+
+      function openMenu() {
+        menuLayer?.classList.add("open");
+        menuLayer?.setAttribute("aria-hidden", "false");
+        menuButton?.setAttribute("aria-expanded", "true");
+        document.body.style.overflow = "hidden";
+      }
+
+      function closeMenu() {
+        menuLayer?.classList.remove("open");
+        menuLayer?.setAttribute("aria-hidden", "true");
+        menuButton?.setAttribute("aria-expanded", "false");
+        document.body.style.overflow = "";
+      }
+
+      menuButton?.addEventListener("click", () => {
+        if (menuLayer?.classList.contains("open")) closeMenu();
+        else openMenu();
+      });
+
+      closeMenuButtons.forEach((button) => button.addEventListener("click", closeMenu));
+      menuLayer?.querySelectorAll("a").forEach((link) => link.addEventListener("click", closeMenu));
+
+      menuGroups.forEach((group) => {
+        const button = group.querySelector(".site-menu-summary");
+        button?.addEventListener("click", () => {
+          const isOpen = group.classList.contains("open");
+          menuGroups.forEach((g) => g.classList.remove("open"));
+          if (!isOpen) group.classList.add("open");
+        });
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") closeMenu();
+      });
+    </script>
+  </body>
+</html>

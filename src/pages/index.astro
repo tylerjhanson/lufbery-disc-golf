@@ -1,11 +1,461 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
+const singlesLinks = [
+  { href: "/singles/handicaps-tags", label: "Handicaps & Tags" },
+  { href: "/singles/weekly-results", label: "Weekly Results" },
+  { href: "/singles/weekly-winners", label: "Weekly Winners" },
+  { href: "/singles/course-records", label: "Course Records" },
+  { href: "/singles/aces", label: "Aces" },
+];
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+const doublesLinks = [
+  { href: "/doubles/course-records", label: "Course Records" },
+  { href: "/doubles/aces", label: "Aces" },
+];
+
+const logoUrl = "https://flyingaces.lufberydiscgolf.com/favicon.png";
+const lostFoundUrl = "/lost-and-found";
+const udiscLeagueUrl = "https://udisc.com/leagues/lufbery-league";
+
+const calendarIcsUrl =
+  "https://calendar.google.com/calendar/ical/600330c48796b6025429fafaf3799e789f394b9d551c9ac96938c36e31444740%40group.calendar.google.com/public/basic.ics";
+
+const WEEKDAY_MAP = {
+  SU: 0,
+  MO: 1,
+  TU: 2,
+  WE: 3,
+  TH: 4,
+  FR: 5,
+  SA: 6,
+};
+
+function unfoldIcs(raw: string) {
+  return raw.replace(/\r?\n[ \t]/g, "");
+}
+
+function getBlocks(raw: string) {
+  return unfoldIcs(raw).match(/BEGIN:VEVENT[\s\S]*?END:VEVENT/g) || [];
+}
+
+function getLines(block: string) {
+  return block.split(/\r?\n/);
+}
+
+function getLine(block: string, key: string) {
+  return getLines(block).find((line) => line.startsWith(`${key}:`) || line.startsWith(`${key};`)) || "";
+}
+
+function getLinesByKey(block: string, key: string) {
+  return getLines(block).filter((line) => line.startsWith(`${key}:`) || line.startsWith(`${key};`));
+}
+
+function getValue(line: string) {
+  if (!line) return "";
+  const idx = line.indexOf(":");
+  return idx >= 0 ? line.slice(idx + 1).trim() : "";
+}
+
+function decodeIcsText(value: string) {
+  return String(value || "")
+    .replace(/\\,/g, ",")
+    .replace(/\\;/g, ";")
+    .replace(/\\n/g, " ")
+    .replace(/\\\\/g, "\\");
+}
+
+function stampFromParts(parts: {
+  year: number;
+  month: number;
+  day: number;
+  hour?: number;
+  minute?: number;
+  second?: number;
+}) {
+  const y = String(parts.year).padStart(4, "0");
+  const m = String(parts.month).padStart(2, "0");
+  const d = String(parts.day).padStart(2, "0");
+  const hh = String(parts.hour || 0).padStart(2, "0");
+  const mm = String(parts.minute || 0).padStart(2, "0");
+  const ss = String(parts.second || 0).padStart(2, "0");
+  return `${y}${m}${d}${hh}${mm}${ss}`;
+}
+
+function formatMonthDay(year: number, month: number, day: number) {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "UTC",
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).format(new Date(Date.UTC(year, month - 1, day)));
+}
+
+function formatTime12(hour: number, minute: number) {
+  const ampm = hour >= 12 ? "PM" : "AM";
+  let h = hour % 12;
+  if (h === 0) h = 12;
+  return `${h}:${String(minute).padStart(2, "0")} ${ampm}`;
+}
+
+function getNowPartsInNewYork() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date());
+
+  const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return {
+    year: Number(map.year),
+    month: Number(map.month),
+    day: Number(map.day),
+    hour: Number(map.hour),
+    minute: Number(map.minute),
+    second: Number(map.second),
+  };
+}
+
+const nowStamp = stampFromParts(getNowPartsInNewYork());
+
+function parseDateLineDetailed(line: string) {
+  if (!line) return null;
+
+  const value = getValue(line);
+  if (!value) return null;
+
+  if (line.includes("VALUE=DATE")) {
+    const year = Number(value.slice(0, 4));
+    const month = Number(value.slice(4, 6));
+    const day = Number(value.slice(6, 8));
+
+    return {
+      allDay: true,
+      parts: { year, month, day, hour: 0, minute: 0, second: 0 },
+      stamp: stampFromParts({ year, month, day, hour: 0, minute: 0, second: 0 }),
+      displayDate: formatMonthDay(year, month, day),
+      displayTime: "All day",
+    };
+  }
+
+  if (value.endsWith("Z")) {
+    const iso = `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}T${value.slice(9, 11)}:${value.slice(11, 13)}:${value.slice(13, 15)}Z`;
+    const date = new Date(iso);
+
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/New_York",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(date);
+
+    const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+    const localParts = {
+      year: Number(map.year),
+      month: Number(map.month),
+      day: Number(map.day),
+      hour: Number(map.hour),
+      minute: Number(map.minute),
+      second: Number(map.second),
+    };
+
+    return {
+      allDay: false,
+      parts: localParts,
+      stamp: stampFromParts(localParts),
+      displayDate: formatMonthDay(localParts.year, localParts.month, localParts.day),
+      displayTime: formatTime12(localParts.hour, localParts.minute),
+    };
+  }
+
+  const parsed = {
+    year: Number(value.slice(0, 4)),
+    month: Number(value.slice(4, 6)),
+    day: Number(value.slice(6, 8)),
+    hour: Number(value.slice(9, 11) || "0"),
+    minute: Number(value.slice(11, 13) || "0"),
+    second: Number(value.slice(13, 15) || "0"),
+  };
+
+  return {
+    allDay: false,
+    parts: parsed,
+    stamp: stampFromParts(parsed),
+    displayDate: formatMonthDay(parsed.year, parsed.month, parsed.day),
+    displayTime: formatTime12(parsed.hour, parsed.minute),
+  };
+}
+
+function addDaysUtc(date: Date, days: number) {
+  const copy = new Date(date.getTime());
+  copy.setUTCDate(copy.getUTCDate() + days);
+  return copy;
+}
+
+function startOfWeekUtc(date: Date) {
+  return addDaysUtc(date, -date.getUTCDay());
+}
+
+function expandWeeklyOccurrences(
+  startInfo: ReturnType<typeof parseDateLineDetailed>,
+  rruleLine: string,
+  exdateLines: string[]
+) {
+  if (!startInfo || !rruleLine) return [];
+
+  const rule = Object.fromEntries(
+    getValue(rruleLine)
+      .split(";")
+      .map((part) => {
+        const [k, v] = part.split("=");
+        return [k, v];
+      })
+  );
+
+  if (rule.FREQ !== "WEEKLY") return [];
+
+  const interval = Number(rule.INTERVAL || "1");
+  const byDays = (rule.BYDAY ? rule.BYDAY.split(",") : [])
+    .map((d) => WEEKDAY_MAP[d])
+    .filter((v) => v !== undefined);
+
+  const startParts = startInfo.parts;
+  const baseDate = new Date(Date.UTC(startParts.year, startParts.month - 1, startParts.day));
+  const baseWeekStart = startOfWeekUtc(baseDate);
+  const defaultDay = baseDate.getUTCDay();
+  const dayList = byDays.length ? [...byDays].sort((a, b) => a - b) : [defaultDay];
+
+  let untilStamp = "";
+  if (rule.UNTIL) {
+    const untilLine = `DTSTART:${rule.UNTIL}`;
+    const untilParsed = parseDateLineDetailed(untilLine);
+    untilStamp = untilParsed ? untilParsed.stamp : "";
+  }
+
+  const exdateStamps = new Set<string>();
+  exdateLines.forEach((line) => {
+    const rawValues = getValue(line).split(",");
+    rawValues.forEach((value) => {
+      const parsed = parseDateLineDetailed(`DTSTART:${value}`);
+      if (parsed) exdateStamps.add(parsed.stamp);
+    });
+  });
+
+  const out = [];
+
+  for (let weekIndex = 0; weekIndex < 80; weekIndex++) {
+    const weekStart = addDaysUtc(baseWeekStart, weekIndex * 7 * interval);
+
+    for (const dayNum of dayList) {
+      const occDate = addDaysUtc(weekStart, dayNum);
+      const occParts = {
+        year: occDate.getUTCFullYear(),
+        month: occDate.getUTCMonth() + 1,
+        day: occDate.getUTCDate(),
+        hour: startParts.hour,
+        minute: startParts.minute,
+        second: startParts.second,
+      };
+
+      const stamp = stampFromParts(occParts);
+
+      if (stamp < startInfo.stamp) continue;
+      if (untilStamp && stamp > untilStamp) continue;
+      if (exdateStamps.has(stamp)) continue;
+
+      out.push({
+        stamp,
+        displayDate: formatMonthDay(occParts.year, occParts.month, occParts.day),
+        displayTime: startInfo.allDay ? "All day" : formatTime12(occParts.hour, occParts.minute),
+      });
+    }
+  }
+
+  return out;
+}
+
+let upcomingEvents: { title: string; location: string; stamp: string; displayDate: string; displayTime: string }[] = [];
+
+try {
+  const res = await fetch(calendarIcsUrl);
+  const ics = await res.text();
+
+  upcomingEvents = getBlocks(ics)
+    .flatMap((block) => {
+      const summary = decodeIcsText(getValue(getLine(block, "SUMMARY")));
+      const location = decodeIcsText(getValue(getLine(block, "LOCATION")));
+      const startInfo = parseDateLineDetailed(getLine(block, "DTSTART"));
+      const rrule = getLine(block, "RRULE");
+      const exdates = getLinesByKey(block, "EXDATE");
+
+      if (!summary || !startInfo) return [];
+
+      if (rrule) {
+        return expandWeeklyOccurrences(startInfo, rrule, exdates).map((occ) => ({
+          title: summary,
+          location,
+          stamp: occ.stamp,
+          displayDate: occ.displayDate,
+          displayTime: occ.displayTime,
+        }));
+      }
+
+      return [
+        {
+          title: summary,
+          location,
+          stamp: startInfo.stamp,
+          displayDate: startInfo.displayDate,
+          displayTime: startInfo.displayTime,
+        },
+      ];
+    })
+    .filter((event) => event.stamp >= nowStamp)
+    .sort((a, b) => a.stamp.localeCompare(b.stamp))
+    .reduce((acc, event) => {
+      const key = `${event.title}|${event.stamp}|${event.location}`;
+      if (!acc.some((x) => `${x.title}|${x.stamp}|${x.location}` === key)) {
+        acc.push(event);
+      }
+      return acc;
+    }, [] as { title: string; location: string; stamp: string; displayDate: string; displayTime: string }[])
+    .slice(0, 5);
+} catch (error) {
+  upcomingEvents = [];
+}
+import SiteLayout from "../layouts/SiteLayout.astro";
 ---
 
-<Layout>
-	<Welcome />
-</Layout>
+
+<SiteLayout title="Lufbery Disc Golf" showBrandBar={true}>
+  <style>
+      .home-grid {
+        display: grid;
+        grid-template-columns: 1.1fr 1fr;
+        gap: 18px;
+      }
+      .section-stack { display: grid; gap: 18px; }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line-soft);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        padding: 22px 20px 18px;
+      }
+      .card h2 {
+        margin: 0 0 8px;
+        font-size: 1.2rem;
+        font-weight: 700;
+        line-height: 1.2;
+      }
+      .subtle-note {
+        color: var(--muted);
+        font-size: 0.97rem;
+        line-height: 1.6;
+        margin: 0 0 14px;
+      }
+      .link-list, .utility-buttons { display: grid; gap: 10px; }
+      .link-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 46px;
+        padding: 10px 14px;
+        border: 1px solid var(--line-soft);
+        border-radius: 7px;
+        background: var(--button-bg, #f3f5f8);
+        font-weight: 500;
+        text-align: center;
+        transition: background 0.12s ease, transform 0.12s ease;
+      }
+      .link-item:hover {
+        background: var(--button-bg-hover, #eceff4);
+        transform: translateY(-1px);
+      }
+      .utility-buttons .link-item {
+        background: var(--card);
+      }
+      .utility-buttons .link-item:hover {
+        background: var(--button-bg, #f3f5f8);
+      }
+      .event-list { display: grid; gap: 10px; }
+      .event-item {
+        border: 1px solid var(--line-soft);
+        border-radius: 7px;
+        padding: 12px 14px;
+        background: var(--button-bg, #f3f5f8);
+      }
+      .event-date {
+        margin: 0 0 6px;
+        font-weight: 700;
+        font-size: 0.94rem;
+        line-height: 1.2;
+      }
+      .event-title {
+        margin: 0 0 3px;
+        font-weight: 400;
+        font-size: 0.96rem;
+        line-height: 1.35;
+      }
+      .event-meta {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.4;
+      }
+      @media (max-width: 900px) {
+        .home-grid { grid-template-columns: 1fr; }
+      }
+  </style>
+
+  <section class="home-grid">
+    <div class="section-stack">
+      <div class="card">
+        <h2>Singles</h2>
+        <p class="subtle-note">Thursday evenings April-September</p>
+        <div class="link-list">
+          {singlesLinks.map((item) => <a class="link-item" href={item.href}>{item.label}</a>)}
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Doubles</h2>
+        <p class="subtle-note">Sundays, 9 a.m., year round</p>
+        <div class="link-list">
+          {doublesLinks.map((item) => <a class="link-item" href={item.href}>{item.label}</a>)}
+        </div>
+      </div>
+    </div>
+
+    <div class="section-stack">
+      <div class="utility-buttons">
+        <a class="link-item" href={lostFoundUrl}>Lost &amp; Found</a>
+        <a class="link-item" href={udiscLeagueUrl} target="_blank" rel="noopener">Lufbery on UDisc</a>
+      </div>
+
+      <div class="card">
+        <h2>Upcoming Events</h2>
+        {upcomingEvents.length > 0 ? (
+          <div class="event-list">
+            {upcomingEvents.map((event) => (
+              <article class="event-item">
+                <p class="event-date">{event.displayDate} · {event.displayTime}</p>
+                <p class="event-title">{event.title}</p>
+                {event.location ? <p class="event-meta">{event.location}</p> : null}
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p class="subtle-note">No upcoming events are available right now.</p>
+        )}
+      </div>
+    </div>
+  </section>
+</SiteLayout>

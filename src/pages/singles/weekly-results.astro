@@ -1,0 +1,533 @@
+---
+import { getWeeklyResults } from "../../lib/data";
+
+const events = getWeeklyResults();
+
+function getEventYear(title: string) {
+  const match = String(title || "").match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if (!match) return "";
+  let year = Number(match[3]);
+  if (year < 100) year += 2000;
+  return String(year);
+}
+
+const eventYears = [...new Set(events.map((event) => getEventYear(event.title)).filter(Boolean))].sort((a, b) => Number(b) - Number(a));
+const defaultYear = eventYears[0] || "all";
+
+import SiteLayout from "../../layouts/SiteLayout.astro";
+---
+
+<SiteLayout title="Weekly Results" showBrandBar={true}>
+<style>
+
+      :root {
+        --bg: #f5f7fb;
+        --card: #ffffff;
+        --text: #111827;
+        --muted: #6b7280;
+        --line: #e5e7eb;
+        --line-soft: #eef2f7;
+        --header: #f8fafc;
+        --hover: #f9fbff;
+        --accent: #2563eb;
+        --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        --radius: 22px;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        padding: 24px;
+        font-family: Inter, Arial, Helvetica, sans-serif;
+        background: linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%);
+        color: var(--text);
+      }
+
+      .wrap {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+      }
+
+      .page-header {
+        margin-bottom: 18px;
+      }
+
+      .weekly-results-page {
+        overflow-x: hidden;
+      }
+
+      .results-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .filter-select {
+        min-width: 170px;
+        padding: 10px 12px;
+        border: 1px solid var(--line-soft);
+        border-radius: 9px;
+        background: var(--card);
+        color: var(--text);
+        font: inherit;
+      }
+
+      .empty-state {
+        display: none;
+        padding: 14px 4px 0;
+        color: var(--muted);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 4vw, 3rem);
+        line-height: 1.05;
+        letter-spacing: -0.03em;
+      }
+
+      .events {
+        display: grid;
+        gap: 18px;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line-soft);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .card-header {
+        padding: 22px 24px 12px;
+      }
+
+      .card-title {
+        margin: 0;
+        font-size: 1.18rem;
+        line-height: 1.25;
+      }
+
+      .event-link,
+.event-link:visited {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.event-link:hover,
+.event-link:focus-visible {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+      .section-block {
+        padding: 0 16px 14px;
+      }
+
+      .subheading {
+        margin: 4px 0 10px;
+        font-size: 0.96rem;
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+      }
+
+      table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto;
+  min-width: 0;
+}
+
+      thead th {
+  background: var(--header);
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 10px 6px;
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+  white-space: normal;
+  line-height: 1.1;
+}
+
+      thead th:first-child {
+        text-align: left;
+        border-top-left-radius: 14px;
+      }
+
+      thead th:last-child {
+        border-top-right-radius: 14px;
+      }
+
+      tbody td {
+  padding: 9px 6px;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 0.9rem;
+  text-align: center;
+  vertical-align: middle;
+  line-height: 1.15;
+  white-space: normal;
+}
+
+      tbody tr:nth-child(even) td {
+        background: #fcfdff;
+      }
+
+      tbody tr:hover td {
+        background: var(--hover);
+      }
+
+      tbody td:first-child {
+        text-align: left;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+thead th:first-child,
+tbody td:first-child {
+  width: 34%;
+}
+
+tbody td:not(:first-child) {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+      .weekly-results-page .results-toolbar {
+        margin-bottom: 10px;
+      }
+
+      .weekly-results-page .events {
+        gap: 14px;
+      }
+
+      .weekly-results-page .card {
+        border-radius: 10px !important;
+      }
+
+      .weekly-results-page .card-header {
+        padding: 12px 12px 6px !important;
+      }
+
+      .weekly-results-page .card-title {
+        font-size: 1rem !important;
+        line-height: 1.2 !important;
+      }
+
+      .weekly-results-page .section-block {
+        padding: 0 4px 6px !important;
+      }
+
+      .weekly-results-page .table-wrap {
+        padding: 0 !important;
+        overflow-x: visible;
+      }
+
+      .weekly-results-page table.handicap-table {
+        table-layout: fixed;
+      }
+
+      .weekly-results-page table.handicap-table thead th {
+        font-size: 0.64rem !important;
+        padding: 7px 3px !important;
+        line-height: 1.05 !important;
+      }
+
+      .weekly-results-page table.handicap-table tbody td {
+        font-size: 0.8rem !important;
+        padding: 7px 3px !important;
+        line-height: 1.08 !important;
+        vertical-align: top !important;
+      }
+
+      .weekly-results-page table.handicap-table thead th:first-child,
+      .weekly-results-page table.handicap-table tbody td:first-child {
+        width: 28% !important;
+      }
+
+      .weekly-results-page table.handicap-table th:nth-child(n+2),
+      .weekly-results-page table.handicap-table td:nth-child(n+2) {
+        text-align: center !important;
+      }
+
+      .weekly-results-page table.handicap-table td:nth-child(5),
+      .weekly-results-page table.handicap-table td:nth-child(6),
+      .weekly-results-page table.handicap-table td:nth-child(7),
+      .weekly-results-page table.handicap-table th:nth-child(5),
+      .weekly-results-page table.handicap-table th:nth-child(6),
+      .weekly-results-page table.handicap-table th:nth-child(7) {
+        white-space: nowrap;
+      }
+
+      .weekly-results-page table.working-table thead th,
+      .weekly-results-page table.pool-table thead th {
+        font-size: 0.68rem !important;
+        padding: 8px 5px !important;
+      }
+
+      .weekly-results-page table.working-table tbody td,
+      .weekly-results-page table.pool-table tbody td {
+        font-size: 0.84rem !important;
+        padding: 8px 5px !important;
+        line-height: 1.1 !important;
+      }
+
+      .weekly-results-page table.working-table thead th:first-child,
+      .weekly-results-page table.working-table tbody td:first-child,
+      .weekly-results-page table.pool-table thead th:first-child,
+      .weekly-results-page table.pool-table tbody td:first-child {
+        width: 32% !important;
+      }
+
+      .weekly-results-page tbody td:first-child {
+        font-weight: 400 !important;
+      }
+
+      .footer-link {
+        margin-top: 20px;
+        padding: 0 2px;
+      }
+
+      .footer-link a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .footer-link a:hover {
+        text-decoration: underline;
+      }
+
+      @media (max-width: 700px) {
+  body {
+    padding: 8px;
+  }
+
+  .weekly-results-page .card-header {
+    padding: 10px 10px 6px !important;
+  }
+
+  .weekly-results-page .card-title {
+    font-size: 0.95rem !important;
+  }
+
+  .weekly-results-page .section-block {
+    padding: 0 2px 6px !important;
+  }
+
+  .weekly-results-page .table-wrap {
+    overflow-x: visible;
+  }
+
+  .weekly-results-page table.handicap-table thead th {
+    font-size: 0.56rem !important;
+    padding: 6px 2px !important;
+    letter-spacing: 0 !important;
+  }
+
+  .weekly-results-page table.handicap-table tbody td {
+    font-size: 0.76rem !important;
+    padding: 6px 2px !important;
+    line-height: 1.06 !important;
+  }
+
+  .weekly-results-page table.handicap-table thead th:first-child,
+  .weekly-results-page table.handicap-table tbody td:first-child {
+    width: 26% !important;
+  }
+
+  .weekly-results-page table.working-table thead th,
+  .weekly-results-page table.pool-table thead th {
+    font-size: 0.64rem !important;
+    padding: 8px 4px !important;
+  }
+
+  .weekly-results-page table.working-table tbody td,
+  .weekly-results-page table.pool-table tbody td {
+    font-size: 0.82rem !important;
+    padding: 8px 4px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  h1 {
+    font-size: 1.9rem;
+  }
+
+  .card-title {
+    font-size: 0.92rem;
+  }
+
+  thead th {
+    font-size: 0.58rem;
+    padding: 7px 3px;
+  }
+
+  tbody td {
+    font-size: 0.74rem;
+    padding: 6px 3px;
+  }
+
+  thead th:first-child,
+  tbody td:first-child {
+    width: 30%;
+  }
+}
+    
+</style>
+
+<div class="wrap weekly-results-page">
+      <div class="page-header">
+        <h1>Weekly Results</h1>
+      </div>
+
+      <div class="results-toolbar">
+        <label>
+          <select id="yearFilter" class="filter-select" aria-label="Filter results by year">
+            <option value="all">All years</option>
+            {eventYears.map((year) => (
+              <option value={year} selected={year === defaultYear}>{year}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div id="resultsEvents" class="events">
+        {events.map((event) => (
+          <section class="card" data-year={getEventYear(event.title) || ""}>
+            <div class="card-header">
+              <h2 class="card-title">
+                {event.url ? (
+                  <a class="event-link" href={event.url} target="_blank" rel="noopener">
+                    {event.title}
+                  </a>
+                ) : (
+                  event.title
+                )}
+              </h2>
+            </div>
+
+            {event.kind === "handicap" && (
+              <>
+                <div class="section-block">
+                  <div class="table-wrap">
+                    <table class="handicap-table">
+                      <thead>
+                        <tr>
+                          {event.headers.map((header) => (
+  <th>{header === "Overall" ? "OVR" : header}</th>
+))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {event.rows.map((row) => (
+                          <tr>
+                            <td data-label="Name">{row.name}</td>
+                            <td data-label="Raw">{row.raw}</td>
+                            <td data-label="Hcp.">{row.hcp}</td>
+                            <td data-label="Net">{row.net}</td>
+                            <td data-label="Payout">{row.payout}</td>
+                            <td data-label="Overall">{row.overall}</td>
+                            <td data-label="CTP">{row.ctp}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {event.working && event.working.rows.length > 0 && (
+                  <div class="section-block">
+                    <div class="subheading">{event.working.title}</div>
+                    <div class="table-wrap">
+                      <table class="working-table">
+                        <thead>
+                          <tr>
+                            {event.working.headers.map((header) => <th>{header}</th>)}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {event.working.rows.map((row) => (
+                            <tr>
+                              {row.map((cell, idx) => (
+                                <td data-label={event.working.headers[idx] || ""}>{cell}</td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {event.kind === "pools" &&
+              event.pools.map((pool) => (
+                <div class="section-block">
+                  <div class="subheading">{pool.title}</div>
+                  <div class="table-wrap">
+                    <table class="pool-table">
+                      <thead>
+                        <tr>
+                          {pool.headers.map((header) => <th>{header}</th>)}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pool.rows.map((row) => (
+                          <tr>
+                            {row.slice(0, pool.headers.length).map((cell, idx) => (
+                              <td data-label={pool.headers[idx] || ""}>{cell}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
+          </section>
+        ))}
+      </div>
+      <div id="resultsEmpty" class="empty-state">No results found for the selected year.</div>
+
+      <div class="footer-link">
+        <a href="/singles/">← Back to Singles</a>
+      </div>
+    </div>
+    <script>
+      const yearFilter = document.getElementById("yearFilter");
+      const eventCards = Array.from(document.querySelectorAll("#resultsEvents > .card"));
+      const resultsEmpty = document.getElementById("resultsEmpty");
+
+      function applyYearFilter() {
+        const value = yearFilter?.value || "all";
+        let visible = 0;
+
+        eventCards.forEach((card) => {
+          const year = card.getAttribute("data-year") || "";
+          const show = value === "all" || value === year;
+          card.style.display = show ? "" : "none";
+          if (show) visible += 1;
+        });
+
+        if (resultsEmpty) {
+          resultsEmpty.style.display = visible ? "none" : "block";
+        }
+      }
+
+      yearFilter?.addEventListener("change", applyYearFilter);
+      applyYearFilter();
+    </script>
+</SiteLayout>
