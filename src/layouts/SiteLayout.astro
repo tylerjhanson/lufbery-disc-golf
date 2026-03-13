@@ -6,7 +6,7 @@ interface Props {
 
 const { title = "Lufbery Disc Golf", showBrandBar = true } = Astro.props;
 
-const logoUrl = "https://flyingaces.lufberydiscgolf.com/favicon.png";
+const logoUrl = "/logo.png";
 const singlesLinks = [
   { href: "/singles/handicaps-tags", label: "Handicaps & Tags" },
   { href: "/singles/weekly-results", label: "Weekly Results" },
@@ -22,10 +22,12 @@ const doublesLinks = [
 
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title}</title>
-    <script is:inline>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{title}</title>
+  <link rel="icon" type="image/png" href="/favicon.png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <script is:inline>
       (() => {
         const key = "lufbery-theme";
         const saved = localStorage.getItem(key) || "system";
@@ -360,7 +362,7 @@ const doublesLinks = [
       <header class="site-header">
         <div class="site-header-inner">
           <a class="site-brand" href="/" aria-label="Home">
-            <img src={logoUrl} alt="" />
+            <img src={logoUrl} alt="Lufbery Disc Golf logo" />
             <span class="site-brand-text">Lufbery Disc Golf</span>
           </a>
 
