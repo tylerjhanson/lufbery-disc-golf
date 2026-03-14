@@ -53,6 +53,16 @@ function getRoundType(event: { title?: string; kind?: string }) {
 function cleanPlayerName(value: unknown) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
+
+function getCellValueByHeader(headers: unknown[], row: unknown[], headerName: string) {
+  const index = (headers || []).findIndex(
+    (header) => cleanPlayerName(header).toLowerCase() === headerName.toLowerCase()
+  );
+
+  if (index === -1) return "";
+  return String((row || [])[index] ?? "").trim();
+}
+
 function isValidPlayerOption(value: unknown) {
   const name = cleanPlayerName(value).toLowerCase();
 
@@ -62,6 +72,7 @@ function isValidPlayerOption(value: unknown) {
     name !== "working towards a handicap"
   );
 }
+
 function getEventPlayers(event: any) {
   const values: string[] = [];
 
@@ -558,7 +569,6 @@ const defaultPlayer = "all";
                       {event.rows.map((row) => (
                         <tr
                           data-player-name={cleanPlayerName(row.name)}
-                          data-row-kind="handicap-player"
                           data-raw-score={String(row.raw ?? "")}
                         >
                           <td data-label="Name" class="player-name-cell">{row.name}</td>
@@ -587,7 +597,10 @@ const defaultPlayer = "all";
                       </thead>
                       <tbody>
                         {event.working.rows.map((row) => (
-                          <tr data-player-name={cleanPlayerName(row?.[0])}>
+                          <tr
+                            data-player-name={cleanPlayerName(row?.[0])}
+                            data-raw-score={getCellValueByHeader(event.working.headers, row, "Raw")}
+                          >
                             {row.map((cell, idx) => (
                               <td
                                 data-label={event.working.headers[idx] || ""}
@@ -729,13 +742,16 @@ const defaultPlayer = "all";
       eventCards.forEach((card) => {
         if (card.style.display === "none") return;
 
-        const rows = Array.from(card.querySelectorAll('tr[data-row-kind="handicap-player"]'));
+        const rows = Array.from(card.querySelectorAll('tr[data-player-name][data-raw-score]'));
 
         rows.forEach((row) => {
           const rowPlayer = normalizeValue(row.getAttribute("data-player-name") || "");
           if (rowPlayer !== selectedNorm) return;
 
-          const rawValue = Number(row.getAttribute("data-raw-score"));
+          const rawText = String(row.getAttribute("data-raw-score") || "").trim();
+          if (!rawText) return;
+
+          const rawValue = Number(rawText);
           if (!Number.isNaN(rawValue)) {
             rawScores.push(rawValue);
           }
