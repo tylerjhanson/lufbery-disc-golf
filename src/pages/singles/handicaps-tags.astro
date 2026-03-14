@@ -369,8 +369,8 @@ const rows = getHandicaps();
     const headers = table?.querySelectorAll("thead th.sortable") || [];
     const playerSearch = document.getElementById("playerSearch");
 
-    let currentColumn = 1;
-    let currentDirection = "asc";
+    let currentColumn = 3;
+let currentDirection = "desc";
 
     function getCellValue(row, columnIndex) {
       return row.children[columnIndex]?.textContent?.trim() ?? "";
