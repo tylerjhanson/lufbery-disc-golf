@@ -420,10 +420,24 @@ const defaultPlayer = "all";
         padding: 8px;
       }
 
-      .filter-select {
-        min-width: 0;
-        width: 100%;
-      }
+      .results-toolbar {
+  display: grid;
+  grid-template-columns: 1.35fr 0.9fr 1.05fr;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.results-toolbar label {
+  min-width: 0;
+  width: 100%;
+}
+
+.filter-select {
+  min-width: 0;
+  width: 100%;
+  padding: 9px 10px;
+  font-size: 0.92rem;
+}
 
       .card-header {
         padding: 10px 10px 6px !important;
