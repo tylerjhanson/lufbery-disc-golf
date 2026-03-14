@@ -50,6 +50,40 @@ function getRoundType(event: { title?: string; kind?: string }) {
   return "monthly";
 }
 
+function getEventPlayerSearchText(event: any) {
+  const values: string[] = [];
+
+  if (event.kind === "handicap") {
+    if (Array.isArray(event.rows)) {
+      event.rows.forEach((row: any) => {
+        values.push(String(row?.name || ""));
+      });
+    }
+
+    if (event.working?.rows && Array.isArray(event.working.rows)) {
+      event.working.rows.forEach((row: any[]) => {
+        values.push(String(row?.[0] || ""));
+      });
+    }
+  }
+
+  if (event.kind === "pools" && Array.isArray(event.pools)) {
+    event.pools.forEach((pool: any) => {
+      if (Array.isArray(pool?.rows)) {
+        pool.rows.forEach((row: any[]) => {
+          values.push(String(row?.[0] || ""));
+        });
+      }
+    });
+  }
+
+  return values
+    .join(" ")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 const sortedEvents = [...events].sort(
   (a, b) => getEventTimestamp(b.title) - getEventTimestamp(a.title)
 );
@@ -63,465 +97,536 @@ const defaultRoundType = "all";
 ---
 
 <SiteLayout title="Weekly Results" showBrandBar={true}>
-<style>
-      :root {
-        --bg: #f5f7fb;
-        --card: #ffffff;
-        --text: #111827;
-        --muted: #6b7280;
-        --line: #e5e7eb;
-        --line-soft: #eef2f7;
-        --header: #f8fafc;
-        --hover: #f9fbff;
-        --accent: #2563eb;
-        --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-        --radius: 22px;
-      }
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --line-soft: #eef2f7;
+      --header: #f8fafc;
+      --hover: #f9fbff;
+      --accent: #2563eb;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --radius: 22px;
+    }
 
-      * { box-sizing: border-box; }
+    * { box-sizing: border-box; }
 
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+    }
+
+    .page-header {
+      margin-bottom: 18px;
+    }
+
+    .weekly-results-page {
+      overflow-x: hidden;
+    }
+
+    .results-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .search-input {
+      width: min(360px, 100%);
+      padding: 10px 12px;
+      border: 1px solid var(--line-soft);
+      border-radius: 9px;
+      background: var(--card);
+      color: var(--text);
+      font: inherit;
+    }
+
+    .filter-select {
+      min-width: 170px;
+      padding: 10px 12px;
+      border: 1px solid var(--line-soft);
+      border-radius: 9px;
+      background: var(--card);
+      color: var(--text);
+      font: inherit;
+    }
+
+    .empty-state {
+      display: none;
+      padding: 14px 4px 0;
+      color: var(--muted);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+    }
+
+    .events {
+      display: grid;
+      gap: 18px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 22px 24px 12px;
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 1.18rem;
+      line-height: 1.25;
+    }
+
+    .event-link,
+    .event-link:visited {
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .event-link:hover,
+    .event-link:focus-visible {
+      color: #1d4ed8;
+      text-decoration: underline;
+    }
+
+    .section-block {
+      padding: 0 16px 14px;
+    }
+
+    .subheading {
+      margin: 4px 0 10px;
+      font-size: 0.96rem;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      table-layout: auto;
+      min-width: 0;
+    }
+
+    thead th {
+      background: var(--header);
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      padding: 10px 6px;
+      border-bottom: 1px solid var(--line);
+      text-align: center;
+      white-space: normal;
+      line-height: 1.1;
+    }
+
+    thead th:first-child {
+      text-align: left;
+      border-top-left-radius: 14px;
+    }
+
+    thead th:last-child {
+      border-top-right-radius: 14px;
+    }
+
+    tbody td {
+      padding: 9px 6px;
+      border-bottom: 1px solid var(--line-soft);
+      font-size: 0.9rem;
+      text-align: center;
+      vertical-align: middle;
+      line-height: 1.15;
+      white-space: normal;
+    }
+
+    tbody tr:nth-child(even) td {
+      background: #fcfdff;
+    }
+
+    tbody tr:hover td {
+      background: var(--hover);
+    }
+
+    tbody td:first-child {
+      text-align: left;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    thead th:first-child,
+    tbody td:first-child {
+      width: 34%;
+    }
+
+    tbody td:not(:first-child) {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .player-match-row td {
+      background: #eff6ff !important;
+    }
+
+    td.player-name-cell.player-match-name {
+      background: #dbeafe !important;
+      color: #1d4ed8 !important;
+      font-weight: 700 !important;
+      box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.18);
+    }
+
+    .weekly-results-page .results-toolbar {
+      margin-bottom: 10px;
+    }
+
+    .weekly-results-page .events {
+      gap: 14px;
+    }
+
+    .weekly-results-page .card {
+      border-radius: 10px !important;
+    }
+
+    .weekly-results-page .card-header {
+      padding: 12px 12px 6px !important;
+    }
+
+    .weekly-results-page .card-title {
+      font-size: 1rem !important;
+      line-height: 1.2 !important;
+    }
+
+    .weekly-results-page .section-block {
+      padding: 0 4px 6px !important;
+    }
+
+    .weekly-results-page .table-wrap {
+      padding: 0 !important;
+      overflow-x: visible;
+    }
+
+    .weekly-results-page table.handicap-table {
+      table-layout: fixed;
+    }
+
+    .weekly-results-page table.handicap-table thead th {
+      font-size: 0.64rem !important;
+      padding: 7px 3px !important;
+      line-height: 1.05 !important;
+    }
+
+    .weekly-results-page table.handicap-table tbody td {
+      font-size: 0.8rem !important;
+      padding: 7px 3px !important;
+      line-height: 1.08 !important;
+      vertical-align: top !important;
+    }
+
+    .weekly-results-page table.handicap-table thead th:first-child,
+    .weekly-results-page table.handicap-table tbody td:first-child {
+      width: 28% !important;
+    }
+
+    .weekly-results-page table.handicap-table th:nth-child(n+2),
+    .weekly-results-page table.handicap-table td:nth-child(n+2) {
+      text-align: center !important;
+    }
+
+    .weekly-results-page table.handicap-table td:nth-child(5),
+    .weekly-results-page table.handicap-table td:nth-child(6),
+    .weekly-results-page table.handicap-table td:nth-child(7),
+    .weekly-results-page table.handicap-table th:nth-child(5),
+    .weekly-results-page table.handicap-table th:nth-child(6),
+    .weekly-results-page table.handicap-table th:nth-child(7) {
+      white-space: nowrap;
+    }
+
+    .weekly-results-page table.working-table thead th,
+    .weekly-results-page table.pool-table thead th {
+      font-size: 0.68rem !important;
+      padding: 8px 5px !important;
+    }
+
+    .weekly-results-page table.working-table tbody td,
+    .weekly-results-page table.pool-table tbody td {
+      font-size: 0.84rem !important;
+      padding: 8px 5px !important;
+      line-height: 1.1 !important;
+    }
+
+    .weekly-results-page table.working-table thead th:first-child,
+    .weekly-results-page table.working-table tbody td:first-child,
+    .weekly-results-page table.pool-table thead th:first-child,
+    .weekly-results-page table.pool-table tbody td:first-child {
+      width: 32% !important;
+    }
+
+    .weekly-results-page tbody td:first-child {
+      font-weight: 400 !important;
+    }
+
+    .footer-link {
+      margin-top: 20px;
+      padding: 0 2px;
+    }
+
+    .footer-link a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .footer-link a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 700px) {
       body {
-        margin: 0;
-        padding: 24px;
-        font-family: Inter, Arial, Helvetica, sans-serif;
-        background: linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%);
-        color: var(--text);
+        padding: 8px;
       }
 
-      .wrap {
+      .search-input {
         width: 100%;
-        max-width: none;
-        margin: 0;
-      }
-
-      .page-header {
-        margin-bottom: 18px;
-      }
-
-      .weekly-results-page {
-        overflow-x: hidden;
-      }
-
-      .results-toolbar {
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
-        flex-wrap: wrap;
-        gap: 12px;
-        margin-bottom: 12px;
-      }
-
-      .filter-select {
-        min-width: 170px;
-        padding: 10px 12px;
-        border: 1px solid var(--line-soft);
-        border-radius: 9px;
-        background: var(--card);
-        color: var(--text);
-        font: inherit;
-      }
-
-      .empty-state {
-        display: none;
-        padding: 14px 4px 0;
-        color: var(--muted);
-      }
-
-      h1 {
-        margin: 0;
-        font-size: clamp(2rem, 4vw, 3rem);
-        line-height: 1.05;
-        letter-spacing: -0.03em;
-      }
-
-      .events {
-        display: grid;
-        gap: 18px;
-      }
-
-      .card {
-        background: var(--card);
-        border: 1px solid var(--line-soft);
-        border-radius: var(--radius);
-        box-shadow: var(--shadow);
-        overflow: hidden;
-      }
-
-      .card-header {
-        padding: 22px 24px 12px;
-      }
-
-      .card-title {
-        margin: 0;
-        font-size: 1.18rem;
-        line-height: 1.25;
-      }
-
-      .event-link,
-      .event-link:visited {
-        color: #2563eb;
-        text-decoration: none;
-        font-weight: 600;
-      }
-
-      .event-link:hover,
-      .event-link:focus-visible {
-        color: #1d4ed8;
-        text-decoration: underline;
-      }
-
-      .section-block {
-        padding: 0 16px 14px;
-      }
-
-      .subheading {
-        margin: 4px 0 10px;
-        font-size: 0.96rem;
-        color: var(--muted);
-        font-weight: 700;
-      }
-
-      .table-wrap {
-        overflow-x: auto;
-      }
-
-      table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-        table-layout: auto;
-        min-width: 0;
-      }
-
-      thead th {
-        background: var(--header);
-        color: var(--muted);
-        font-size: 0.76rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-        padding: 10px 6px;
-        border-bottom: 1px solid var(--line);
-        text-align: center;
-        white-space: normal;
-        line-height: 1.1;
-      }
-
-      thead th:first-child {
-        text-align: left;
-        border-top-left-radius: 14px;
-      }
-
-      thead th:last-child {
-        border-top-right-radius: 14px;
-      }
-
-      tbody td {
-        padding: 9px 6px;
-        border-bottom: 1px solid var(--line-soft);
-        font-size: 0.9rem;
-        text-align: center;
-        vertical-align: middle;
-        line-height: 1.15;
-        white-space: normal;
-      }
-
-      tbody tr:nth-child(even) td {
-        background: #fcfdff;
-      }
-
-      tbody tr:hover td {
-        background: var(--hover);
-      }
-
-      tbody td:first-child {
-        text-align: left;
-        font-weight: 600;
-        overflow-wrap: anywhere;
-        word-break: break-word;
-      }
-
-      thead th:first-child,
-      tbody td:first-child {
-        width: 34%;
-      }
-
-      tbody td:not(:first-child) {
-        overflow-wrap: anywhere;
-        word-break: break-word;
-      }
-
-      .weekly-results-page .results-toolbar {
-        margin-bottom: 10px;
-      }
-
-      .weekly-results-page .events {
-        gap: 14px;
-      }
-
-      .weekly-results-page .card {
-        border-radius: 10px !important;
       }
 
       .weekly-results-page .card-header {
-        padding: 12px 12px 6px !important;
+        padding: 10px 10px 6px !important;
       }
 
       .weekly-results-page .card-title {
-        font-size: 1rem !important;
-        line-height: 1.2 !important;
+        font-size: 0.95rem !important;
       }
 
       .weekly-results-page .section-block {
-        padding: 0 4px 6px !important;
+        padding: 0 2px 6px !important;
       }
 
       .weekly-results-page .table-wrap {
-        padding: 0 !important;
         overflow-x: visible;
       }
 
-      .weekly-results-page table.handicap-table {
-        table-layout: fixed;
-      }
-
       .weekly-results-page table.handicap-table thead th {
-        font-size: 0.64rem !important;
-        padding: 7px 3px !important;
-        line-height: 1.05 !important;
+        font-size: 0.56rem !important;
+        padding: 6px 2px !important;
+        letter-spacing: 0 !important;
       }
 
       .weekly-results-page table.handicap-table tbody td {
-        font-size: 0.8rem !important;
-        padding: 7px 3px !important;
-        line-height: 1.08 !important;
-        vertical-align: top !important;
+        font-size: 0.76rem !important;
+        padding: 6px 2px !important;
+        line-height: 1.06 !important;
       }
 
       .weekly-results-page table.handicap-table thead th:first-child,
       .weekly-results-page table.handicap-table tbody td:first-child {
-        width: 28% !important;
-      }
-
-      .weekly-results-page table.handicap-table th:nth-child(n+2),
-      .weekly-results-page table.handicap-table td:nth-child(n+2) {
-        text-align: center !important;
-      }
-
-      .weekly-results-page table.handicap-table td:nth-child(5),
-      .weekly-results-page table.handicap-table td:nth-child(6),
-      .weekly-results-page table.handicap-table td:nth-child(7),
-      .weekly-results-page table.handicap-table th:nth-child(5),
-      .weekly-results-page table.handicap-table th:nth-child(6),
-      .weekly-results-page table.handicap-table th:nth-child(7) {
-        white-space: nowrap;
+        width: 26% !important;
       }
 
       .weekly-results-page table.working-table thead th,
       .weekly-results-page table.pool-table thead th {
-        font-size: 0.68rem !important;
-        padding: 8px 5px !important;
+        font-size: 0.64rem !important;
+        padding: 8px 4px !important;
       }
 
       .weekly-results-page table.working-table tbody td,
       .weekly-results-page table.pool-table tbody td {
-        font-size: 0.84rem !important;
-        padding: 8px 5px !important;
-        line-height: 1.1 !important;
+        font-size: 0.82rem !important;
+        padding: 8px 4px !important;
+      }
+    }
+
+    @media (max-width: 420px) {
+      h1 {
+        font-size: 1.9rem;
       }
 
-      .weekly-results-page table.working-table thead th:first-child,
-      .weekly-results-page table.working-table tbody td:first-child,
-      .weekly-results-page table.pool-table thead th:first-child,
-      .weekly-results-page table.pool-table tbody td:first-child {
-        width: 32% !important;
+      .card-title {
+        font-size: 0.92rem;
       }
 
-      .weekly-results-page tbody td:first-child {
-        font-weight: 400 !important;
+      thead th {
+        font-size: 0.58rem;
+        padding: 7px 3px;
       }
 
-      .footer-link {
-        margin-top: 20px;
-        padding: 0 2px;
+      tbody td {
+        font-size: 0.74rem;
+        padding: 6px 3px;
       }
 
-      .footer-link a {
-        color: var(--accent);
-        text-decoration: none;
-        font-weight: 600;
+      thead th:first-child,
+      tbody td:first-child {
+        width: 30%;
       }
+    }
+  </style>
 
-      .footer-link a:hover {
-        text-decoration: underline;
-      }
+  <div class="wrap weekly-results-page">
+    <div class="page-header">
+      <h1>Weekly Results</h1>
+    </div>
 
-      @media (max-width: 700px) {
-        body {
-          padding: 8px;
-        }
+    <div class="results-toolbar">
+      <input
+        id="playerSearch"
+        class="search-input"
+        type="search"
+        placeholder="Search player"
+        aria-label="Search player"
+      />
 
-        .weekly-results-page .card-header {
-          padding: 10px 10px 6px !important;
-        }
+      <label>
+        <select id="yearFilter" class="filter-select" aria-label="Filter results by year">
+          <option value="all" selected={defaultYear === "all"}>All years</option>
+          {eventYears.map((year) => (
+            <option value={year}>{year}</option>
+          ))}
+        </select>
+      </label>
 
-        .weekly-results-page .card-title {
-          font-size: 0.95rem !important;
-        }
+      <label>
+        <select id="roundTypeFilter" class="filter-select" aria-label="Filter results by round type">
+          <option value="all" selected={defaultRoundType === "all"}>All round types</option>
+          <option value="handicap">Handicap</option>
+          <option value="monthly">Monthly</option>
+          <option value="2-rounds">2 Rounds</option>
+        </select>
+      </label>
+    </div>
 
-        .weekly-results-page .section-block {
-          padding: 0 2px 6px !important;
-        }
+    <div id="resultsEvents" class="events">
+      {sortedEvents.map((event) => (
+        <section
+          class="card"
+          data-year={getEventYear(event.title) || ""}
+          data-round-type={getRoundType(event)}
+          data-timestamp={String(getEventTimestamp(event.title))}
+          data-player-text={getEventPlayerSearchText(event)}
+        >
+          <div class="card-header">
+            <h2 class="card-title">
+              {event.url ? (
+                <a class="event-link" href={event.url} target="_blank" rel="noopener">
+                  {event.title}
+                </a>
+              ) : (
+                event.title
+              )}
+            </h2>
+          </div>
 
-        .weekly-results-page .table-wrap {
-          overflow-x: visible;
-        }
-
-        .weekly-results-page table.handicap-table thead th {
-          font-size: 0.56rem !important;
-          padding: 6px 2px !important;
-          letter-spacing: 0 !important;
-        }
-
-        .weekly-results-page table.handicap-table tbody td {
-          font-size: 0.76rem !important;
-          padding: 6px 2px !important;
-          line-height: 1.06 !important;
-        }
-
-        .weekly-results-page table.handicap-table thead th:first-child,
-        .weekly-results-page table.handicap-table tbody td:first-child {
-          width: 26% !important;
-        }
-
-        .weekly-results-page table.working-table thead th,
-        .weekly-results-page table.pool-table thead th {
-          font-size: 0.64rem !important;
-          padding: 8px 4px !important;
-        }
-
-        .weekly-results-page table.working-table tbody td,
-        .weekly-results-page table.pool-table tbody td {
-          font-size: 0.82rem !important;
-          padding: 8px 4px !important;
-        }
-      }
-
-      @media (max-width: 420px) {
-        h1 {
-          font-size: 1.9rem;
-        }
-
-        .card-title {
-          font-size: 0.92rem;
-        }
-
-        thead th {
-          font-size: 0.58rem;
-          padding: 7px 3px;
-        }
-
-        tbody td {
-          font-size: 0.74rem;
-          padding: 6px 3px;
-        }
-
-        thead th:first-child,
-        tbody td:first-child {
-          width: 30%;
-        }
-      }
-</style>
-
-<div class="wrap weekly-results-page">
-  <div class="page-header">
-    <h1>Weekly Results</h1>
-  </div>
-
-  <div class="results-toolbar">
-    <label>
-      <select id="yearFilter" class="filter-select" aria-label="Filter results by year">
-        <option value="all" selected={defaultYear === "all"}>All years</option>
-        {eventYears.map((year) => (
-          <option value={year}>{year}</option>
-        ))}
-      </select>
-    </label>
-
-    <label>
-  <select id="roundTypeFilter" class="filter-select" aria-label="Filter results by round type">
-    <option value="all" selected={defaultRoundType === "all"}>All round types</option>
-    <option value="handicap">Handicap</option>
-    <option value="monthly">Monthly</option>
-    <option value="2-rounds">2 Rounds</option>
-  </select>
-</label>
-  </div>
-
-  <div id="resultsEvents" class="events">
-    {sortedEvents.map((event) => (
-      <section
-        class="card"
-        data-year={getEventYear(event.title) || ""}
-        data-round-type={getRoundType(event)}
-        data-timestamp={String(getEventTimestamp(event.title))}
-      >
-        <div class="card-header">
-          <h2 class="card-title">
-            {event.url ? (
-              <a class="event-link" href={event.url} target="_blank" rel="noopener">
-                {event.title}
-              </a>
-            ) : (
-              event.title
-            )}
-          </h2>
-        </div>
-
-        {event.kind === "handicap" && (
-          <>
-            <div class="section-block">
-              <div class="table-wrap">
-                <table class="handicap-table">
-                  <thead>
-                    <tr>
-                      {event.headers.map((header) => (
-                        <th>{header === "Overall" ? "OVR" : header}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {event.rows.map((row) => (
-                      <tr>
-                        <td data-label="Name">{row.name}</td>
-                        <td data-label="Raw">{row.raw}</td>
-                        <td data-label="Hcp.">{row.hcp}</td>
-                        <td data-label="Net">{row.net}</td>
-                        <td data-label="Payout">{row.payout}</td>
-                        <td data-label="Overall">{row.overall}</td>
-                        <td data-label="CTP">{row.ctp}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {event.working && event.working.rows.length > 0 && (
+          {event.kind === "handicap" && (
+            <>
               <div class="section-block">
-                <div class="subheading">{event.working.title}</div>
                 <div class="table-wrap">
-                  <table class="working-table">
+                  <table class="handicap-table">
                     <thead>
                       <tr>
-                        {event.working.headers.map((header) => <th>{header}</th>)}
+                        {event.headers.map((header) => (
+                          <th>{header === "Overall" ? "OVR" : header}</th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {event.working.rows.map((row) => (
+                      {event.rows.map((row) => (
                         <tr>
-                          {row.map((cell, idx) => (
-                            <td data-label={event.working.headers[idx] || ""}>{cell}</td>
+                          <td data-label="Name" class="player-name-cell">{row.name}</td>
+                          <td data-label="Raw">{row.raw}</td>
+                          <td data-label="Hcp.">{row.hcp}</td>
+                          <td data-label="Net">{row.net}</td>
+                          <td data-label="Payout">{row.payout}</td>
+                          <td data-label="Overall">{row.overall}</td>
+                          <td data-label="CTP">{row.ctp}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {event.working && event.working.rows.length > 0 && (
+                <div class="section-block">
+                  <div class="subheading">{event.working.title}</div>
+                  <div class="table-wrap">
+                    <table class="working-table">
+                      <thead>
+                        <tr>
+                          {event.working.headers.map((header) => <th>{header}</th>)}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {event.working.rows.map((row) => (
+                          <tr>
+                            {row.map((cell, idx) => (
+                              <td
+                                data-label={event.working.headers[idx] || ""}
+                                class={idx === 0 ? "player-name-cell" : undefined}
+                              >
+                                {cell}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {event.kind === "pools" &&
+            event.pools.map((pool) => (
+              <div class="section-block">
+                <div class="subheading">{pool.title}</div>
+                <div class="table-wrap">
+                  <table class="pool-table">
+                    <thead>
+                      <tr>
+                        {pool.headers.map((header) => <th>{header}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pool.rows.map((row) => (
+                        <tr>
+                          {row.slice(0, pool.headers.length).map((cell, idx) => (
+                            <td
+                              data-label={pool.headers[idx] || ""}
+                              class={idx === 0 ? "player-name-cell" : undefined}
+                            >
+                              {cell}
+                            </td>
                           ))}
                         </tr>
                       ))}
@@ -529,92 +634,106 @@ const defaultRoundType = "all";
                   </table>
                 </div>
               </div>
-            )}
-          </>
-        )}
+            ))}
+        </section>
+      ))}
+    </div>
 
-        {event.kind === "pools" &&
-          event.pools.map((pool) => (
-            <div class="section-block">
-              <div class="subheading">{pool.title}</div>
-              <div class="table-wrap">
-                <table class="pool-table">
-                  <thead>
-                    <tr>
-                      {pool.headers.map((header) => <th>{header}</th>)}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pool.rows.map((row) => (
-                      <tr>
-                        {row.slice(0, pool.headers.length).map((cell, idx) => (
-                          <td data-label={pool.headers[idx] || ""}>{cell}</td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ))}
-      </section>
-    ))}
+    <div id="resultsEmpty" class="empty-state">No results found for the selected filters.</div>
+
+    <div class="footer-link">
+      <a href="/singles/">← Back to Singles</a>
+    </div>
   </div>
 
-  <div id="resultsEmpty" class="empty-state">No results found for the selected filters.</div>
+  <script>
+    const yearFilter = document.getElementById("yearFilter");
+    const roundTypeFilter = document.getElementById("roundTypeFilter");
+    const playerSearch = document.getElementById("playerSearch");
+    const eventCards = Array.from(document.querySelectorAll("#resultsEvents > .card"));
+    const resultsEmpty = document.getElementById("resultsEmpty");
+    const resultsEvents = document.getElementById("resultsEvents");
 
-  <div class="footer-link">
-    <a href="/singles/">← Back to Singles</a>
-  </div>
-</div>
+    function sortCardsNewestFirst() {
+      if (!resultsEvents) return;
 
-<script>
-  const yearFilter = document.getElementById("yearFilter");
-  const roundTypeFilter = document.getElementById("roundTypeFilter");
-  const eventCards = Array.from(document.querySelectorAll("#resultsEvents > .card"));
-  const resultsEmpty = document.getElementById("resultsEmpty");
-  const resultsEvents = document.getElementById("resultsEvents");
+      const sortedCards = [...eventCards].sort((a, b) => {
+        const aTime = Number(a.getAttribute("data-timestamp") || "0");
+        const bTime = Number(b.getAttribute("data-timestamp") || "0");
+        return bTime - aTime;
+      });
 
-  function sortCardsNewestFirst() {
-    if (!resultsEvents) return;
-
-    const sortedCards = [...eventCards].sort((a, b) => {
-      const aTime = Number(a.getAttribute("data-timestamp") || "0");
-      const bTime = Number(b.getAttribute("data-timestamp") || "0");
-      return bTime - aTime;
-    });
-
-    resultsEvents.append(...sortedCards);
-  }
-
-  function applyFilters() {
-    const selectedYear = yearFilter?.value || "all";
-    const selectedRoundType = roundTypeFilter?.value || "all";
-    let visible = 0;
-
-    eventCards.forEach((card) => {
-      const year = card.getAttribute("data-year") || "";
-      const roundType = card.getAttribute("data-round-type") || "";
-
-      const matchesYear = selectedYear === "all" || selectedYear === year;
-      const matchesRoundType =
-        selectedRoundType === "all" || selectedRoundType === roundType;
-
-      const show = matchesYear && matchesRoundType;
-
-      card.style.display = show ? "" : "none";
-      if (show) visible += 1;
-    });
-
-    if (resultsEmpty) {
-      resultsEmpty.style.display = visible ? "none" : "block";
+      resultsEvents.append(...sortedCards);
     }
-  }
 
-  yearFilter?.addEventListener("change", applyFilters);
-  roundTypeFilter?.addEventListener("change", applyFilters);
+    function clearHighlights(card) {
+      card.querySelectorAll(".player-match-row").forEach((row) => {
+        row.classList.remove("player-match-row");
+      });
 
-  sortCardsNewestFirst();
-  applyFilters();
-</script>
+      card.querySelectorAll(".player-name-cell").forEach((cell) => {
+        cell.classList.remove("player-match-name");
+      });
+    }
+
+    function applyHighlights(card, query) {
+      clearHighlights(card);
+
+      if (!query) return;
+
+      const nameCells = Array.from(card.querySelectorAll(".player-name-cell"));
+
+      nameCells.forEach((cell) => {
+        const text = (cell.textContent || "").trim().toLowerCase();
+
+        if (text.includes(query)) {
+          cell.classList.add("player-match-name");
+
+          const row = cell.closest("tr");
+          if (row) row.classList.add("player-match-row");
+        }
+      });
+    }
+
+    function applyFilters() {
+      const selectedYear = yearFilter?.value || "all";
+      const selectedRoundType = roundTypeFilter?.value || "all";
+      const query = (playerSearch?.value || "").trim().toLowerCase();
+
+      let visible = 0;
+
+      eventCards.forEach((card) => {
+        const year = card.getAttribute("data-year") || "";
+        const roundType = card.getAttribute("data-round-type") || "";
+        const playerText = (card.getAttribute("data-player-text") || "").toLowerCase();
+
+        const matchesYear = selectedYear === "all" || selectedYear === year;
+        const matchesRoundType =
+          selectedRoundType === "all" || selectedRoundType === roundType;
+        const matchesPlayer = !query || playerText.includes(query);
+
+        const show = matchesYear && matchesRoundType && matchesPlayer;
+
+        card.style.display = show ? "" : "none";
+
+        clearHighlights(card);
+        if (show && query) {
+          applyHighlights(card, query);
+        }
+
+        if (show) visible += 1;
+      });
+
+      if (resultsEmpty) {
+        resultsEmpty.style.display = visible ? "none" : "block";
+      }
+    }
+
+    yearFilter?.addEventListener("change", applyFilters);
+    roundTypeFilter?.addEventListener("change", applyFilters);
+    playerSearch?.addEventListener("input", applyFilters);
+
+    sortCardsNewestFirst();
+    applyFilters();
+  </script>
 </SiteLayout>
