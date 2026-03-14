@@ -43,7 +43,7 @@ function getRoundType(event: { title?: string; kind?: string }) {
     return "2-rounds";
   }
 
-  if (event?.kind === "handicap") {
+  if (event?.kind === "handicap" || title.includes("handicap")) {
     return "handicap";
   }
 
