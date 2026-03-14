@@ -7,16 +7,12 @@ type WinnerRow = {
   score: string;
   date: string;
   url?: string;
-  roundType?: string;
-  type?: string;
-  kind?: string;
-  eventTitle?: string;
 };
 
 const rows = getWeeklyWinners() as WinnerRow[];
 
 function getDateParts(value: string) {
-  const match = String(value || "").match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  const match = String(value || "").match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
   if (!match) return null;
 
   const month = Number(match[1]);
@@ -39,64 +35,23 @@ function getRowYear(value: string) {
   return parts ? String(parts.year) : "";
 }
 
-function normalizeRoundType(value: string) {
-  const v = String(value || "").trim().toLowerCase();
-
-  if (!v) return "";
-
-  if (
-    v === "2-rounds" ||
-    v === "2 rounds" ||
-    v === "2-round" ||
-    v === "2 round" ||
-    v === "27 holes" ||
-    v === "27 hole" ||
-    v === "27-holes" ||
-    v === "27-hole"
-  ) {
-    return "2-rounds";
-  }
-
-  if (v === "handicap") return "handicap";
-  if (v === "monthly") return "monthly";
-
-  return "";
-}
-
 function getWinnerRoundType(row: WinnerRow) {
-  const explicit =
-    normalizeRoundType(row.roundType || "") ||
-    normalizeRoundType(row.type || "") ||
-    normalizeRoundType(row.kind || "");
+  const dateText = String(row.date || "").toLowerCase();
 
-  if (explicit) return explicit;
+  const hasTwoRounds =
+    dateText.includes("27 holes") ||
+    dateText.includes("27 hole") ||
+    dateText.includes("2 rounds") ||
+    dateText.includes("2 round");
 
-  const haystack = [
-    row.eventTitle || "",
-    row.url || "",
-    row.name || "",
-    row.score || "",
-  ]
-    .join(" ")
-    .toLowerCase();
+  const hasPool =
+    dateText.includes("a pool") ||
+    dateText.includes("b pool") ||
+    dateText.includes("c pool");
 
-  if (
-    haystack.includes("2 rounds") ||
-    haystack.includes("2 round") ||
-    haystack.includes("2-round") ||
-    haystack.includes("27 hole") ||
-    haystack.includes("27 holes") ||
-    haystack.includes("27-hole") ||
-    haystack.includes("27-holes")
-  ) {
-    return "2-rounds";
-  }
-
-  if (haystack.includes("handicap")) {
-    return "handicap";
-  }
-
-  return "monthly";
+  if (hasTwoRounds) return "2-rounds";
+  if (hasPool) return "monthly";
+  return "handicap";
 }
 
 const sortedRows = [...rows].sort((a, b) => getRowTimestamp(b.date) - getRowTimestamp(a.date));
