@@ -54,6 +54,13 @@ function getWinnerRoundType(row: WinnerRow) {
   return "handicap";
 }
 
+function splitDateLines(value: string) {
+  return String(value || "")
+    .split(/(?=\s*\()/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
 const sortedRows = [...rows].sort((a, b) => getRowTimestamp(b.date) - getRowTimestamp(a.date));
 
 const rowYears = [...new Set(sortedRows.map((row) => getRowYear(row.date)).filter(Boolean))].sort(
@@ -65,463 +72,467 @@ const defaultRoundType = "all";
 ---
 
 <SiteLayout title="Weekly Winners" showBrandBar={true}>
-<style>
-      :root {
-        --bg: #f5f7fb;
-        --card: #ffffff;
-        --text: #111827;
-        --muted: #6b7280;
-        --line: #e5e7eb;
-        --line-soft: #eef2f7;
-        --header: #f8fafc;
-        --hover: #f9fbff;
-        --accent: #2563eb;
-        --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-        --radius: 22px;
-      }
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --line-soft: #eef2f7;
+      --header: #f8fafc;
+      --hover: #f9fbff;
+      --accent: #2563eb;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --radius: 22px;
+    }
 
-      * { box-sizing: border-box; }
+    * { box-sizing: border-box; }
 
-      body {
-        margin: 0;
-        padding: 24px;
-        font-family: Inter, Arial, Helvetica, sans-serif;
-        background: linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%);
-        color: var(--text);
-      }
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%);
+      color: var(--text);
+    }
 
-      .wrap {
-        width: 100%;
-        max-width: none;
-        margin: 0;
-      }
+    .wrap {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+    }
 
-      .page-header {
-        margin-bottom: 18px;
-      }
+    .page-header {
+      margin-bottom: 18px;
+    }
 
-      .toolbar {
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
-        flex-wrap: wrap;
-        gap: 12px;
-        margin-bottom: 12px;
-      }
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
 
-      .filter-select {
-        min-width: 170px;
-        padding: 10px 12px;
-        border: 1px solid var(--line-soft);
-        border-radius: 9px;
-        background: var(--card);
-        color: var(--text);
-        font: inherit;
-      }
+    .filter-select {
+      min-width: 170px;
+      padding: 10px 12px;
+      border: 1px solid var(--line-soft);
+      border-radius: 9px;
+      background: var(--card);
+      color: var(--text);
+      font: inherit;
+    }
 
-      .card {
-        background: var(--card);
-        border: 1px solid var(--line-soft);
-        border-radius: var(--radius);
-        box-shadow: var(--shadow);
-        overflow: hidden;
-      }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
 
-      .card-header {
-        padding: 26px 28px 14px;
-      }
+    .card-header {
+      padding: 26px 28px 14px;
+    }
 
-      h1 {
-        margin: 0;
-        font-size: clamp(2rem, 4vw, 3rem);
-        line-height: 1.05;
-        letter-spacing: -0.03em;
-      }
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+    }
 
-      .table-wrap {
-        padding: 0 20px 10px;
-      }
+    .table-wrap {
+      padding: 0 20px 10px;
+    }
 
-      table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-        table-layout: fixed;
-      }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      table-layout: fixed;
+    }
+
+    col.name-col { width: 44%; }
+    col.score-col { width: 24%; }
+    col.date-col { width: 32%; }
+
+    thead th {
+      background: var(--header);
+      color: var(--muted);
+      font-size: 0.86rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      text-align: center;
+      user-select: none;
+    }
+
+    thead th.sortable {
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    thead th.sortable:hover {
+      background: #f1f5f9;
+      color: var(--text);
+    }
+
+    thead th:first-child {
+      border-top-left-radius: 14px;
+      text-align: left;
+    }
+
+    thead th:last-child {
+      border-top-right-radius: 14px;
+    }
+
+    .th-inner {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+    }
+
+    thead th:first-child .th-inner {
+      justify-content: flex-start;
+    }
+
+    .sort-indicator {
+      display: inline-block;
+      width: 12px;
+      color: #94a3b8;
+      font-size: 0.8rem;
+      flex: 0 0 12px;
+    }
+
+    tbody td {
+      padding: 15px 16px;
+      border-bottom: 1px solid var(--line-soft);
+      font-size: 1rem;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    tbody tr:nth-child(even) td {
+      background: #fcfdff;
+    }
+
+    tbody tr:hover td {
+      background: var(--hover);
+    }
+
+    tbody td:first-child {
+      text-align: left;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      line-height: 1.35;
+    }
+
+    .date-link {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .date-link:hover {
+      text-decoration: underline;
+    }
+
+    .empty-state {
+      display: none;
+      padding: 14px 20px 18px;
+      color: var(--muted);
+    }
+
+    .footer-link {
+      padding: 18px 28px 26px;
+    }
+
+    .footer-link a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .footer-link a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 700px) {
+      body { padding: 10px; }
+      .card-header { padding: 18px 16px 10px; }
+      h1 { font-size: 2.1rem; }
+      .table-wrap { padding: 0 8px 8px; }
 
       col.name-col { width: 44%; }
       col.score-col { width: 24%; }
       col.date-col { width: 32%; }
 
       thead th {
-        background: var(--header);
-        color: var(--muted);
-        font-size: 0.86rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        padding: 14px 16px;
-        border-bottom: 1px solid var(--line);
-        text-align: center;
-        user-select: none;
-      }
-
-      thead th.sortable {
-        cursor: pointer;
-        transition: background 0.15s ease, color 0.15s ease;
-      }
-
-      thead th.sortable:hover {
-        background: #f1f5f9;
-        color: var(--text);
-      }
-
-      thead th:first-child {
-        border-top-left-radius: 14px;
-        text-align: left;
-      }
-
-      thead th:last-child {
-        border-top-right-radius: 14px;
-      }
-
-      .th-inner {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        width: 100%;
-      }
-
-      thead th:first-child .th-inner {
-        justify-content: flex-start;
-      }
-
-      .sort-indicator {
-        display: inline-block;
-        width: 12px;
-        color: #94a3b8;
-        font-size: 0.8rem;
-        flex: 0 0 12px;
+        font-size: 0.72rem;
+        letter-spacing: 0.02em;
+        padding: 10px 6px;
       }
 
       tbody td {
-        padding: 15px 16px;
-        border-bottom: 1px solid var(--line-soft);
-        font-size: 1rem;
-        text-align: center;
-        vertical-align: middle;
-      }
-
-      tbody tr:nth-child(even) td {
-        background: #fcfdff;
-      }
-
-      tbody tr:hover td {
-        background: var(--hover);
-      }
-
-      tbody td:first-child {
-        text-align: left;
-        font-weight: 600;
-        overflow-wrap: anywhere;
-        word-break: break-word;
-        line-height: 1.35;
-      }
-
-      .date-link {
-        color: var(--accent);
-        text-decoration: none;
-        font-weight: 600;
-      }
-
-      .date-link:hover {
-        text-decoration: underline;
-      }
-
-      .empty-state {
-        display: none;
-        padding: 14px 20px 18px;
-        color: var(--muted);
+        font-size: 0.9rem;
+        padding: 10px 6px;
       }
 
       .footer-link {
-        padding: 18px 28px 26px;
+        padding: 14px 16px 18px;
+      }
+    }
+
+    @media (max-width: 420px) {
+      h1 { font-size: 1.95rem; }
+
+      thead th {
+        font-size: 0.68rem;
+        padding: 9px 4px;
       }
 
-      .footer-link a {
-        color: var(--accent);
-        text-decoration: none;
-        font-weight: 600;
+      tbody td {
+        font-size: 0.86rem;
+        padding: 9px 4px;
       }
+    }
+  </style>
 
-      .footer-link a:hover {
-        text-decoration: underline;
-      }
+  <div class="wrap">
+    <div class="page-header">
+      <h1>Weekly Winners</h1>
+    </div>
 
-      @media (max-width: 700px) {
-        body { padding: 10px; }
-        .card-header { padding: 18px 16px 10px; }
-        h1 { font-size: 2.1rem; }
-        .table-wrap { padding: 0 8px 8px; }
+    <div class="toolbar">
+      <label>
+        <select id="yearFilter" class="filter-select" aria-label="Filter winners by year">
+          <option value="all" selected={defaultYear === "all"}>All years</option>
+          {rowYears.map((year) => (
+            <option value={year}>{year}</option>
+          ))}
+        </select>
+      </label>
 
-        col.name-col { width: 44%; }
-        col.score-col { width: 24%; }
-        col.date-col { width: 32%; }
+      <label>
+        <select id="roundTypeFilter" class="filter-select" aria-label="Filter winners by round type">
+          <option value="all" selected={defaultRoundType === "all"}>All round types</option>
+          <option value="handicap">Handicap</option>
+          <option value="monthly">Monthly</option>
+          <option value="2-rounds">2 Rounds</option>
+        </select>
+      </label>
+    </div>
 
-        thead th {
-          font-size: 0.72rem;
-          letter-spacing: 0.02em;
-          padding: 10px 6px;
-        }
+    <div class="card">
+      <div class="card-header"></div>
 
-        tbody td {
-          font-size: 0.9rem;
-          padding: 10px 6px;
-        }
+      <div class="table-wrap">
+        <table id="sortable-table">
+          <colgroup>
+            <col class="name-col" />
+            <col class="score-col" />
+            <col class="date-col" />
+          </colgroup>
 
-        .footer-link {
-          padding: 14px 16px 18px;
-        }
-      }
+          <thead>
+            <tr>
+              <th class="sortable" data-column="0" data-type="text">
+                <span class="th-inner">Name <span class="sort-indicator"></span></span>
+              </th>
+              <th class="sortable" data-column="1" data-type="text">
+                <span class="th-inner">Score <span class="sort-indicator"></span></span>
+              </th>
+              <th class="sortable" data-column="2" data-type="date">
+                <span class="th-inner">Date <span class="sort-indicator"></span></span>
+              </th>
+            </tr>
+          </thead>
 
-      @media (max-width: 420px) {
-        h1 { font-size: 1.95rem; }
+          <tbody>
+            {sortedRows.map((row) => (
+              <tr
+                data-year={getRowYear(row.date)}
+                data-round-type={getWinnerRoundType(row)}
+                data-sort-date={String(getRowTimestamp(row.date))}
+              >
+                <td>
+                  {row.name.split("(tie)").map((part, i, arr) =>
+                    i < arr.length - 1 ? (
+                      <>
+                        {part}(tie)<br />
+                      </>
+                    ) : (
+                      part
+                    )
+                  )}
+                </td>
 
-        thead th {
-          font-size: 0.68rem;
-          padding: 9px 4px;
-        }
+                <td>{row.score}</td>
 
-        tbody td {
-          font-size: 0.86rem;
-          padding: 9px 4px;
-        }
-      }
-</style>
-
-<div class="wrap">
-  <div class="page-header">
-    <h1>Weekly Winners</h1>
-  </div>
-
-  <div class="toolbar">
-    <label>
-      <select id="yearFilter" class="filter-select" aria-label="Filter winners by year">
-        <option value="all" selected={defaultYear === "all"}>All years</option>
-        {rowYears.map((year) => (
-          <option value={year}>{year}</option>
-        ))}
-      </select>
-    </label>
-
-    <label>
-      <select id="roundTypeFilter" class="filter-select" aria-label="Filter winners by round type">
-        <option value="all" selected={defaultRoundType === "all"}>All round types</option>
-        <option value="handicap">Handicap</option>
-        <option value="monthly">Monthly</option>
-        <option value="2-rounds">2 Rounds</option>
-      </select>
-    </label>
-  </div>
-
-  <div class="card">
-    <div class="card-header"></div>
-
-    <div class="table-wrap">
-      <table id="sortable-table">
-        <colgroup>
-          <col class="name-col" />
-          <col class="score-col" />
-          <col class="date-col" />
-        </colgroup>
-
-        <thead>
-          <tr>
-            <th class="sortable" data-column="0" data-type="text">
-              <span class="th-inner">Name <span class="sort-indicator"></span></span>
-            </th>
-            <th class="sortable" data-column="1" data-type="text">
-              <span class="th-inner">Score <span class="sort-indicator"></span></span>
-            </th>
-            <th class="sortable" data-column="2" data-type="date">
-              <span class="th-inner">Date <span class="sort-indicator"></span></span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedRows.map((row) => (
-            <tr
-              data-year={getRowYear(row.date)}
-              data-round-type={getWinnerRoundType(row)}
-              data-sort-date={String(getRowTimestamp(row.date))}
-            >
-              <td>
-                {row.name.split("(tie)").map((part, i, arr) =>
-                  i < arr.length - 1 ? (
-                    <>
-                      {part}(tie)<br />
-                    </>
+                <td>
+                  {row.url ? (
+                    <a class="date-link" href={row.url} target="_blank" rel="noopener">
+                      {splitDateLines(row.date).map((part, i) => (
+                        <>
+                          {i > 0 && <br />}
+                          {part}
+                        </>
+                      ))}
+                    </a>
                   ) : (
-                    part
-                  )
-                )}
-              </td>
-              <td>{row.score}</td>
-              <td>
-  {row.url ? (
-    <a class="date-link" href={row.url} target="_blank" rel="noopener">
-      {String(row.date || "")
-        .split(/(?=\s*\()/)
-        .map((part, i) => (
-          <>
-            {i > 0 && <br />}
-            {part.trim()}
-          </>
-        ))}
-    </a>
-  ) : (
-    String(row.date || "")
-      .split(/(?=\s*\()/)
-      .map((part, i) => (
-        <>
-          {i > 0 && <br />}
-          {part.trim()}
-        </>
-      ))
-  )}
-</td>
+                    splitDateLines(row.date).map((part, i) => (
+                      <>
+                        {i > 0 && <br />}
+                        {part}
+                      </>
+                    ))
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-    <div id="winnersEmpty" class="empty-state">No winners found for the selected filters.</div>
+      <div id="winnersEmpty" class="empty-state">No winners found for the selected filters.</div>
 
-    <div class="footer-link">
-      <a href="/singles/">← Back to Singles</a>
+      <div class="footer-link">
+        <a href="/singles/">← Back to Singles</a>
+      </div>
     </div>
   </div>
-</div>
 
-<script>
-  const table = document.getElementById("sortable-table");
-  const tbody = table.querySelector("tbody");
-  const headers = table.querySelectorAll("thead th.sortable");
-  const yearFilter = document.getElementById("yearFilter");
-  const roundTypeFilter = document.getElementById("roundTypeFilter");
-  const emptyState = document.getElementById("winnersEmpty");
+  <script>
+    const table = document.getElementById("sortable-table");
+    const tbody = table.querySelector("tbody");
+    const headers = table.querySelectorAll("thead th.sortable");
+    const yearFilter = document.getElementById("yearFilter");
+    const roundTypeFilter = document.getElementById("roundTypeFilter");
+    const emptyState = document.getElementById("winnersEmpty");
 
-  let currentColumn = 2;
-  let currentDirection = "desc";
+    let currentColumn = 2;
+    let currentDirection = "desc";
 
-  function getCellValue(row, columnIndex) {
-    return row.children[columnIndex]?.textContent?.trim() ?? "";
-  }
-
-  function parseUsDate(value) {
-    const parts = value.split("/");
-    if (parts.length !== 3) return new Date(0).getTime();
-
-    let month = Number(parts[0]);
-    let day = Number(parts[1]);
-    let year = Number(parts[2]);
-
-    if (year < 100) year += 2000;
-
-    return new Date(year, month - 1, day).getTime();
-  }
-
-  function compareValues(a, b, type, direction) {
-    const emptyA = a === "";
-    const emptyB = b === "";
-
-    if (emptyA && emptyB) return 0;
-    if (emptyA) return 1;
-    if (emptyB) return -1;
-
-    let result = 0;
-
-    if (type === "date") {
-      result = parseUsDate(a) - parseUsDate(b);
-    } else {
-      result = a.localeCompare(b, undefined, { sensitivity: "base", numeric: true });
+    function getCellValue(row, columnIndex) {
+      return row.children[columnIndex]?.textContent?.trim() ?? "";
     }
 
-    return direction === "asc" ? result : -result;
-  }
+    function parseUsDate(value) {
+      const parts = value.split("/");
+      if (parts.length !== 3) return new Date(0).getTime();
 
-  function updateIndicators(activeColumn, direction) {
+      let month = Number(parts[0]);
+      let day = Number(parts[1]);
+      let year = Number(parts[2]);
+
+      if (year < 100) year += 2000;
+
+      return new Date(year, month - 1, day).getTime();
+    }
+
+    function compareValues(a, b, type, direction) {
+      const emptyA = a === "";
+      const emptyB = b === "";
+
+      if (emptyA && emptyB) return 0;
+      if (emptyA) return 1;
+      if (emptyB) return -1;
+
+      let result = 0;
+
+      if (type === "date") {
+        result = parseUsDate(a) - parseUsDate(b);
+      } else {
+        result = a.localeCompare(b, undefined, { sensitivity: "base", numeric: true });
+      }
+
+      return direction === "asc" ? result : -result;
+    }
+
+    function updateIndicators(activeColumn, direction) {
+      headers.forEach((header) => {
+        const indicator = header.querySelector(".sort-indicator");
+        const col = Number(header.dataset.column);
+
+        if (!indicator) return;
+
+        if (col === activeColumn) {
+          indicator.textContent = direction === "asc" ? "▲" : "▼";
+          indicator.style.color = "#2563eb";
+        } else {
+          indicator.textContent = "";
+          indicator.style.color = "#94a3b8";
+        }
+      });
+    }
+
+    function sortTable(columnIndex, type, direction) {
+      const sortedRows = Array.from(tbody.querySelectorAll("tr")).sort((rowA, rowB) => {
+        const valueA = getCellValue(rowA, columnIndex);
+        const valueB = getCellValue(rowB, columnIndex);
+        return compareValues(valueA, valueB, type, direction);
+      });
+
+      tbody.append(...sortedRows);
+      updateIndicators(columnIndex, direction);
+    }
+
+    function applyFilters() {
+      const selectedYear = yearFilter?.value || "all";
+      const selectedRoundType = roundTypeFilter?.value || "all";
+      const rows = Array.from(tbody.querySelectorAll("tr"));
+
+      let visible = 0;
+
+      rows.forEach((row) => {
+        const rowYear = row.getAttribute("data-year") || "";
+        const rowRoundType = row.getAttribute("data-round-type") || "";
+
+        const matchesYear = selectedYear === "all" || selectedYear === rowYear;
+        const matchesRoundType =
+          selectedRoundType === "all" || selectedRoundType === rowRoundType;
+
+        const show = matchesYear && matchesRoundType;
+        row.style.display = show ? "" : "none";
+
+        if (show) visible += 1;
+      });
+
+      if (emptyState) {
+        emptyState.style.display = visible ? "none" : "block";
+      }
+    }
+
     headers.forEach((header) => {
-      const indicator = header.querySelector(".sort-indicator");
-      const col = Number(header.dataset.column);
+      header.addEventListener("click", () => {
+        const columnIndex = Number(header.dataset.column);
+        const type = header.dataset.type || "text";
 
-      if (!indicator) return;
+        if (currentColumn === columnIndex) {
+          currentDirection = currentDirection === "asc" ? "desc" : "asc";
+        } else {
+          currentColumn = columnIndex;
+          currentDirection = columnIndex === 2 ? "desc" : "asc";
+        }
 
-      if (col === activeColumn) {
-        indicator.textContent = direction === "asc" ? "▲" : "▼";
-        indicator.style.color = "#2563eb";
-      } else {
-        indicator.textContent = "";
-        indicator.style.color = "#94a3b8";
-      }
-    });
-  }
-
-  function sortTable(columnIndex, type, direction) {
-    const sortedRows = Array.from(tbody.querySelectorAll("tr")).sort((rowA, rowB) => {
-      const valueA = getCellValue(rowA, columnIndex);
-      const valueB = getCellValue(rowB, columnIndex);
-      return compareValues(valueA, valueB, type, direction);
+        sortTable(columnIndex, type, currentDirection);
+        applyFilters();
+      });
     });
 
-    tbody.append(...sortedRows);
-    updateIndicators(columnIndex, direction);
-  }
+    yearFilter?.addEventListener("change", applyFilters);
+    roundTypeFilter?.addEventListener("change", applyFilters);
 
-  function applyFilters() {
-    const selectedYear = yearFilter?.value || "all";
-    const selectedRoundType = roundTypeFilter?.value || "all";
-    const rows = Array.from(tbody.querySelectorAll("tr"));
-
-    let visible = 0;
-
-    rows.forEach((row) => {
-      const rowYear = row.getAttribute("data-year") || "";
-      const rowRoundType = row.getAttribute("data-round-type") || "";
-
-      const matchesYear = selectedYear === "all" || selectedYear === rowYear;
-      const matchesRoundType =
-        selectedRoundType === "all" || selectedRoundType === rowRoundType;
-
-      const show = matchesYear && matchesRoundType;
-      row.style.display = show ? "" : "none";
-
-      if (show) visible += 1;
-    });
-
-    if (emptyState) {
-      emptyState.style.display = visible ? "none" : "block";
-    }
-  }
-
-  headers.forEach((header) => {
-    header.addEventListener("click", () => {
-      const columnIndex = Number(header.dataset.column);
-      const type = header.dataset.type || "text";
-
-      if (currentColumn === columnIndex) {
-        currentDirection = currentDirection === "asc" ? "desc" : "asc";
-      } else {
-        currentColumn = columnIndex;
-        currentDirection = columnIndex === 2 ? "desc" : "asc";
-      }
-
-      sortTable(columnIndex, type, currentDirection);
-      applyFilters();
-    });
-  });
-
-  yearFilter?.addEventListener("change", applyFilters);
-  roundTypeFilter?.addEventListener("change", applyFilters);
-
-  sortTable(currentColumn, "date", currentDirection);
-  applyFilters();
-</script>
+    sortTable(currentColumn, "date", currentDirection);
+    applyFilters();
+  </script>
 </SiteLayout>
