@@ -1,25 +1,66 @@
 ---
+import SiteLayout from "../../layouts/SiteLayout.astro";
 import { getWeeklyResults } from "../../lib/data";
 
 const events = getWeeklyResults();
 
-function getEventYear(title: string) {
+function getEventDateParts(title: string) {
   const match = String(title || "").match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
-  if (!match) return "";
+  if (!match) return null;
+
+  const month = Number(match[1]);
+  const day = Number(match[2]);
   let year = Number(match[3]);
+
   if (year < 100) year += 2000;
-  return String(year);
+
+  return { month, day, year };
 }
 
-const eventYears = [...new Set(events.map((event) => getEventYear(event.title)).filter(Boolean))].sort((a, b) => Number(b) - Number(a));
-const defaultYear = eventYears[0] || "all";
+function getEventTimestamp(title: string) {
+  const parts = getEventDateParts(title);
+  if (!parts) return 0;
+  return new Date(parts.year, parts.month - 1, parts.day).getTime();
+}
 
-import SiteLayout from "../../layouts/SiteLayout.astro";
+function getEventYear(title: string) {
+  const parts = getEventDateParts(title);
+  return parts ? String(parts.year) : "";
+}
+
+function getRoundType(event: { title?: string; kind?: string }) {
+  const title = String(event?.title || "").toLowerCase();
+
+  if (
+    title.includes("27 hole") ||
+    title.includes("27-hole") ||
+    title.includes("27 holes") ||
+    title.includes("27-holes")
+  ) {
+    return "27-holes";
+  }
+
+  if (event?.kind === "handicap") {
+    return "handicap";
+  }
+
+  return "monthly";
+}
+
+const sortedEvents = [...events].sort(
+  (a, b) => getEventTimestamp(b.title) - getEventTimestamp(a.title)
+);
+
+const eventYears = [
+  ...new Set(sortedEvents.map((event) => getEventYear(event.title)).filter(Boolean)),
+].sort((a, b) => Number(b) - Number(a));
+
+const defaultYear = "all";
+const defaultRoundType = "all";
 ---
 
 <SiteLayout title="Weekly Results" showBrandBar={true}>
 <style>
-
       :root {
         --bg: #f5f7fb;
         --card: #ffffff;
@@ -61,7 +102,8 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
       .results-toolbar {
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        justify-content: flex-start;
+        flex-wrap: wrap;
         gap: 12px;
         margin-bottom: 12px;
       }
@@ -113,17 +155,17 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
       }
 
       .event-link,
-.event-link:visited {
-  color: #2563eb;
-  text-decoration: none;
-  font-weight: 600;
-}
+      .event-link:visited {
+        color: #2563eb;
+        text-decoration: none;
+        font-weight: 600;
+      }
 
-.event-link:hover,
-.event-link:focus-visible {
-  color: #1d4ed8;
-  text-decoration: underline;
-}
+      .event-link:hover,
+      .event-link:focus-visible {
+        color: #1d4ed8;
+        text-decoration: underline;
+      }
 
       .section-block {
         padding: 0 16px 14px;
@@ -141,26 +183,26 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
       }
 
       table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  table-layout: auto;
-  min-width: 0;
-}
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        table-layout: auto;
+        min-width: 0;
+      }
 
       thead th {
-  background: var(--header);
-  color: var(--muted);
-  font-size: 0.76rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  padding: 10px 6px;
-  border-bottom: 1px solid var(--line);
-  text-align: center;
-  white-space: normal;
-  line-height: 1.1;
-}
+        background: var(--header);
+        color: var(--muted);
+        font-size: 0.76rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        padding: 10px 6px;
+        border-bottom: 1px solid var(--line);
+        text-align: center;
+        white-space: normal;
+        line-height: 1.1;
+      }
 
       thead th:first-child {
         text-align: left;
@@ -172,14 +214,14 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
       }
 
       tbody td {
-  padding: 9px 6px;
-  border-bottom: 1px solid var(--line-soft);
-  font-size: 0.9rem;
-  text-align: center;
-  vertical-align: middle;
-  line-height: 1.15;
-  white-space: normal;
-}
+        padding: 9px 6px;
+        border-bottom: 1px solid var(--line-soft);
+        font-size: 0.9rem;
+        text-align: center;
+        vertical-align: middle;
+        line-height: 1.15;
+        white-space: normal;
+      }
 
       tbody tr:nth-child(even) td {
         background: #fcfdff;
@@ -195,15 +237,17 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
         overflow-wrap: anywhere;
         word-break: break-word;
       }
-thead th:first-child,
-tbody td:first-child {
-  width: 34%;
-}
 
-tbody td:not(:first-child) {
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
+      thead th:first-child,
+      tbody td:first-child {
+        width: 34%;
+      }
+
+      tbody td:not(:first-child) {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
       .weekly-results-page .results-toolbar {
         margin-bottom: 10px;
       }
@@ -310,224 +354,264 @@ tbody td:not(:first-child) {
       }
 
       @media (max-width: 700px) {
-  body {
-    padding: 8px;
-  }
+        body {
+          padding: 8px;
+        }
 
-  .weekly-results-page .card-header {
-    padding: 10px 10px 6px !important;
-  }
+        .weekly-results-page .card-header {
+          padding: 10px 10px 6px !important;
+        }
 
-  .weekly-results-page .card-title {
-    font-size: 0.95rem !important;
-  }
+        .weekly-results-page .card-title {
+          font-size: 0.95rem !important;
+        }
 
-  .weekly-results-page .section-block {
-    padding: 0 2px 6px !important;
-  }
+        .weekly-results-page .section-block {
+          padding: 0 2px 6px !important;
+        }
 
-  .weekly-results-page .table-wrap {
-    overflow-x: visible;
-  }
+        .weekly-results-page .table-wrap {
+          overflow-x: visible;
+        }
 
-  .weekly-results-page table.handicap-table thead th {
-    font-size: 0.56rem !important;
-    padding: 6px 2px !important;
-    letter-spacing: 0 !important;
-  }
+        .weekly-results-page table.handicap-table thead th {
+          font-size: 0.56rem !important;
+          padding: 6px 2px !important;
+          letter-spacing: 0 !important;
+        }
 
-  .weekly-results-page table.handicap-table tbody td {
-    font-size: 0.76rem !important;
-    padding: 6px 2px !important;
-    line-height: 1.06 !important;
-  }
+        .weekly-results-page table.handicap-table tbody td {
+          font-size: 0.76rem !important;
+          padding: 6px 2px !important;
+          line-height: 1.06 !important;
+        }
 
-  .weekly-results-page table.handicap-table thead th:first-child,
-  .weekly-results-page table.handicap-table tbody td:first-child {
-    width: 26% !important;
-  }
+        .weekly-results-page table.handicap-table thead th:first-child,
+        .weekly-results-page table.handicap-table tbody td:first-child {
+          width: 26% !important;
+        }
 
-  .weekly-results-page table.working-table thead th,
-  .weekly-results-page table.pool-table thead th {
-    font-size: 0.64rem !important;
-    padding: 8px 4px !important;
-  }
+        .weekly-results-page table.working-table thead th,
+        .weekly-results-page table.pool-table thead th {
+          font-size: 0.64rem !important;
+          padding: 8px 4px !important;
+        }
 
-  .weekly-results-page table.working-table tbody td,
-  .weekly-results-page table.pool-table tbody td {
-    font-size: 0.82rem !important;
-    padding: 8px 4px !important;
-  }
-}
-
-@media (max-width: 420px) {
-  h1 {
-    font-size: 1.9rem;
-  }
-
-  .card-title {
-    font-size: 0.92rem;
-  }
-
-  thead th {
-    font-size: 0.58rem;
-    padding: 7px 3px;
-  }
-
-  tbody td {
-    font-size: 0.74rem;
-    padding: 6px 3px;
-  }
-
-  thead th:first-child,
-  tbody td:first-child {
-    width: 30%;
-  }
-}
-    
-</style>
-
-<div class="wrap weekly-results-page">
-      <div class="page-header">
-        <h1>Weekly Results</h1>
-      </div>
-
-      <div class="results-toolbar">
-        <label>
-          <select id="yearFilter" class="filter-select" aria-label="Filter results by year">
-            <option value="all">All years</option>
-            {eventYears.map((year) => (
-              <option value={year} selected={year === defaultYear}>{year}</option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      <div id="resultsEvents" class="events">
-        {events.map((event) => (
-          <section class="card" data-year={getEventYear(event.title) || ""}>
-            <div class="card-header">
-              <h2 class="card-title">
-                {event.url ? (
-                  <a class="event-link" href={event.url} target="_blank" rel="noopener">
-                    {event.title}
-                  </a>
-                ) : (
-                  event.title
-                )}
-              </h2>
-            </div>
-
-            {event.kind === "handicap" && (
-              <>
-                <div class="section-block">
-                  <div class="table-wrap">
-                    <table class="handicap-table">
-                      <thead>
-                        <tr>
-                          {event.headers.map((header) => (
-  <th>{header === "Overall" ? "OVR" : header}</th>
-))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {event.rows.map((row) => (
-                          <tr>
-                            <td data-label="Name">{row.name}</td>
-                            <td data-label="Raw">{row.raw}</td>
-                            <td data-label="Hcp.">{row.hcp}</td>
-                            <td data-label="Net">{row.net}</td>
-                            <td data-label="Payout">{row.payout}</td>
-                            <td data-label="Overall">{row.overall}</td>
-                            <td data-label="CTP">{row.ctp}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {event.working && event.working.rows.length > 0 && (
-                  <div class="section-block">
-                    <div class="subheading">{event.working.title}</div>
-                    <div class="table-wrap">
-                      <table class="working-table">
-                        <thead>
-                          <tr>
-                            {event.working.headers.map((header) => <th>{header}</th>)}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {event.working.rows.map((row) => (
-                            <tr>
-                              {row.map((cell, idx) => (
-                                <td data-label={event.working.headers[idx] || ""}>{cell}</td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-
-            {event.kind === "pools" &&
-              event.pools.map((pool) => (
-                <div class="section-block">
-                  <div class="subheading">{pool.title}</div>
-                  <div class="table-wrap">
-                    <table class="pool-table">
-                      <thead>
-                        <tr>
-                          {pool.headers.map((header) => <th>{header}</th>)}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {pool.rows.map((row) => (
-                          <tr>
-                            {row.slice(0, pool.headers.length).map((cell, idx) => (
-                              <td data-label={pool.headers[idx] || ""}>{cell}</td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ))}
-          </section>
-        ))}
-      </div>
-      <div id="resultsEmpty" class="empty-state">No results found for the selected year.</div>
-
-      <div class="footer-link">
-        <a href="/singles/">← Back to Singles</a>
-      </div>
-    </div>
-    <script>
-      const yearFilter = document.getElementById("yearFilter");
-      const eventCards = Array.from(document.querySelectorAll("#resultsEvents > .card"));
-      const resultsEmpty = document.getElementById("resultsEmpty");
-
-      function applyYearFilter() {
-        const value = yearFilter?.value || "all";
-        let visible = 0;
-
-        eventCards.forEach((card) => {
-          const year = card.getAttribute("data-year") || "";
-          const show = value === "all" || value === year;
-          card.style.display = show ? "" : "none";
-          if (show) visible += 1;
-        });
-
-        if (resultsEmpty) {
-          resultsEmpty.style.display = visible ? "none" : "block";
+        .weekly-results-page table.working-table tbody td,
+        .weekly-results-page table.pool-table tbody td {
+          font-size: 0.82rem !important;
+          padding: 8px 4px !important;
         }
       }
 
-      yearFilter?.addEventListener("change", applyYearFilter);
-      applyYearFilter();
-    </script>
+      @media (max-width: 420px) {
+        h1 {
+          font-size: 1.9rem;
+        }
+
+        .card-title {
+          font-size: 0.92rem;
+        }
+
+        thead th {
+          font-size: 0.58rem;
+          padding: 7px 3px;
+        }
+
+        tbody td {
+          font-size: 0.74rem;
+          padding: 6px 3px;
+        }
+
+        thead th:first-child,
+        tbody td:first-child {
+          width: 30%;
+        }
+      }
+</style>
+
+<div class="wrap weekly-results-page">
+  <div class="page-header">
+    <h1>Weekly Results</h1>
+  </div>
+
+  <div class="results-toolbar">
+    <label>
+      <select id="yearFilter" class="filter-select" aria-label="Filter results by year">
+        <option value="all" selected={defaultYear === "all"}>All years</option>
+        {eventYears.map((year) => (
+          <option value={year}>{year}</option>
+        ))}
+      </select>
+    </label>
+
+    <label>
+      <select id="roundTypeFilter" class="filter-select" aria-label="Filter results by round type">
+        <option value="all" selected={defaultRoundType === "all"}>All round types</option>
+        <option value="handicap">Handicap</option>
+        <option value="monthly">Monthly</option>
+        <option value="27-holes">27 Holes</option>
+      </select>
+    </label>
+  </div>
+
+  <div id="resultsEvents" class="events">
+    {sortedEvents.map((event) => (
+      <section
+        class="card"
+        data-year={getEventYear(event.title) || ""}
+        data-round-type={getRoundType(event)}
+        data-timestamp={String(getEventTimestamp(event.title))}
+      >
+        <div class="card-header">
+          <h2 class="card-title">
+            {event.url ? (
+              <a class="event-link" href={event.url} target="_blank" rel="noopener">
+                {event.title}
+              </a>
+            ) : (
+              event.title
+            )}
+          </h2>
+        </div>
+
+        {event.kind === "handicap" && (
+          <>
+            <div class="section-block">
+              <div class="table-wrap">
+                <table class="handicap-table">
+                  <thead>
+                    <tr>
+                      {event.headers.map((header) => (
+                        <th>{header === "Overall" ? "OVR" : header}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {event.rows.map((row) => (
+                      <tr>
+                        <td data-label="Name">{row.name}</td>
+                        <td data-label="Raw">{row.raw}</td>
+                        <td data-label="Hcp.">{row.hcp}</td>
+                        <td data-label="Net">{row.net}</td>
+                        <td data-label="Payout">{row.payout}</td>
+                        <td data-label="Overall">{row.overall}</td>
+                        <td data-label="CTP">{row.ctp}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {event.working && event.working.rows.length > 0 && (
+              <div class="section-block">
+                <div class="subheading">{event.working.title}</div>
+                <div class="table-wrap">
+                  <table class="working-table">
+                    <thead>
+                      <tr>
+                        {event.working.headers.map((header) => <th>{header}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {event.working.rows.map((row) => (
+                        <tr>
+                          {row.map((cell, idx) => (
+                            <td data-label={event.working.headers[idx] || ""}>{cell}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {event.kind === "pools" &&
+          event.pools.map((pool) => (
+            <div class="section-block">
+              <div class="subheading">{pool.title}</div>
+              <div class="table-wrap">
+                <table class="pool-table">
+                  <thead>
+                    <tr>
+                      {pool.headers.map((header) => <th>{header}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pool.rows.map((row) => (
+                      <tr>
+                        {row.slice(0, pool.headers.length).map((cell, idx) => (
+                          <td data-label={pool.headers[idx] || ""}>{cell}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+      </section>
+    ))}
+  </div>
+
+  <div id="resultsEmpty" class="empty-state">No results found for the selected filters.</div>
+
+  <div class="footer-link">
+    <a href="/singles/">← Back to Singles</a>
+  </div>
+</div>
+
+<script>
+  const yearFilter = document.getElementById("yearFilter");
+  const roundTypeFilter = document.getElementById("roundTypeFilter");
+  const eventCards = Array.from(document.querySelectorAll("#resultsEvents > .card"));
+  const resultsEmpty = document.getElementById("resultsEmpty");
+  const resultsEvents = document.getElementById("resultsEvents");
+
+  function sortCardsNewestFirst() {
+    if (!resultsEvents) return;
+
+    const sortedCards = [...eventCards].sort((a, b) => {
+      const aTime = Number(a.getAttribute("data-timestamp") || "0");
+      const bTime = Number(b.getAttribute("data-timestamp") || "0");
+      return bTime - aTime;
+    });
+
+    resultsEvents.append(...sortedCards);
+  }
+
+  function applyFilters() {
+    const selectedYear = yearFilter?.value || "all";
+    const selectedRoundType = roundTypeFilter?.value || "all";
+    let visible = 0;
+
+    eventCards.forEach((card) => {
+      const year = card.getAttribute("data-year") || "";
+      const roundType = card.getAttribute("data-round-type") || "";
+
+      const matchesYear = selectedYear === "all" || selectedYear === year;
+      const matchesRoundType =
+        selectedRoundType === "all" || selectedRoundType === roundType;
+
+      const show = matchesYear && matchesRoundType;
+
+      card.style.display = show ? "" : "none";
+      if (show) visible += 1;
+    });
+
+    if (resultsEmpty) {
+      resultsEmpty.style.display = visible ? "none" : "block";
+    }
+  }
+
+  yearFilter?.addEventListener("change", applyFilters);
+  roundTypeFilter?.addEventListener("change", applyFilters);
+
+  sortCardsNewestFirst();
+  applyFilters();
+</script>
 </SiteLayout>
