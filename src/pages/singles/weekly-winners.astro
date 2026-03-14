@@ -369,19 +369,28 @@ const defaultRoundType = "all";
               </td>
               <td>{row.score}</td>
               <td>
-                {row.url ? (
-                  <a class="date-link" href={row.url} target="_blank" rel="noopener">
-                    {row.date}
-                  </a>
-                ) : (
-                  row.date
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+  {row.url ? (
+    <a class="date-link" href={row.url} target="_blank" rel="noopener">
+      {String(row.date || "")
+        .split(/(?=\s*\()/)
+        .map((part, i) => (
+          <>
+            {i > 0 && <br />}
+            {part.trim()}
+          </>
+        ))}
+    </a>
+  ) : (
+    String(row.date || "")
+      .split(/(?=\s*\()/)
+      .map((part, i) => (
+        <>
+          {i > 0 && <br />}
+          {part.trim()}
+        </>
+      ))
+  )}
+</td>
 
     <div id="winnersEmpty" class="empty-state">No winners found for the selected filters.</div>
 
