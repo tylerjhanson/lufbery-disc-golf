@@ -54,13 +54,19 @@ function cleanPlayerName(value: unknown) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
 
-function getCellValueByHeader(headers: unknown[], row: unknown[], headerName: string) {
-  const index = (headers || []).findIndex(
-    (header) => cleanPlayerName(header).toLowerCase() === headerName.toLowerCase()
+function getCellValueByHeaders(headers: unknown[], row: unknown[], headerNames: string[]) {
+  const normalizedHeaders = (headers || []).map((header) =>
+    cleanPlayerName(header).toLowerCase()
   );
 
-  if (index === -1) return "";
-  return String((row || [])[index] ?? "").trim();
+  for (const headerName of headerNames) {
+    const index = normalizedHeaders.indexOf(headerName.toLowerCase());
+    if (index !== -1) {
+      return String((row || [])[index] ?? "").trim();
+    }
+  }
+
+  return "";
 }
 
 function isValidPlayerOption(value: unknown) {
@@ -612,9 +618,9 @@ const defaultPlayer = "all";
                       <tbody>
                         {event.working.rows.map((row) => (
                           <tr
-                            data-player-name={cleanPlayerName(row?.[0])}
-                            data-raw-score={getCellValueByHeader(event.working.headers, row, "Raw")}
-                          >
+  data-player-name={cleanPlayerName(row?.[0])}
+  data-raw-score={getCellValueByHeaders(event.working.headers, row, ["Round 1", "Raw", "Score"])}
+>
                             {row.map((cell, idx) => (
                               <td
                                 data-label={event.working.headers[idx] || ""}
@@ -646,7 +652,10 @@ const defaultPlayer = "all";
                     </thead>
                     <tbody>
                       {pool.rows.map((row) => (
-                        <tr data-player-name={cleanPlayerName(row?.[0])}>
+                        <tr
+  data-player-name={cleanPlayerName(row?.[0])}
+  data-raw-score={getCellValueByHeaders(pool.headers, row, ["Round 1", "Raw", "Score"])}
+>
                           {row.slice(0, pool.headers.length).map((cell, idx) => (
                             <td
                               data-label={pool.headers[idx] || ""}
