@@ -369,8 +369,8 @@ const rows = getHandicaps();
     const headers = table?.querySelectorAll("thead th.sortable") || [];
     const playerSearch = document.getElementById("playerSearch");
 
-    let currentColumn = 3;
-let currentDirection = "desc";
+    let currentColumn = 1;
+let currentDirection = "asc";
 
     function getCellValue(row, columnIndex) {
       return row.children[columnIndex]?.textContent?.trim() ?? "";
@@ -437,20 +437,20 @@ let currentDirection = "desc";
     }
 
     headers.forEach((header) => {
-      header.addEventListener("click", () => {
-        const columnIndex = Number(header.dataset.column);
-        const type = header.dataset.type || "text";
+  header.addEventListener("click", () => {
+    const columnIndex = Number(header.dataset.column);
+    const type = header.dataset.type || "text";
 
-        if (currentColumn === columnIndex) {
-          currentDirection = currentDirection === "asc" ? "desc" : "asc";
-        } else {
-          currentColumn = columnIndex;
-          currentDirection = "asc";
-        }
+    if (currentColumn === columnIndex) {
+      currentDirection = currentDirection === "asc" ? "desc" : "asc";
+    } else {
+      currentColumn = columnIndex;
+      currentDirection = columnIndex === 3 ? "desc" : "asc";
+    }
 
-        sortTable(columnIndex, type, currentDirection);
-      });
-    });
+    sortTable(columnIndex, type, currentDirection);
+  });
+});
 
     playerSearch?.addEventListener("input", applySearchFilter);
 
