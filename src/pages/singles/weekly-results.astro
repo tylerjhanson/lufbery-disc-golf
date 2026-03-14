@@ -744,7 +744,7 @@ const defaultPlayer = "all";
 
       if (!rawScores.length) {
         playerAverage.style.display = "block";
-        playerAverage.textContent = `${selectedPlayer} average raw score: no raw scores available for the current filters.`;
+        playerAverage.textContent = `${selectedPlayer} Average Score: no raw scores available for the current filters.`;
         return;
       }
 
@@ -753,7 +753,7 @@ const defaultPlayer = "all";
       const roundsLabel = rawScores.length === 1 ? "round" : "rounds";
 
       playerAverage.style.display = "block";
-      playerAverage.textContent = `${selectedPlayer} average raw score: ${average.toFixed(2)} (${rawScores.length} ${roundsLabel})`;
+      playerAverage.textContent = `${selectedPlayer} Average Score: ${average.toFixed(2)} (${rawScores.length} ${roundsLabel})`;
     }
 
     function applyFilters() {
