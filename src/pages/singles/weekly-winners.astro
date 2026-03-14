@@ -1,13 +1,116 @@
 ---
 import { getWeeklyWinners } from "../../lib/data";
-
-const rows = getWeeklyWinners();
 import SiteLayout from "../../layouts/SiteLayout.astro";
+
+type WinnerRow = {
+  name: string;
+  score: string;
+  date: string;
+  url?: string;
+  roundType?: string;
+  type?: string;
+  kind?: string;
+  eventTitle?: string;
+};
+
+const rows = getWeeklyWinners() as WinnerRow[];
+
+function getDateParts(value: string) {
+  const match = String(value || "").match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (!match) return null;
+
+  const month = Number(match[1]);
+  const day = Number(match[2]);
+  let year = Number(match[3]);
+
+  if (year < 100) year += 2000;
+
+  return { month, day, year };
+}
+
+function getRowTimestamp(value: string) {
+  const parts = getDateParts(value);
+  if (!parts) return 0;
+  return new Date(parts.year, parts.month - 1, parts.day).getTime();
+}
+
+function getRowYear(value: string) {
+  const parts = getDateParts(value);
+  return parts ? String(parts.year) : "";
+}
+
+function normalizeRoundType(value: string) {
+  const v = String(value || "").trim().toLowerCase();
+
+  if (!v) return "";
+
+  if (
+    v === "2-rounds" ||
+    v === "2 rounds" ||
+    v === "2-round" ||
+    v === "2 round" ||
+    v === "27 holes" ||
+    v === "27 hole" ||
+    v === "27-holes" ||
+    v === "27-hole"
+  ) {
+    return "2-rounds";
+  }
+
+  if (v === "handicap") return "handicap";
+  if (v === "monthly") return "monthly";
+
+  return "";
+}
+
+function getWinnerRoundType(row: WinnerRow) {
+  const explicit =
+    normalizeRoundType(row.roundType || "") ||
+    normalizeRoundType(row.type || "") ||
+    normalizeRoundType(row.kind || "");
+
+  if (explicit) return explicit;
+
+  const haystack = [
+    row.eventTitle || "",
+    row.url || "",
+    row.name || "",
+    row.score || "",
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  if (
+    haystack.includes("2 rounds") ||
+    haystack.includes("2 round") ||
+    haystack.includes("2-round") ||
+    haystack.includes("27 hole") ||
+    haystack.includes("27 holes") ||
+    haystack.includes("27-hole") ||
+    haystack.includes("27-holes")
+  ) {
+    return "2-rounds";
+  }
+
+  if (haystack.includes("handicap")) {
+    return "handicap";
+  }
+
+  return "monthly";
+}
+
+const sortedRows = [...rows].sort((a, b) => getRowTimestamp(b.date) - getRowTimestamp(a.date));
+
+const rowYears = [...new Set(sortedRows.map((row) => getRowYear(row.date)).filter(Boolean))].sort(
+  (a, b) => Number(b) - Number(a)
+);
+
+const defaultYear = "all";
+const defaultRoundType = "all";
 ---
 
 <SiteLayout title="Weekly Winners" showBrandBar={true}>
 <style>
-
       :root {
         --bg: #f5f7fb;
         --card: #ffffff;
@@ -36,6 +139,29 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
         width: 100%;
         max-width: none;
         margin: 0;
+      }
+
+      .page-header {
+        margin-bottom: 18px;
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .filter-select {
+        min-width: 170px;
+        padding: 10px 12px;
+        border: 1px solid var(--line-soft);
+        border-radius: 9px;
+        background: var(--card);
+        color: var(--text);
+        font: inherit;
       }
 
       .card {
@@ -145,6 +271,7 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
         font-weight: 600;
         overflow-wrap: anywhere;
         word-break: break-word;
+        line-height: 1.35;
       }
 
       .date-link {
@@ -155,6 +282,12 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
 
       .date-link:hover {
         text-decoration: underline;
+      }
+
+      .empty-state {
+        display: none;
+        padding: 14px 20px 18px;
+        color: var(--muted);
       }
 
       .footer-link {
@@ -210,167 +343,221 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
           padding: 9px 4px;
         }
       }
-      tbody td:first-child {
-  text-align: left;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  line-height: 1.35;
-}
-    
 </style>
 
 <div class="wrap">
-      <div class="card">
-        <div class="card-header">
-          <h1>Weekly Winners</h1>
-        </div>
+  <div class="page-header">
+    <h1>Weekly Winners</h1>
+  </div>
 
-        <div class="table-wrap">
-          <table id="sortable-table">
-            <colgroup>
-              <col class="name-col" />
-              <col class="score-col" />
-              <col class="date-col" />
-            </colgroup>
+  <div class="toolbar">
+    <label>
+      <select id="yearFilter" class="filter-select" aria-label="Filter winners by year">
+        <option value="all" selected={defaultYear === "all"}>All years</option>
+        {rowYears.map((year) => (
+          <option value={year}>{year}</option>
+        ))}
+      </select>
+    </label>
 
-            <thead>
-              <tr>
-                <th class="sortable" data-column="0" data-type="text">
-                  <span class="th-inner">Name <span class="sort-indicator"></span></span>
-                </th>
-                <th class="sortable" data-column="1" data-type="text">
-                  <span class="th-inner">Score <span class="sort-indicator"></span></span>
-                </th>
-                <th class="sortable" data-column="2" data-type="date">
-                  <span class="th-inner">Date <span class="sort-indicator"></span></span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-  {rows.map((row) => (
-    <tr>
-      <td>
-        {row.name.split("(tie)").map((part, i, arr) =>
-          i < arr.length - 1 ? (
-            <>
-              {part}(tie)<br />
-            </>
-          ) : (
-            part
-          )
-        )}
-      </td>
-      <td>{row.score}</td>
-      <td>
-        {row.url ? (
-          <a class="date-link" href={row.url} target="_blank" rel="noopener">
-            {row.date}
-          </a>
-        ) : (
-          row.date
-        )}
-      </td>
-    </tr>
-  ))}
-</tbody>
-          </table>
-        </div>
+    <label>
+      <select id="roundTypeFilter" class="filter-select" aria-label="Filter winners by round type">
+        <option value="all" selected={defaultRoundType === "all"}>All round types</option>
+        <option value="handicap">Handicap</option>
+        <option value="monthly">Monthly</option>
+        <option value="2-rounds">2 Rounds</option>
+      </select>
+    </label>
+  </div>
 
-        <div class="footer-link">
-          <a href="/singles/">← Back to Singles</a>
-        </div>
-      </div>
+  <div class="card">
+    <div class="card-header"></div>
+
+    <div class="table-wrap">
+      <table id="sortable-table">
+        <colgroup>
+          <col class="name-col" />
+          <col class="score-col" />
+          <col class="date-col" />
+        </colgroup>
+
+        <thead>
+          <tr>
+            <th class="sortable" data-column="0" data-type="text">
+              <span class="th-inner">Name <span class="sort-indicator"></span></span>
+            </th>
+            <th class="sortable" data-column="1" data-type="text">
+              <span class="th-inner">Score <span class="sort-indicator"></span></span>
+            </th>
+            <th class="sortable" data-column="2" data-type="date">
+              <span class="th-inner">Date <span class="sort-indicator"></span></span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {sortedRows.map((row) => (
+            <tr
+              data-year={getRowYear(row.date)}
+              data-round-type={getWinnerRoundType(row)}
+              data-sort-date={String(getRowTimestamp(row.date))}
+            >
+              <td>
+                {row.name.split("(tie)").map((part, i, arr) =>
+                  i < arr.length - 1 ? (
+                    <>
+                      {part}(tie)<br />
+                    </>
+                  ) : (
+                    part
+                  )
+                )}
+              </td>
+              <td>{row.score}</td>
+              <td>
+                {row.url ? (
+                  <a class="date-link" href={row.url} target="_blank" rel="noopener">
+                    {row.date}
+                  </a>
+                ) : (
+                  row.date
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
 
-    <script>
-      const table = document.getElementById("sortable-table");
-      const tbody = table.querySelector("tbody");
-      const headers = table.querySelectorAll("thead th.sortable");
+    <div id="winnersEmpty" class="empty-state">No winners found for the selected filters.</div>
 
-      let currentColumn = 2;
-      let currentDirection = "desc";
+    <div class="footer-link">
+      <a href="/singles/">← Back to Singles</a>
+    </div>
+  </div>
+</div>
 
-      function getCellValue(row, columnIndex) {
-        return row.children[columnIndex]?.textContent?.trim() ?? "";
+<script>
+  const table = document.getElementById("sortable-table");
+  const tbody = table.querySelector("tbody");
+  const headers = table.querySelectorAll("thead th.sortable");
+  const yearFilter = document.getElementById("yearFilter");
+  const roundTypeFilter = document.getElementById("roundTypeFilter");
+  const emptyState = document.getElementById("winnersEmpty");
+
+  let currentColumn = 2;
+  let currentDirection = "desc";
+
+  function getCellValue(row, columnIndex) {
+    return row.children[columnIndex]?.textContent?.trim() ?? "";
+  }
+
+  function parseUsDate(value) {
+    const parts = value.split("/");
+    if (parts.length !== 3) return new Date(0).getTime();
+
+    let month = Number(parts[0]);
+    let day = Number(parts[1]);
+    let year = Number(parts[2]);
+
+    if (year < 100) year += 2000;
+
+    return new Date(year, month - 1, day).getTime();
+  }
+
+  function compareValues(a, b, type, direction) {
+    const emptyA = a === "";
+    const emptyB = b === "";
+
+    if (emptyA && emptyB) return 0;
+    if (emptyA) return 1;
+    if (emptyB) return -1;
+
+    let result = 0;
+
+    if (type === "date") {
+      result = parseUsDate(a) - parseUsDate(b);
+    } else {
+      result = a.localeCompare(b, undefined, { sensitivity: "base", numeric: true });
+    }
+
+    return direction === "asc" ? result : -result;
+  }
+
+  function updateIndicators(activeColumn, direction) {
+    headers.forEach((header) => {
+      const indicator = header.querySelector(".sort-indicator");
+      const col = Number(header.dataset.column);
+
+      if (!indicator) return;
+
+      if (col === activeColumn) {
+        indicator.textContent = direction === "asc" ? "▲" : "▼";
+        indicator.style.color = "#2563eb";
+      } else {
+        indicator.textContent = "";
+        indicator.style.color = "#94a3b8";
+      }
+    });
+  }
+
+  function sortTable(columnIndex, type, direction) {
+    const sortedRows = Array.from(tbody.querySelectorAll("tr")).sort((rowA, rowB) => {
+      const valueA = getCellValue(rowA, columnIndex);
+      const valueB = getCellValue(rowB, columnIndex);
+      return compareValues(valueA, valueB, type, direction);
+    });
+
+    tbody.append(...sortedRows);
+    updateIndicators(columnIndex, direction);
+  }
+
+  function applyFilters() {
+    const selectedYear = yearFilter?.value || "all";
+    const selectedRoundType = roundTypeFilter?.value || "all";
+    const rows = Array.from(tbody.querySelectorAll("tr"));
+
+    let visible = 0;
+
+    rows.forEach((row) => {
+      const rowYear = row.getAttribute("data-year") || "";
+      const rowRoundType = row.getAttribute("data-round-type") || "";
+
+      const matchesYear = selectedYear === "all" || selectedYear === rowYear;
+      const matchesRoundType =
+        selectedRoundType === "all" || selectedRoundType === rowRoundType;
+
+      const show = matchesYear && matchesRoundType;
+      row.style.display = show ? "" : "none";
+
+      if (show) visible += 1;
+    });
+
+    if (emptyState) {
+      emptyState.style.display = visible ? "none" : "block";
+    }
+  }
+
+  headers.forEach((header) => {
+    header.addEventListener("click", () => {
+      const columnIndex = Number(header.dataset.column);
+      const type = header.dataset.type || "text";
+
+      if (currentColumn === columnIndex) {
+        currentDirection = currentDirection === "asc" ? "desc" : "asc";
+      } else {
+        currentColumn = columnIndex;
+        currentDirection = columnIndex === 2 ? "desc" : "asc";
       }
 
-      function parseUsDate(value) {
-        const parts = value.split("/");
-        if (parts.length !== 3) return new Date(0).getTime();
+      sortTable(columnIndex, type, currentDirection);
+      applyFilters();
+    });
+  });
 
-        let month = Number(parts[0]);
-        let day = Number(parts[1]);
-        let year = Number(parts[2]);
+  yearFilter?.addEventListener("change", applyFilters);
+  roundTypeFilter?.addEventListener("change", applyFilters);
 
-        if (year < 100) year += 2000;
-
-        return new Date(year, month - 1, day).getTime();
-      }
-
-      function compareValues(a, b, type, direction) {
-        const emptyA = a === "";
-        const emptyB = b === "";
-
-        if (emptyA && emptyB) return 0;
-        if (emptyA) return 1;
-        if (emptyB) return -1;
-
-        let result = 0;
-
-        if (type === "date") {
-          result = parseUsDate(a) - parseUsDate(b);
-        } else {
-          result = a.localeCompare(b, undefined, { sensitivity: "base", numeric: true });
-        }
-
-        return direction === "asc" ? result : -result;
-      }
-
-      function updateIndicators(activeColumn, direction) {
-        headers.forEach((header) => {
-          const indicator = header.querySelector(".sort-indicator");
-          const col = Number(header.dataset.column);
-
-          if (!indicator) return;
-
-          if (col === activeColumn) {
-            indicator.textContent = direction === "asc" ? "▲" : "▼";
-            indicator.style.color = "#2563eb";
-          } else {
-            indicator.textContent = "";
-            indicator.style.color = "#94a3b8";
-          }
-        });
-      }
-
-      function sortTable(columnIndex, type, direction) {
-        const sortedRows = Array.from(tbody.querySelectorAll("tr")).sort((rowA, rowB) => {
-          const valueA = getCellValue(rowA, columnIndex);
-          const valueB = getCellValue(rowB, columnIndex);
-          return compareValues(valueA, valueB, type, direction);
-        });
-
-        tbody.append(...sortedRows);
-        updateIndicators(columnIndex, direction);
-      }
-
-      headers.forEach((header) => {
-        header.addEventListener("click", () => {
-          const columnIndex = Number(header.dataset.column);
-          const type = header.dataset.type || "text";
-
-          if (currentColumn === columnIndex) {
-            currentDirection = currentDirection === "asc" ? "desc" : "asc";
-          } else {
-            currentColumn = columnIndex;
-            currentDirection = columnIndex === 2 ? "desc" : "asc";
-          }
-
-          sortTable(columnIndex, type, currentDirection);
-        });
-      });
-
-      sortTable(currentColumn, "date", currentDirection);
-    </script>
+  sortTable(currentColumn, "date", currentDirection);
+  applyFilters();
+</script>
 </SiteLayout>
