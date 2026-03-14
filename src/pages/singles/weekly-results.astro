@@ -534,7 +534,7 @@ const defaultPlayer = "all";
 
       <label>
         <select id="yearFilter" class="filter-select" aria-label="Filter results by year">
-          <option value="all" selected={defaultYear === "all"}>All years</option>
+          <option value="all" selected={defaultYear === "all"}>All Years</option>
           {eventYears.map((year) => (
             <option value={year}>{year}</option>
           ))}
@@ -619,7 +619,7 @@ const defaultPlayer = "all";
                         {event.working.rows.map((row) => (
                           <tr
   data-player-name={cleanPlayerName(row?.[0])}
-  data-raw-score={getCellValueByHeaders(event.working.headers, row, ["Round 1", "Raw", "Score"])}
+  data-raw-score={getCellValueByHeaders(event.working.headers, row, ["R1", "Round 1", "Raw", "Score"])}
 >
                             {row.map((cell, idx) => (
                               <td
@@ -654,7 +654,7 @@ const defaultPlayer = "all";
                       {pool.rows.map((row) => (
                         <tr
   data-player-name={cleanPlayerName(row?.[0])}
-  data-raw-score={getCellValueByHeaders(pool.headers, row, ["Round 1", "Raw", "Score"])}
+  data-raw-score={getCellValueByHeaders(pool.headers, row, ["R1", "Round 1", "Raw", "Score"])}
 >
                           {row.slice(0, pool.headers.length).map((cell, idx) => (
                             <td
@@ -750,50 +750,51 @@ const defaultPlayer = "all";
       });
     }
 
-    function updatePlayerAverage(selectedPlayer) {
-      if (!playerAverage) return;
+     function updatePlayerAverage(selectedPlayer) {
+    if (!playerAverage) return;
 
-      if (!selectedPlayer || selectedPlayer === "all") {
-        playerAverage.style.display = "none";
-        playerAverage.textContent = "";
-        return;
-      }
-
-      const selectedNorm = normalizeValue(selectedPlayer);
-      const rawScores = [];
-
-      eventCards.forEach((card) => {
-        if (card.style.display === "none") return;
-
-        const rows = Array.from(card.querySelectorAll('tr[data-player-name][data-raw-score]'));
-
-        rows.forEach((row) => {
-          const rowPlayer = normalizeValue(row.getAttribute("data-player-name") || "");
-          if (rowPlayer !== selectedNorm) return;
-
-          const rawText = String(row.getAttribute("data-raw-score") || "").trim();
-          if (!rawText) return;
-
-          const rawValue = Number(rawText);
-          if (!Number.isNaN(rawValue)) {
-            rawScores.push(rawValue);
-          }
-        });
-      });
-
-      if (!rawScores.length) {
-        playerAverage.style.display = "block";
-        playerAverage.textContent = `${selectedPlayer} Average Score: n/a`;
-        return;
-      }
-
-      const total = rawScores.reduce((sum, value) => sum + value, 0);
-      const average = total / rawScores.length;
-      const roundsLabel = rawScores.length === 1 ? "round" : "rounds";
-
-      playerAverage.style.display = "block";
-      playerAverage.textContent = `${selectedPlayer} Average Score: ${average.toFixed(2)} (${rawScores.length} ${roundsLabel})`;
+    if (!selectedPlayer || selectedPlayer === "all") {
+      playerAverage.style.display = "none";
+      playerAverage.textContent = "";
+      return;
     }
+
+    const selectedNorm = normalizeValue(selectedPlayer);
+    const rawScores = [];
+
+    eventCards.forEach((card) => {
+      if (card.style.display === "none") return;
+
+      const rows = Array.from(card.querySelectorAll('tr[data-player-name][data-raw-score]'));
+
+      rows.forEach((row) => {
+        const rowPlayer = normalizeValue(row.getAttribute("data-player-name") || "");
+        if (rowPlayer !== selectedNorm) return;
+
+        const rawText = String(row.getAttribute("data-raw-score") || "").trim();
+        if (!rawText) return;
+
+        const rawValue = Number(rawText);
+        if (!Number.isNaN(rawValue)) {
+          rawScores.push(rawValue);
+        }
+      });
+    });
+
+    if (!rawScores.length) {
+      playerAverage.style.display = "block";
+      playerAverage.textContent = `${selectedPlayer} Average Score: n/a`;
+      return;
+    }
+
+    const total = rawScores.reduce((sum, value) => sum + value, 0);
+    const average = total / rawScores.length;
+    const roundsLabel = rawScores.length === 1 ? "round" : "rounds";
+
+    playerAverage.style.display = "block";
+    playerAverage.textContent = `${selectedPlayer} Average Score: ${average.toFixed(2)} (${rawScores.length} ${roundsLabel})`;
+  }
+
 
     function applyFilters() {
       const selectedYear = yearFilter?.value || "all";
