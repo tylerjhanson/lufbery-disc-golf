@@ -3,11 +3,32 @@ import { getSinglesRecords } from "../../lib/data";
 
 const rows = getSinglesRecords();
 import SiteLayout from "../../layouts/SiteLayout.astro";
+
+function getDateParts(value: string) {
+  const match = String(value || "").match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if (!match) return null;
+
+  const month = Number(match[1]);
+  const day = Number(match[2]);
+  let year = Number(match[3]);
+
+  if (year < 100) year += 2000;
+
+  return { month, day, year };
+}
+
+function getRowYear(value: string) {
+  const parts = getDateParts(value);
+  return parts ? String(parts.year) : "";
+}
+
+const recordYears = [...new Set(rows.map((row) => getRowYear(row.date)).filter(Boolean))].sort(
+  (a, b) => Number(b) - Number(a)
+);
 ---
 
 <SiteLayout title="Singles Records" showBrandBar={true}>
 <style>
-
       :root {
         --bg: #f5f7fb;
         --card: #ffffff;
@@ -36,6 +57,35 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
         width: 100%;
         max-width: none;
         margin: 0;
+      }
+
+      .page-header {
+        margin-bottom: 18px;
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+      }
+
+      .filter-select {
+        min-width: 170px;
+        padding: 10px 12px;
+        border: 1px solid var(--line-soft);
+        border-radius: 9px;
+        background: var(--card);
+        color: var(--text);
+        font: inherit;
+      }
+
+      .empty-state {
+        display: none;
+        padding: 14px 20px 18px;
+        color: var(--muted);
       }
 
       .card {
@@ -147,7 +197,6 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
         word-break: break-word;
       }
 
-
       .date-link {
         color: var(--accent);
         text-decoration: none;
@@ -211,15 +260,25 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
           padding: 9px 4px;
         }
       }
-    
 </style>
 
 <div class="wrap">
-      <div class="card">
-        <div class="card-header">
-          <h1>Best Rounds – Original Layout (A Baskets)</h1>
-        </div>
+      <div class="page-header">
+        <h1>Best Rounds – Original Layout (A Baskets)</h1>
+      </div>
 
+      <div class="toolbar">
+        <label>
+          <select id="yearFilter" class="filter-select" aria-label="Filter records by year">
+            <option value="all">All years</option>
+            {recordYears.map((year) => (
+              <option value={year}>{year}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div class="card">
         <div class="table-wrap">
           <table id="sortable-table">
             <colgroup>
@@ -244,7 +303,7 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
 
             <tbody>
               {rows.map((row) => (
-                <tr>
+                <tr data-year={getRowYear(row.date)}>
                   <td>{row.name}</td>
                   <td>{row.score}</td>
                   <td>
@@ -262,6 +321,8 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
           </table>
         </div>
 
+        <div id="recordsEmpty" class="empty-state">No records found for the selected year.</div>
+
         <div class="footer-link">
           <a href="/singles/">← Back to Singles</a>
         </div>
@@ -272,6 +333,8 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
       const table = document.getElementById("sortable-table");
       const tbody = table.querySelector("tbody");
       const headers = table.querySelectorAll("thead th.sortable");
+      const yearFilter = document.getElementById("yearFilter");
+      const recordsEmpty = document.getElementById("recordsEmpty");
 
       let currentColumn = 1;
       let currentDirection = "asc";
@@ -281,12 +344,12 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
       }
 
       function parseUsDate(value) {
-        const parts = value.split("/");
-        if (parts.length !== 3) return new Date(0).getTime();
+        const match = String(value || "").match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+        if (!match) return new Date(0).getTime();
 
-        let month = Number(parts[0]);
-        let day = Number(parts[1]);
-        let year = Number(parts[2]);
+        let month = Number(match[1]);
+        let day = Number(match[2]);
+        let year = Number(match[3]);
 
         if (year < 100) year += 2000;
 
@@ -347,6 +410,23 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
         updateIndicators(columnIndex, direction);
       }
 
+      function applyYearFilter() {
+        const selectedYear = yearFilter?.value || "all";
+        const rows = Array.from(tbody.querySelectorAll("tr"));
+        let visible = 0;
+
+        rows.forEach((row) => {
+          const rowYear = row.getAttribute("data-year") || "";
+          const show = selectedYear === "all" || selectedYear === rowYear;
+          row.style.display = show ? "" : "none";
+          if (show) visible += 1;
+        });
+
+        if (recordsEmpty) {
+          recordsEmpty.style.display = visible ? "none" : "block";
+        }
+      }
+
       headers.forEach((header) => {
         header.addEventListener("click", () => {
           const columnIndex = Number(header.dataset.column);
@@ -360,9 +440,13 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
           }
 
           sortTable(columnIndex, type, currentDirection);
+          applyYearFilter();
         });
       });
 
+      yearFilter?.addEventListener("change", applyYearFilter);
+
       sortTable(currentColumn, "score", currentDirection);
+      applyYearFilter();
     </script>
 </SiteLayout>
