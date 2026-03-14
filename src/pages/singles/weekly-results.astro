@@ -32,12 +32,15 @@ function getRoundType(event: { title?: string; kind?: string }) {
   const title = String(event?.title || "").toLowerCase();
 
   if (
+    title.includes("2 rounds") ||
+    title.includes("2 round") ||
+    title.includes("2-round") ||
     title.includes("27 hole") ||
     title.includes("27-hole") ||
     title.includes("27 holes") ||
     title.includes("27-holes")
   ) {
-    return "27-holes";
+    return "2-rounds";
   }
 
   if (event?.kind === "handicap") {
@@ -446,13 +449,13 @@ const defaultRoundType = "all";
     </label>
 
     <label>
-      <select id="roundTypeFilter" class="filter-select" aria-label="Filter results by round type">
-        <option value="all" selected={defaultRoundType === "all"}>All round types</option>
-        <option value="handicap">Handicap</option>
-        <option value="monthly">Monthly</option>
-        <option value="27-holes">27 Holes</option>
-      </select>
-    </label>
+  <select id="roundTypeFilter" class="filter-select" aria-label="Filter results by round type">
+    <option value="all" selected={defaultRoundType === "all"}>All round types</option>
+    <option value="handicap">Handicap</option>
+    <option value="monthly">Monthly</option>
+    <option value="2-rounds">2 Rounds</option>
+  </select>
+</label>
   </div>
 
   <div id="resultsEvents" class="events">
