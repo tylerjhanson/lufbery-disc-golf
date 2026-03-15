@@ -434,9 +434,10 @@ const doublesLinks = [
       const themeToggle = document.getElementById("themeToggle");
       const storageKey = "lufbery-theme";
       const themeModes = ["system", "light", "dark"];
+      const colorSchemeMq = window.matchMedia("(prefers-color-scheme: dark)");
 
       function systemMode() {
-        return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        return colorSchemeMq.matches ? "dark" : "light";
       }
 
       function themeIcon(mode) {
@@ -471,6 +472,7 @@ const doublesLinks = [
       function applyTheme(mode) {
         const actual = mode === "system" ? systemMode() : mode;
         html.setAttribute("data-theme", actual);
+
         if (themeToggle) {
           themeToggle.innerHTML = themeIcon(mode);
           themeToggle.setAttribute("aria-label", `Theme mode: ${mode}`);
@@ -494,9 +496,26 @@ const doublesLinks = [
         });
       }
 
-      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
-        const mode = getStoredMode();
-        if (mode === "system") applyTheme("system");
+      function handleSystemThemeChange() {
+        if (getStoredMode() === "system") applyTheme("system");
+      }
+
+      if (typeof colorSchemeMq.addEventListener === "function") {
+        colorSchemeMq.addEventListener("change", handleSystemThemeChange);
+      } else if (typeof colorSchemeMq.addListener === "function") {
+        colorSchemeMq.addListener(handleSystemThemeChange);
+      }
+
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && getStoredMode() === "system") {
+          applyTheme("system");
+        }
+      });
+
+      window.addEventListener("pageshow", () => {
+        if (getStoredMode() === "system") {
+          applyTheme("system");
+        }
       });
 
       const menuButton = document.getElementById("menuButton");
