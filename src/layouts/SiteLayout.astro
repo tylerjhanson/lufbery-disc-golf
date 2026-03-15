@@ -30,9 +30,7 @@ const doublesLinks = [
 
     <script is:inline>
       (() => {
-        const key = "lufbery-theme";
-        const saved = localStorage.getItem(key) || "system";
-        document.documentElement.setAttribute("data-theme", saved);
+        document.documentElement.setAttribute("data-theme", "system");
       })();
     </script>
 
@@ -598,7 +596,6 @@ const doublesLinks = [
     <script>
       const html = document.documentElement;
       const themeToggle = document.getElementById("themeToggle");
-      const storageKey = "lufbery-theme";
       const themeModes = ["system", "light", "dark"];
 
       function themeIcon(mode) {
@@ -628,10 +625,6 @@ const doublesLinks = [
         `;
       }
 
-      function getStoredMode() {
-        return localStorage.getItem(storageKey) || "system";
-      }
-
       function applyTheme(mode) {
         html.setAttribute("data-theme", mode);
 
@@ -642,18 +635,13 @@ const doublesLinks = [
         }
       }
 
-      function nextTheme(mode) {
-        const index = themeModes.indexOf(mode);
-        return themeModes[(index + 1) % themeModes.length];
-      }
-
-      let savedTheme = getStoredMode();
+      let savedTheme = "system";
       applyTheme(savedTheme);
 
       if (themeToggle) {
         themeToggle.addEventListener("click", () => {
-          savedTheme = nextTheme(savedTheme);
-          localStorage.setItem(storageKey, savedTheme);
+          const index = themeModes.indexOf(savedTheme);
+          savedTheme = themeModes[(index + 1) % themeModes.length];
           applyTheme(savedTheme);
         });
       }
