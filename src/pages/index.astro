@@ -15,6 +15,8 @@ const doublesLinks = [
 const logoUrl = "https://lufberydiscgolf.com/logo.png";
 const lostFoundUrl = "/lost-and-found";
 const udiscLeagueUrl = "https://udisc.com/leagues/lufbery-league";
+const heroMobileUrl = "/hero-3-1.jpg";
+const heroDesktopUrl = "/hero-4-3.jpg";
 
 const calendarIcsUrl =
   "https://calendar.google.com/calendar/ical/600330c48796b6025429fafaf3799e789f394b9d551c9ac96938c36e31444740%40group.calendar.google.com/public/basic.ics";
@@ -335,127 +337,141 @@ import SiteLayout from "../layouts/SiteLayout.astro";
 
 
 <SiteLayout title="Lufbery Disc Golf" showBrandBar={true}>
-  <style>
-      .home-grid {
-        display: grid;
-        grid-template-columns: 1.1fr 1fr;
-        gap: 18px;
-      }
-      .section-stack { display: grid; gap: 18px; }
-      .card {
-        background: var(--card);
-        border: 1px solid var(--line-soft);
-        border-radius: 12px;
-        box-shadow: var(--shadow);
-        padding: 22px 20px 18px;
-      }
-      .card h2 {
-        margin: 0 0 8px;
-        font-size: 1.2rem;
-        font-weight: 700;
-        line-height: 1.2;
-      }
-      .subtle-note {
-        color: var(--muted);
-        font-size: 0.97rem;
-        line-height: 1.6;
-        margin: 0 0 14px;
-      }
-      .link-list, .utility-buttons { display: grid; gap: 10px; }
-      .link-item {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 46px;
-        padding: 10px 14px;
-        border: 1px solid var(--line-soft);
-        border-radius: 7px;
-        background: var(--button-bg, #f3f5f8);
-        font-weight: 500;
-        text-align: center;
-        transition: background 0.12s ease, transform 0.12s ease;
-      }
-      .link-item:hover {
-        background: var(--button-bg-hover, #eceff4);
-        transform: translateY(-1px);
-      }
-      .utility-buttons .link-item {
-        background: var(--card);
-      }
-      .utility-buttons .link-item:hover {
-        background: var(--button-bg, #f3f5f8);
-      }
-      .event-list { display: grid; gap: 10px; }
-      .event-item {
-        border: 1px solid var(--line-soft);
-        border-radius: 7px;
-        padding: 12px 14px;
-        background: var(--button-bg, #f3f5f8);
-      }
-      .event-date {
-        margin: 0 0 6px;
-        font-weight: 700;
-        font-size: 0.94rem;
-        line-height: 1.2;
-      }
-      .event-title {
-        margin: 0 0 3px;
-        font-weight: 400;
-        font-size: 0.96rem;
-        line-height: 1.35;
-      }
-      .event-meta {
-        margin: 0;
-        color: var(--muted);
-        font-size: 0.88rem;
-        line-height: 1.4;
-      }
-      @media (max-width: 900px) {
-        .home-grid { grid-template-columns: 1fr; }
-      }
+  <style is:global>
+    body {
+      background: linear-gradient(180deg, #efe9dd 0%, #f7f4ec 100%) !important;
+    }
+
+    html {
+      background: #e9e2d4 !important;
+    }
   </style>
 
-  <section class="home-grid">
-    <div class="section-stack">
-      <div class="card">
-        <h2>Singles</h2>
-        <p class="subtle-note">Thursday evenings April-September</p>
-        <div class="link-list">
-          {singlesLinks.map((item) => <a class="link-item" href={item.href}>{item.label}</a>)}
-        </div>
-      </div>
+  <style>
+    .home-page {
+      display: grid;
+      gap: 20px;
+    }
 
-      <div class="card">
-        <h2>Doubles</h2>
-        <p class="subtle-note">Sundays, 9 a.m., year round</p>
-        <div class="link-list">
-          {doublesLinks.map((item) => <a class="link-item" href={item.href}>{item.label}</a>)}
-        </div>
-      </div>
-    </div>
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border-radius: 18px;
+      border: 1px solid var(--line-soft);
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+      background: #ddd;
+    }
 
-    <div class="section-stack">
-      <div class="utility-buttons">
-        <a class="link-item" href={lostFoundUrl}>Lost &amp; Found</a>
-        <a class="link-item" href={udiscLeagueUrl} target="_blank" rel="noopener">Lufbery on UDisc</a>
-      </div>
+    .hero picture,
+    .hero img {
+      display: block;
+      width: 100%;
+    }
 
-      <div class="card">
-        <h2>Upcoming Events</h2>
-        {upcomingEvents.length > 0 ? (
-          <div class="event-list">
-            {upcomingEvents.map((event) => (
-              <article class="event-item">
-                <p class="event-date">{event.displayDate} · {event.displayTime}</p>
-                <p class="event-title">{event.title}</p>
-                {event.location ? <p class="event-meta">{event.location}</p> : null}
-              </article>
-            ))}
+    .hero img {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    .card {
+      border-radius: 16px;
+      padding: 24px 22px 20px;
+    }
+
+    .link-item {
+      border-radius: 12px;
+      min-height: 50px;
+      justify-content: space-between;
+      text-align: left;
+      padding: 12px 16px;
+    }
+
+    .link-item::after {
+      content: "→";
+      opacity: 0.4;
+      margin-left: 12px;
+      flex: 0 0 auto;
+    }
+
+    .event-item {
+      border-radius: 14px;
+      padding: 14px 15px;
+    }
+
+    @media (min-width: 901px) {
+      .hero img {
+        height: 360px;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .home-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero img {
+        height: 190px;
+      }
+    }
+  </style>
+
+  <div class="home-page">
+    <section class="hero" aria-label="Lufbery Disc Golf hero image">
+      <picture>
+        <source media="(min-width: 901px)" srcset={heroDesktopUrl} />
+        <img
+          src={heroMobileUrl}
+          alt="Disc golf basket in a wooded fairway at Lufbery."
+          loading="eager"
+          fetchpriority="high"
+        />
+      </picture>
+    </section>
+
+    <section class="home-grid">
+      <div class="section-stack">
+        <div class="card">
+          <h2>Singles</h2>
+          <p class="subtle-note">Thursday evenings April-September</p>
+          <div class="link-list">
+            {singlesLinks.map((item) => <a class="link-item" href={item.href}>{item.label}</a>)}
           </div>
-        ) : (
-          <p class="subtle-note">No upcoming events are available right now.</p>
-        )}
+        </div>
+
+        <div class="card">
+          <h2>Doubles</h2>
+          <p class="subtle-note">Sundays, 9 a.m., year round</p>
+          <div class="link-list">
+            {doublesLinks.map((item) => <a class="link-item" href={item.href}>{item.label}</a>)}
+          </div>
+        </div>
       </div>
-    </div>
-  </section>
+
+      <div class="section-stack">
+        <div class="utility-buttons">
+          <a class="link-item" href={lostFoundUrl}>Lost &amp; Found</a>
+          <a class="link-item" href={udiscLeagueUrl} target="_blank" rel="noopener">Lufbery on UDisc</a>
+        </div>
+
+        <div class="card">
+          <h2>Upcoming Events</h2>
+          {upcomingEvents.length > 0 ? (
+            <div class="event-list">
+              {upcomingEvents.map((event) => (
+                <article class="event-item">
+                  <p class="event-date">{event.displayDate} · {event.displayTime}</p>
+                  <p class="event-title">{event.title}</p>
+                  {event.location ? <p class="event-meta">{event.location}</p> : null}
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p class="subtle-note">No upcoming events are available right now.</p>
+          )}
+        </div>
+      </div>
+    </section>
+  </div>
 </SiteLayout>
