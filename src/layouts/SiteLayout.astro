@@ -22,21 +22,20 @@ const doublesLinks = [
 
 <html lang="en">
   <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{title}</title>
-  <link rel="icon" type="image/png" href="/favicon.png" sizes="32x32" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <script is:inline>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <link rel="icon" type="image/png" href="/favicon.png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <script is:inline>
       (() => {
         const key = "lufbery-theme";
         const saved = localStorage.getItem(key) || "system";
-        const actual = saved === "system"
-          ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
-          : saved;
-        document.documentElement.setAttribute("data-theme", actual);
+        document.documentElement.setAttribute("data-theme", saved);
       })();
     </script>
+
     <style is:global>
       :root {
         --bg: #f5f7fb;
@@ -66,9 +65,26 @@ const doublesLinks = [
         --shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
       }
 
+      @media (prefers-color-scheme: dark) {
+        html[data-theme="system"] {
+          --bg: #0b1220;
+          --bg-strong: #0f172a;
+          --card: #0f172a;
+          --text: #f8fafc;
+          --muted: #94a3b8;
+          --line-soft: #1f2937;
+          --line: #334155;
+          --accent: #60a5fa;
+          --button-bg: #172235;
+          --button-bg-hover: #1d2c44;
+          --shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+        }
+      }
+
       *, *::before, *::after { box-sizing: border-box; }
       html, body { margin: 0; padding: 0; }
       html { background: var(--bg-strong); }
+
       body {
         min-height: 100vh;
         margin: 0 !important;
@@ -78,6 +94,7 @@ const doublesLinks = [
         color: var(--text);
         overflow-x: hidden;
       }
+
       a { color: inherit; text-decoration: none; }
 
       .site-header {
@@ -85,6 +102,7 @@ const doublesLinks = [
         background: var(--card);
         border-bottom: 1px solid var(--line-soft);
       }
+
       .site-header-inner {
         width: min(100%, 1440px);
         margin: 0 auto;
@@ -94,6 +112,7 @@ const doublesLinks = [
         justify-content: space-between;
         gap: 12px;
       }
+
       .site-brand {
         display: inline-flex;
         align-items: center;
@@ -103,12 +122,14 @@ const doublesLinks = [
         flex: 1 1 auto;
         color: var(--text);
       }
+
       .site-brand img {
         width: 20px;
         height: 20px;
         display: block;
         flex: 0 0 20px;
       }
+
       .site-brand-text {
         font-size: 1rem;
         font-weight: 600;
@@ -116,12 +137,14 @@ const doublesLinks = [
         letter-spacing: -0.02em;
         white-space: nowrap;
       }
+
       .site-topbar-right {
         display: flex;
         align-items: center;
         gap: 8px;
         flex: 0 0 auto;
       }
+
       .site-icon-button {
         width: 38px;
         height: 38px;
@@ -135,10 +158,12 @@ const doublesLinks = [
         cursor: pointer;
         transition: background 0.15s ease, color 0.15s ease;
       }
+
       .site-icon-button:hover {
         color: var(--text);
-        background: rgba(127,127,127,0.08);
+        background: rgba(127, 127, 127, 0.08);
       }
+
       .site-icon-button svg {
         width: 18px;
         height: 18px;
@@ -154,6 +179,7 @@ const doublesLinks = [
       .site-content {
         min-width: 0;
       }
+
       .site-content .wrap {
         width: 100% !important;
         max-width: none !important;
@@ -161,32 +187,40 @@ const doublesLinks = [
         padding: 0 !important;
         min-width: 0 !important;
       }
+
       .site-content h1 {
         font-size: clamp(1.6rem, 2.4vw, 2.15rem) !important;
         font-weight: 700 !important;
         line-height: 1.08 !important;
         letter-spacing: -0.03em !important;
       }
+
       .site-content .page-header {
         margin-bottom: 12px !important;
       }
+
       .site-content .card {
         border-radius: 12px !important;
       }
+
       .site-content .card-header {
         padding: 18px 18px 10px !important;
       }
+
       .site-content .table-wrap {
         padding: 0 10px 8px !important;
       }
+
       .site-content thead th {
         padding: 10px 8px !important;
         font-size: 0.78rem !important;
       }
+
       .site-content tbody td {
         padding: 10px 8px !important;
         font-size: 0.95rem !important;
       }
+
       .site-content tbody td:first-child {
         font-weight: 400 !important;
       }
@@ -195,15 +229,18 @@ const doublesLinks = [
         background: linear-gradient(180deg, var(--bg-strong) 0%, var(--bg) 100%) !important;
         color: var(--text);
       }
+
       html[data-theme="dark"] .site-header {
         background: var(--card);
         border-bottom-color: var(--line-soft);
       }
+
       html[data-theme="dark"] .site-content .card,
       html[data-theme="dark"] .site-menu-panel {
         background: var(--card) !important;
         border-color: var(--line-soft) !important;
       }
+
       html[data-theme="dark"] .site-content .card,
       html[data-theme="dark"] .site-content h1,
       html[data-theme="dark"] .site-content h2,
@@ -220,24 +257,30 @@ const doublesLinks = [
       html[data-theme="dark"] .site-menu-panel button {
         color: var(--text);
       }
+
       html[data-theme="dark"] .site-content thead th {
         background: #162033 !important;
         color: var(--muted) !important;
         border-bottom-color: var(--line) !important;
       }
+
       html[data-theme="dark"] .site-content tbody td {
         color: var(--text) !important;
         border-bottom-color: var(--line-soft) !important;
       }
+
       html[data-theme="dark"] .site-content tbody tr:nth-child(odd) td {
         background: transparent !important;
       }
+
       html[data-theme="dark"] .site-content tbody tr:nth-child(even) td {
         background: rgba(255, 255, 255, 0.03) !important;
       }
+
       html[data-theme="dark"] .site-content tbody tr:hover td {
         background: rgba(255, 255, 255, 0.06) !important;
       }
+
       html[data-theme="dark"] .site-content .filter-select,
       html[data-theme="dark"] .site-content .search-input,
       html[data-theme="dark"] .site-content input,
@@ -246,6 +289,7 @@ const doublesLinks = [
         color: var(--text) !important;
         border-color: var(--line-soft) !important;
       }
+
       html[data-theme="dark"] .site-content .link-item,
       html[data-theme="dark"] .site-content .event-item,
       html[data-theme="dark"] .site-content .calendar-link {
@@ -254,18 +298,96 @@ const doublesLinks = [
         border-color: var(--line-soft) !important;
       }
 
+      @media (prefers-color-scheme: dark) {
+        html[data-theme="system"] body {
+          background: linear-gradient(180deg, var(--bg-strong) 0%, var(--bg) 100%) !important;
+          color: var(--text);
+        }
+
+        html[data-theme="system"] .site-header {
+          background: var(--card);
+          border-bottom-color: var(--line-soft);
+        }
+
+        html[data-theme="system"] .site-content .card,
+        html[data-theme="system"] .site-menu-panel {
+          background: var(--card) !important;
+          border-color: var(--line-soft) !important;
+        }
+
+        html[data-theme="system"] .site-content .card,
+        html[data-theme="system"] .site-content h1,
+        html[data-theme="system"] .site-content h2,
+        html[data-theme="system"] .site-content p,
+        html[data-theme="system"] .site-content div,
+        html[data-theme="system"] .site-content span,
+        html[data-theme="system"] .site-content li,
+        html[data-theme="system"] .site-content label,
+        html[data-theme="system"] .site-content input,
+        html[data-theme="system"] .site-content select,
+        html[data-theme="system"] .site-content button,
+        html[data-theme="system"] .site-menu-panel,
+        html[data-theme="system"] .site-menu-panel a,
+        html[data-theme="system"] .site-menu-panel button {
+          color: var(--text);
+        }
+
+        html[data-theme="system"] .site-content thead th {
+          background: #162033 !important;
+          color: var(--muted) !important;
+          border-bottom-color: var(--line) !important;
+        }
+
+        html[data-theme="system"] .site-content tbody td {
+          color: var(--text) !important;
+          border-bottom-color: var(--line-soft) !important;
+        }
+
+        html[data-theme="system"] .site-content tbody tr:nth-child(odd) td {
+          background: transparent !important;
+        }
+
+        html[data-theme="system"] .site-content tbody tr:nth-child(even) td {
+          background: rgba(255, 255, 255, 0.03) !important;
+        }
+
+        html[data-theme="system"] .site-content tbody tr:hover td {
+          background: rgba(255, 255, 255, 0.06) !important;
+        }
+
+        html[data-theme="system"] .site-content .filter-select,
+        html[data-theme="system"] .site-content .search-input,
+        html[data-theme="system"] .site-content input,
+        html[data-theme="system"] .site-content select {
+          background: #0f172a !important;
+          color: var(--text) !important;
+          border-color: var(--line-soft) !important;
+        }
+
+        html[data-theme="system"] .site-content .link-item,
+        html[data-theme="system"] .site-content .event-item,
+        html[data-theme="system"] .site-content .calendar-link {
+          background: var(--button-bg) !important;
+          color: var(--text) !important;
+          border-color: var(--line-soft) !important;
+        }
+      }
+
       .site-menu-layer {
         position: fixed;
         inset: 0;
         z-index: 80;
         display: none;
       }
+
       .site-menu-layer.open { display: block; }
+
       .site-menu-backdrop {
         position: absolute;
         inset: 0;
         background: rgba(15, 23, 42, 0.18);
       }
+
       .site-menu-panel {
         position: absolute;
         top: 58px;
@@ -277,6 +399,7 @@ const doublesLinks = [
         box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
         overflow: hidden;
       }
+
       .site-menu-row {
         display: flex;
         align-items: center;
@@ -284,7 +407,9 @@ const doublesLinks = [
         padding: 10px 12px 8px;
         border-bottom: 1px solid var(--line-soft);
       }
+
       .site-menu-row-closeonly { min-height: 58px; }
+
       .site-menu-close {
         width: 40px;
         height: 40px;
@@ -296,8 +421,10 @@ const doublesLinks = [
         font-size: 1.35rem;
         line-height: 1;
       }
+
       .site-menu-group { border-bottom: 1px solid var(--line-soft); }
       .site-menu-group:last-child { border-bottom: 0; }
+
       .site-menu-summary {
         width: 100%;
         background: none;
@@ -312,17 +439,21 @@ const doublesLinks = [
         cursor: pointer;
         text-align: left;
       }
+
       .site-menu-summary:hover,
       .site-menu-link:hover,
       .site-submenu a:hover {
-        background: rgba(127,127,127,0.06);
+        background: rgba(127, 127, 127, 0.06);
       }
+
       .site-submenu {
         display: none;
         padding: 0 8px 10px;
         gap: 4px;
       }
+
       .site-menu-group.open .site-submenu { display: grid; }
+
       .site-submenu a {
         display: block;
         padding: 10px 12px;
@@ -331,32 +462,67 @@ const doublesLinks = [
         font-size: 0.97rem;
         font-weight: 500;
       }
+
       .site-menu-link {
         display: block;
         padding: 14px 16px;
         font-size: 1rem;
         font-weight: 500;
       }
-      .site-chev { width: 14px; height: 14px; transition: transform 0.15s ease; }
+
+      .site-chev {
+        width: 14px;
+        height: 14px;
+        transition: transform 0.15s ease;
+      }
+
       .site-menu-group.open .site-chev { transform: rotate(90deg); }
 
       @media (max-width: 700px) {
         .site-header-inner {
           padding: 10px 10px;
         }
+
         .site-shell {
           padding: 10px 8px 18px;
         }
-        .site-brand img { width: 18px; height: 18px; flex-basis: 18px; }
-        .site-brand-text { font-size: 0.96rem; }
-        .site-menu-panel { top: 54px; right: 8px; }
-        .site-content .card-header { padding: 14px 14px 8px !important; }
-        .site-content .table-wrap { padding: 0 4px 4px !important; }
-        .site-content thead th { padding: 8px 5px !important; font-size: 0.68rem !important; }
-        .site-content tbody td { padding: 8px 5px !important; font-size: 0.86rem !important; }
+
+        .site-brand img {
+          width: 18px;
+          height: 18px;
+          flex-basis: 18px;
+        }
+
+        .site-brand-text {
+          font-size: 0.96rem;
+        }
+
+        .site-menu-panel {
+          top: 54px;
+          right: 8px;
+        }
+
+        .site-content .card-header {
+          padding: 14px 14px 8px !important;
+        }
+
+        .site-content .table-wrap {
+          padding: 0 4px 4px !important;
+        }
+
+        .site-content thead th {
+          padding: 8px 5px !important;
+          font-size: 0.68rem !important;
+        }
+
+        .site-content tbody td {
+          padding: 8px 5px !important;
+          font-size: 0.86rem !important;
+        }
       }
     </style>
   </head>
+
   <body>
     {showBrandBar && (
       <header class="site-header">
@@ -434,11 +600,6 @@ const doublesLinks = [
       const themeToggle = document.getElementById("themeToggle");
       const storageKey = "lufbery-theme";
       const themeModes = ["system", "light", "dark"];
-      const colorSchemeMq = window.matchMedia("(prefers-color-scheme: dark)");
-
-      function systemMode() {
-        return colorSchemeMq.matches ? "dark" : "light";
-      }
 
       function themeIcon(mode) {
         if (mode === "light") {
@@ -449,6 +610,7 @@ const doublesLinks = [
             </svg>
           `;
         }
+
         if (mode === "dark") {
           return `
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -456,6 +618,7 @@ const doublesLinks = [
             </svg>
           `;
         }
+
         return `
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <rect x="3" y="4" width="18" height="12" rx="2"></rect>
@@ -470,8 +633,7 @@ const doublesLinks = [
       }
 
       function applyTheme(mode) {
-        const actual = mode === "system" ? systemMode() : mode;
-        html.setAttribute("data-theme", actual);
+        html.setAttribute("data-theme", mode);
 
         if (themeToggle) {
           themeToggle.innerHTML = themeIcon(mode);
@@ -495,28 +657,6 @@ const doublesLinks = [
           applyTheme(savedTheme);
         });
       }
-
-      function handleSystemThemeChange() {
-        if (getStoredMode() === "system") applyTheme("system");
-      }
-
-      if (typeof colorSchemeMq.addEventListener === "function") {
-        colorSchemeMq.addEventListener("change", handleSystemThemeChange);
-      } else if (typeof colorSchemeMq.addListener === "function") {
-        colorSchemeMq.addListener(handleSystemThemeChange);
-      }
-
-      document.addEventListener("visibilitychange", () => {
-        if (!document.hidden && getStoredMode() === "system") {
-          applyTheme("system");
-        }
-      });
-
-      window.addEventListener("pageshow", () => {
-        if (getStoredMode() === "system") {
-          applyTheme("system");
-        }
-      });
 
       const menuButton = document.getElementById("menuButton");
       const menuLayer = document.getElementById("siteMenuLayer");
