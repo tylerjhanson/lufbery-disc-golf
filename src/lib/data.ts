@@ -231,6 +231,18 @@ export function getWeeklyResults() {
     );
   }
 
+  function normalize(value: string) {
+    return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+  }
+
+  function isWorkingTitle(value: string) {
+    const v = normalize(value);
+    return (
+      v === "working to a handicap" ||
+      v === "working towards a handicap"
+    );
+  }
+
   let i = 0;
 
   while (i < rows.length) {
@@ -271,35 +283,49 @@ export function getWeeklyResults() {
         const cells = rows[i];
 
         if (isTitleRow(cells)) break;
+
         if (isBlankRow(cells)) {
           i++;
           continue;
         }
 
-        if ((cells[0] || "") === "Working to a handicap") {
-          const workingHeaders = ["Name", ...cells.slice(1).filter(Boolean)];
+        if (isWorkingTitle(cells[0] || "")) {
+          const workingTitle = cells[0] || "Working to a handicap";
           i++;
+
+          while (i < rows.length && isBlankRow(rows[i])) i++;
+
+          let workingHeaders = ["Name", "Raw"];
+
+          if (i < rows.length && normalize(rows[i][0] || "") === "name") {
+            workingHeaders = rows[i].filter(Boolean);
+            i++;
+          } else if (cells.slice(1).some(Boolean)) {
+            workingHeaders = ["Name", ...cells.slice(1).filter(Boolean)];
+          }
 
           const workingRows: string[][] = [];
 
           while (i < rows.length) {
             const sub = rows[i];
+
             if (isTitleRow(sub)) break;
             if (isBlankRow(sub)) {
               i++;
               break;
             }
-            if ((sub[0] || "") === "Name") {
-              i++;
-              continue;
-            }
+            if (isWorkingTitle(sub[0] || "")) break;
 
-            workingRows.push([sub[0] || "", sub[1] || ""]);
+            workingRows.push([
+              sub[0] || "",
+              sub[1] || "",
+            ]);
+
             i++;
           }
 
           event.working = {
-            title: "Working to a handicap",
+            title: workingTitle,
             headers: workingHeaders,
             rows: workingRows,
           };
@@ -340,7 +366,7 @@ export function getWeeklyResults() {
       const sectionHeaders = ["Name", ...cells.slice(1).filter(Boolean)];
 
       const isPoolSection =
-        /pool/i.test(sectionTitle) || /working to a handicap/i.test(sectionTitle);
+        /pool/i.test(sectionTitle) || isWorkingTitle(sectionTitle);
 
       if (!isPoolSection) {
         i++;
@@ -362,7 +388,7 @@ export function getWeeklyResults() {
 
         const nextSectionTitle = sub[0] || "";
         const nextIsPoolSection =
-          (/pool/i.test(nextSectionTitle) || /working to a handicap/i.test(nextSectionTitle)) &&
+          (/pool/i.test(nextSectionTitle) || isWorkingTitle(nextSectionTitle)) &&
           sub.slice(1).some(Boolean);
 
         if (nextIsPoolSection) break;
