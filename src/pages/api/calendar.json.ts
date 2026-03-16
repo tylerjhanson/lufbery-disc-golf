@@ -296,32 +296,25 @@ async function fetchCalendarIcs(url: string, attempts = 3) {
       }
 
       const contentType = res.headers.get("content-type") || "";
-const finalUrl = res.url || url;
-const ics = await res.text();
+      const finalUrl = res.url || url;
+      const ics = await res.text();
 
-if (!ics || !ics.includes("BEGIN:VEVENT")) {
-  throw new Error(
-    `Calendar response missing VEVENT data. status=${res.status} contentType=${contentType} url=${finalUrl} length=${ics.length}`
-  );
-}
+      if (!ics || !ics.includes("BEGIN:VEVENT")) {
+        throw new Error(
+          `Calendar response missing VEVENT data. status=${res.status} contentType=${contentType} url=${finalUrl} length=${ics.length}`
+        );
+      }
 
       return ics;
-   } catch (error) {
-  console.error("Calendar API failed:", error);
-
-  return new Response(
-    JSON.stringify({
-      upcomingEvents: [],
-      error: error instanceof Error ? error.message : String(error),
-    }),
-    {
-      status: 200,
-      headers: {
-        "content-type": "application/json; charset=utf-8",
-        "cache-control": "no-store",
-      },
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts) {
+        await delay(700 * attempt);
+      }
     }
-  );
+  }
+
+  throw lastError;
 }
 
 export const GET: APIRoute = async () => {
@@ -398,12 +391,18 @@ export const GET: APIRoute = async () => {
   } catch (error) {
     console.error("Calendar API failed:", error);
 
-    return new Response(JSON.stringify({ upcomingEvents: [] }), {
-      status: 200,
-      headers: {
-        "content-type": "application/json; charset=utf-8",
-        "cache-control": "no-store",
-      },
-    });
+    return new Response(
+      JSON.stringify({
+        upcomingEvents: [],
+        error: error instanceof Error ? error.message : String(error),
+      }),
+      {
+        status: 200,
+        headers: {
+          "content-type": "application/json; charset=utf-8",
+          "cache-control": "no-store",
+        },
+      }
+    );
   }
 };
