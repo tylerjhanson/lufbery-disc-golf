@@ -447,10 +447,8 @@ function expandWeeklyOccurrences(
 let upcomingEvents: EventItem[] = [];
 
 try {
-  const res = await fetch(calendarIcsUrl, { cache: "no-store" });
-  if (!res.ok) throw new Error(`Calendar fetch failed: ${res.status}`);
+  const res = await fetch(calendarIcsUrl);
   const ics = await res.text();
-  if (!ics.includes("BEGIN:VEVENT")) throw new Error("Calendar response did not include VEVENT data");
 
   const blocks = getBlocks(ics);
 
@@ -675,7 +673,7 @@ try {
     .result-collapse {
       position: relative;
       overflow: hidden;
-      max-height: 360px;
+      max-height: 470px;
       transition: max-height 0.22s ease;
     }
 
