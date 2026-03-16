@@ -1,4 +1,6 @@
 ---
+import SiteLayout from "../layouts/SiteLayout.astro";
+
 const singlesLinks = [
   { href: "/singles/handicaps-tags", label: "Handicaps & Tags" },
   { href: "/singles/weekly-results", label: "Weekly Results" },
@@ -27,6 +29,15 @@ const WEEKDAY_MAP = {
   TH: 4,
   FR: 5,
   SA: 6,
+};
+
+type EventItem = {
+  key: string;
+  title: string;
+  location: string;
+  stamp: string;
+  displayDate: string;
+  displayTime: string;
 };
 
 function unfoldIcs(raw: string) {
@@ -223,7 +234,7 @@ function expandWeeklyOccurrences(
 
   const interval = Number(rule.INTERVAL || "1");
   const byDays = (rule.BYDAY ? rule.BYDAY.split(",") : [])
-    .map((d) => WEEKDAY_MAP[d])
+    .map((d) => WEEKDAY_MAP[d as keyof typeof WEEKDAY_MAP])
     .filter((v) => v !== undefined);
 
   const startParts = startInfo.parts;
@@ -248,7 +259,7 @@ function expandWeeklyOccurrences(
     });
   });
 
-  const out = [];
+  const out: { stamp: string; displayDate: string; displayTime: string }[] = [];
 
   for (let weekIndex = 0; weekIndex < 80; weekIndex++) {
     const weekStart = addDaysUtc(baseWeekStart, weekIndex * 7 * interval);
@@ -281,138 +292,162 @@ function expandWeeklyOccurrences(
   return out;
 }
 
-let upcomingEvents: { title: string; location: string; stamp: string; displayDate: string; displayTime: string }[] = [];
+let upcomingEvents: EventItem[] = [];
 
 try {
   const res = await fetch(calendarIcsUrl);
   const ics = await res.text();
+  const blocks = getBlocks(ics);
 
-  upcomingEvents = getBlocks(ics)
-    .flatMap((block) => {
-      const summary = decodeIcsText(getValue(getLine(block, "SUMMARY")));
-      const location = decodeIcsText(getValue(getLine(block, "LOCATION")));
-      const startInfo = parseDateLineDetailed(getLine(block, "DTSTART"));
-      const rrule = getLine(block, "RRULE");
-      const exdates = getLinesByKey(block, "EXDATE");
+  const overriddenKeys = new Set(
+    blocks.flatMap((block) => {
+      const uid = getValue(getLine(block, "UID"));
+      const recurrenceId = parseDateLineDetailed(getLine(block, "RECURRENCE-ID"));
+      return uid && recurrenceId ? [`${uid}|${recurrenceId.stamp}`] : [];
+    })
+  );
 
-      if (!summary || !startInfo) return [];
+  const items: EventItem[] = blocks.flatMap((block) => {
+    const status = getValue(getLine(block, "STATUS")).toUpperCase();
+    const uid = getValue(getLine(block, "UID")) || decodeIcsText(getValue(getLine(block, "SUMMARY")));
+    const summary = decodeIcsText(getValue(getLine(block, "SUMMARY")));
+    const location = decodeIcsText(getValue(getLine(block, "LOCATION")));
+    const startInfo = parseDateLineDetailed(getLine(block, "DTSTART"));
+    const recurrenceId = parseDateLineDetailed(getLine(block, "RECURRENCE-ID"));
+    const rrule = getLine(block, "RRULE");
+    const exdates = getLinesByKey(block, "EXDATE");
 
-      if (rrule) {
-        return expandWeeklyOccurrences(startInfo, rrule, exdates).map((occ) => ({
+    if (!uid || !summary || !startInfo) return [];
+    if (status === "CANCELLED") return [];
+
+    if (rrule) {
+      return expandWeeklyOccurrences(startInfo, rrule, exdates)
+        .filter((occ) => !overriddenKeys.has(`${uid}|${occ.stamp}`))
+        .map((occ) => ({
+          key: `${uid}|${occ.stamp}`,
           title: summary,
           location,
           stamp: occ.stamp,
           displayDate: occ.displayDate,
           displayTime: occ.displayTime,
         }));
-      }
+    }
 
-      return [
-        {
-          title: summary,
-          location,
-          stamp: startInfo.stamp,
-          displayDate: startInfo.displayDate,
-          displayTime: startInfo.displayTime,
-        },
-      ];
-    })
-    .filter((event) => event.stamp >= nowStamp)
-    .sort((a, b) => a.stamp.localeCompare(b.stamp))
-    .reduce((acc, event) => {
-      const key = `${event.title}|${event.stamp}|${event.location}`;
-      if (!acc.some((x) => `${x.title}|${x.stamp}|${x.location}` === key)) {
-        acc.push(event);
-      }
-      return acc;
-    }, [] as { title: string; location: string; stamp: string; displayDate: string; displayTime: string }[])
-    .slice(0, 5);
+    return [
+      {
+        key: `${uid}|${recurrenceId ? recurrenceId.stamp : startInfo.stamp}`,
+        title: summary,
+        location,
+        stamp: startInfo.stamp,
+        displayDate: startInfo.displayDate,
+        displayTime: startInfo.displayTime,
+      },
+    ];
+  });
+
+  upcomingEvents = Array.from(
+    items
+      .filter((event) => event.stamp >= nowStamp)
+      .sort((a, b) => a.stamp.localeCompare(b.stamp))
+      .reduce((map, event) => map.set(event.key, event), new Map<string, EventItem>())
+      .values()
+  ).slice(0, 5);
 } catch (error) {
   upcomingEvents = [];
 }
-import SiteLayout from "../layouts/SiteLayout.astro";
 ---
-
 
 <SiteLayout title="Lufbery Disc Golf" showBrandBar={true}>
   <style>
+    .home-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 18px;
+    }
+    .section-stack {
+      display: grid;
+      gap: 18px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line-soft);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding: 22px 20px 18px;
+    }
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .subtle-note {
+      color: var(--muted);
+      font-size: 0.97rem;
+      line-height: 1.6;
+      margin: 0 0 14px;
+    }
+    .link-list,
+    .utility-buttons {
+      display: grid;
+      gap: 10px;
+    }
+    .link-item {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 10px 14px;
+      border: 1px solid var(--line-soft);
+      border-radius: 7px;
+      background: var(--button-bg, #f3f5f8);
+      font-weight: 500;
+      text-align: center;
+      transition: background 0.12s ease, transform 0.12s ease;
+    }
+    .link-item:hover {
+      background: var(--button-bg-hover, #eceff4);
+      transform: translateY(-1px);
+    }
+    .utility-buttons .link-item {
+      background: var(--card);
+    }
+    .utility-buttons .link-item:hover {
+      background: var(--button-bg, #f3f5f8);
+    }
+    .event-list {
+      display: grid;
+      gap: 10px;
+    }
+    .event-item {
+      border: 1px solid var(--line-soft);
+      border-radius: 7px;
+      padding: 12px 14px;
+      background: var(--button-bg, #f3f5f8);
+    }
+    .event-date {
+      margin: 0 0 6px;
+      font-weight: 700;
+      font-size: 0.94rem;
+      line-height: 1.2;
+    }
+    .event-title {
+      margin: 0 0 3px;
+      font-weight: 400;
+      font-size: 0.96rem;
+      line-height: 1.35;
+    }
+    .event-meta {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+    @media (max-width: 900px) {
       .home-grid {
-        display: grid;
-        grid-template-columns: 1.1fr 1fr;
-        gap: 18px;
+        grid-template-columns: 1fr;
       }
-      .section-stack { display: grid; gap: 18px; }
-      .card {
-        background: var(--card);
-        border: 1px solid var(--line-soft);
-        border-radius: 12px;
-        box-shadow: var(--shadow);
-        padding: 22px 20px 18px;
-      }
-      .card h2 {
-        margin: 0 0 8px;
-        font-size: 1.2rem;
-        font-weight: 700;
-        line-height: 1.2;
-      }
-      .subtle-note {
-        color: var(--muted);
-        font-size: 0.97rem;
-        line-height: 1.6;
-        margin: 0 0 14px;
-      }
-      .link-list, .utility-buttons { display: grid; gap: 10px; }
-      .link-item {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 46px;
-        padding: 10px 14px;
-        border: 1px solid var(--line-soft);
-        border-radius: 7px;
-        background: var(--button-bg, #f3f5f8);
-        font-weight: 500;
-        text-align: center;
-        transition: background 0.12s ease, transform 0.12s ease;
-      }
-      .link-item:hover {
-        background: var(--button-bg-hover, #eceff4);
-        transform: translateY(-1px);
-      }
-      .utility-buttons .link-item {
-        background: var(--card);
-      }
-      .utility-buttons .link-item:hover {
-        background: var(--button-bg, #f3f5f8);
-      }
-      .event-list { display: grid; gap: 10px; }
-      .event-item {
-        border: 1px solid var(--line-soft);
-        border-radius: 7px;
-        padding: 12px 14px;
-        background: var(--button-bg, #f3f5f8);
-      }
-      .event-date {
-        margin: 0 0 6px;
-        font-weight: 700;
-        font-size: 0.94rem;
-        line-height: 1.2;
-      }
-      .event-title {
-        margin: 0 0 3px;
-        font-weight: 400;
-        font-size: 0.96rem;
-        line-height: 1.35;
-      }
-      .event-meta {
-        margin: 0;
-        color: var(--muted);
-        font-size: 0.88rem;
-        line-height: 1.4;
-      }
-      @media (max-width: 900px) {
-        .home-grid { grid-template-columns: 1fr; }
-      }
+    }
   </style>
 
   <section class="home-grid">
@@ -446,7 +481,9 @@ import SiteLayout from "../layouts/SiteLayout.astro";
           <div class="event-list">
             {upcomingEvents.map((event) => (
               <article class="event-item">
-                <p class="event-date">{event.displayDate} · {event.displayTime}</p>
+                <p class="event-date">
+                  {event.displayDate} · {event.displayTime}
+                </p>
                 <p class="event-title">{event.title}</p>
                 {event.location ? <p class="event-meta">{event.location}</p> : null}
               </article>
