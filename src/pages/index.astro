@@ -556,9 +556,11 @@ try {
       font-weight: 700;
       line-height: 1.2;
     }
-.events-card {
-  padding-bottom: 29px;
-}
+
+    .events-card {
+      padding-bottom: 29px;
+    }
+
     .subtle-note {
       color: var(--muted);
       font-size: 0.97rem;
@@ -650,6 +652,28 @@ try {
       height: 20px;
       width: auto;
       object-fit: contain;
+    }
+
+    .udisc-logo-dark {
+      display: none;
+    }
+
+    html[data-theme="dark"] .udisc-logo-light {
+      display: none;
+    }
+
+    html[data-theme="dark"] .udisc-logo-dark {
+      display: block;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      html[data-theme="system"] .udisc-logo-light {
+        display: none;
+      }
+
+      html[data-theme="system"] .udisc-logo-dark {
+        display: block;
+      }
     }
 
     .latest-result-card {
@@ -1098,7 +1122,6 @@ try {
               >
                 Show more
               </button>
-
             </div>
           </>
         ) : (
@@ -1152,7 +1175,8 @@ try {
         aria-label="UDisc"
         title="UDisc"
       >
-        <img class="udisc-logo-only" src="/udisc-logo.png" alt="UDisc" />
+        <img class="udisc-logo-only udisc-logo-light" src="/udisc-logo.png" alt="UDisc" />
+        <img class="udisc-logo-only udisc-logo-dark" src="/udisc-logo-white.png" alt="UDisc" />
       </a>
 
       <div class="card events-card">
