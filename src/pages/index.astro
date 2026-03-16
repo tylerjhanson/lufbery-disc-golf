@@ -107,8 +107,6 @@ const MAIN_COLUMN_DEFS = [
   { label: "HCP.", aliases: ["hcp", "handicap"] },
   { label: "Net", aliases: ["net"] },
   { label: "Payout", aliases: ["payout", "pay"] },
-  { label: "OVR", aliases: ["ovr", "overall"] },
-  { label: "CTP", aliases: ["ctp"] },
 ];
 
 const WORKING_COLUMN_DEFS = [
@@ -161,7 +159,7 @@ function resolveColumns(rows: LooseRow[], defs: { label: string; aliases: string
   return resolved;
 }
 
-const latestResultMainColumns = resolveColumns(latestResultMainRows, MAIN_COLUMN_DEFS);
+const latestResultMainColumns = resolveColumns(latestResultMainRows, MAIN_COLUMN_DEFS).slice(0, 5);
 const latestResultWorkingColumns = resolveColumns(latestResultWorkingRows, WORKING_COLUMN_DEFS);
 
 function getCellText(row: LooseRow, key: string) {
@@ -508,7 +506,7 @@ try {
       .sort((a, b) => a.stamp.localeCompare(b.stamp))
       .reduce((map, event) => map.set(event.key, event), new Map<string, EventItem>())
       .values()
-  ).slice(0, 5);
+  ).slice(0, 4);
 } catch (error) {
   console.error("Failed to load homepage calendar:", error);
   upcomingEvents = [];
@@ -523,7 +521,7 @@ try {
 
     .home-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1.03fr) minmax(0, 0.91fr) minmax(220px, 0.66fr);
+      grid-template-columns: minmax(0, 0.97fr) minmax(0, 0.92fr) minmax(210px, 0.62fr);
       gap: 18px;
       align-items: start;
     }
@@ -550,7 +548,7 @@ try {
     }
 
     .card {
-      padding: 22px 20px 18px;
+      padding: 20px 18px 16px;
       min-width: 0;
     }
 
@@ -623,7 +621,7 @@ try {
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 62px;
+      min-height: 58px;
       padding: 14px 16px;
       text-decoration: none;
       transition: background 0.12s ease, transform 0.12s ease;
@@ -677,7 +675,7 @@ try {
     .result-collapse {
       position: relative;
       overflow: hidden;
-      max-height: 440px;
+      max-height: 360px;
       transition: max-height 0.22s ease;
     }
 
@@ -782,16 +780,12 @@ try {
     .result-main-table tbody td:nth-child(3),
     .result-main-table thead th:nth-child(4),
     .result-main-table tbody td:nth-child(4) {
-      width: 8%;
+      width: 11%;
     }
 
     .result-main-table thead th:nth-child(5),
-    .result-main-table tbody td:nth-child(5),
-    .result-main-table thead th:nth-child(6),
-    .result-main-table tbody td:nth-child(6),
-    .result-main-table thead th:nth-child(7),
-    .result-main-table tbody td:nth-child(7) {
-      width: 16%;
+    .result-main-table tbody td:nth-child(5) {
+      width: 21%;
     }
 
     .result-working-table thead th {
@@ -862,21 +856,21 @@ try {
     .event-item {
       border: 1px solid var(--line-soft);
       border-radius: 7px;
-      padding: 12px 14px;
+      padding: 11px 13px;
       background: var(--button-bg, #f3f5f8);
     }
 
     .event-date {
-      margin: 0 0 6px;
+      margin: 0 0 5px;
       font-weight: 700;
-      font-size: 0.94rem;
+      font-size: 0.92rem;
       line-height: 1.2;
     }
 
     .event-title {
-      margin: 0 0 3px;
+      margin: 0 0 2px;
       font-weight: 400;
-      font-size: 0.96rem;
+      font-size: 0.94rem;
       line-height: 1.35;
     }
 
@@ -913,7 +907,7 @@ try {
       }
 
       .udisc-card {
-        order: 2;
+        order: 99;
       }
 
       .result-collapse {
@@ -963,16 +957,12 @@ try {
       .result-main-table tbody td:nth-child(3),
       .result-main-table thead th:nth-child(4),
       .result-main-table tbody td:nth-child(4) {
-        width: 9%;
+        width: 10%;
       }
 
       .result-main-table thead th:nth-child(5),
-      .result-main-table tbody td:nth-child(5),
-      .result-main-table thead th:nth-child(6),
-      .result-main-table tbody td:nth-child(6),
-      .result-main-table thead th:nth-child(7),
-      .result-main-table tbody td:nth-child(7) {
-        width: 16%;
+      .result-main-table tbody td:nth-child(5) {
+        width: 24%;
       }
 
       .result-working-table thead th {
