@@ -449,8 +449,10 @@ function expandWeeklyOccurrences(
 let upcomingEvents: EventItem[] = [];
 
 try {
-  const res = await fetch(calendarIcsUrl);
-  const ics = await res.text();
+  const res = await fetch(calendarIcsUrl, { cache: "no-store" });
+if (!res.ok) throw new Error(`Calendar fetch failed: ${res.status}`);
+const ics = await res.text();
+if (!ics.includes("BEGIN:VEVENT")) throw new Error("Calendar response did not include VEVENT data");
   const blocks = getBlocks(ics);
 
   const overriddenKeys = new Set(
@@ -507,6 +509,7 @@ try {
       .values()
   ).slice(0, 5);
 } catch (error) {
+  console.error("Failed to load homepage calendar:", error);
   upcomingEvents = [];
 }
 ---
@@ -644,99 +647,104 @@ try {
     }
 
     .result-title-link {
-      display: inline-block;
-      color: #2563eb;
-      text-decoration: none;
-      font-size: 1.45rem;
-      font-weight: 700;
-      line-height: 1.15;
-      margin: 0 0 12px;
-    }
+  display: inline-block;
+  color: #2563eb;
+  text-decoration: none;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.15;
+  margin: 0 0 10px;
+}
 
-    .result-title-link:hover {
-      text-decoration: underline;
-    }
+.result-title-link:hover {
+  text-decoration: underline;
+}
 
-    .result-title-plain {
-      margin: 0 0 12px;
-      font-size: 1.45rem;
-      font-weight: 700;
-      line-height: 1.15;
-      color: var(--text);
-    }
+.result-title-plain {
+  margin: 0 0 10px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--text);
+}
 
-    .result-collapse {
-      position: relative;
-      overflow: hidden;
-      max-height: 760px;
-      transition: max-height 0.22s ease;
-    }
+.result-collapse {
+  position: relative;
+  overflow: hidden;
+  max-height: 535px;
+  transition: max-height 0.22s ease;
+}
 
-    .latest-result-card.is-expanded .result-collapse {
-      max-height: none;
-      overflow: visible;
-    }
+.latest-result-card.is-expanded .result-collapse {
+  max-height: none;
+  overflow: visible;
+}
 
-    .latest-result-card.has-overflow:not(.is-expanded) .result-collapse::after {
-      content: "";
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      height: 76px;
-      background: linear-gradient(to bottom, rgba(255,255,255,0), var(--card) 88%);
-      pointer-events: none;
-    }
+.latest-result-card.has-overflow:not(.is-expanded) .result-collapse::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 70px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), var(--card) 88%);
+  pointer-events: none;
+}
 
-    .result-table-block {
-      margin-top: 4px;
-    }
+.result-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: var(--button-bg, #f3f5f8);
+}
 
-    .result-table-wrap {
-      overflow-x: auto;
-      border: 1px solid var(--line-soft);
-      border-radius: 12px;
-      background: var(--button-bg, #f3f5f8);
-    }
+.result-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.9rem;
+}
 
-    .result-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.96rem;
-    }
+.result-table thead th {
+  padding: 8px 6px 7px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-align: left;
+  white-space: nowrap;
+}
 
-    .result-table thead th {
-      padding: 10px 8px 8px;
-      border-bottom: 1px solid var(--line-soft);
-      color: var(--muted);
-      font-size: 0.73rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-      text-align: left;
-      white-space: nowrap;
-    }
+.result-table tbody td {
+  padding: 7px 6px;
+  border-bottom: 1px solid var(--line-soft);
+  line-height: 1.2;
+}
 
-    .result-table tbody td {
-      padding: 8px;
-      border-bottom: 1px solid var(--line-soft);
-      white-space: nowrap;
-      line-height: 1.25;
-    }
+.result-table tbody tr:last-child td {
+  border-bottom: 0;
+}
 
-    .result-table tbody tr:last-child td {
-      border-bottom: 0;
-    }
+.result-table th:first-child,
+.result-table td:first-child {
+  width: 34%;
+  padding-left: 10px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
 
-    .result-table th:first-child,
-    .result-table td:first-child {
-      padding-left: 12px;
-    }
+.result-table th:not(:first-child),
+.result-table td:not(:first-child) {
+  white-space: nowrap;
+}
 
-    .result-table th:last-child,
-    .result-table td:last-child {
-      padding-right: 12px;
-    }
+.result-table th:last-child,
+.result-table td:last-child {
+  padding-right: 10px;
+}
 
     .working-heading {
       margin: 16px 0 8px;
@@ -816,76 +824,76 @@ try {
     }
 
     @media (max-width: 900px) {
-      .home-grid {
-        grid-template-columns: 1fr;
-      }
+  .home-grid {
+    grid-template-columns: 1fr;
+  }
 
-      .mobile-quick-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-      }
+  .mobile-quick-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
 
-      .desktop-lostfound {
-        display: none;
-      }
+  .desktop-lostfound {
+    display: none;
+  }
 
-      .result-collapse {
-        max-height: 320px;
-      }
-    }
+  .result-collapse {
+    max-height: 250px;
+  }
+}
 
-    @media (max-width: 560px) {
-      .card {
-        padding: 18px 14px 14px;
-      }
+   @media (max-width: 560px) {
+  .card {
+    padding: 18px 14px 14px;
+  }
 
-      .utility-card {
-        min-height: 58px;
-        padding: 12px 14px;
-      }
+  .utility-card {
+    min-height: 58px;
+    padding: 12px 14px;
+  }
 
-      .mobile-quick-row {
-        gap: 10px;
-      }
+  .mobile-quick-row {
+    gap: 10px;
+  }
 
-      .result-title-link,
-      .result-title-plain {
-        font-size: 1.22rem;
-      }
+  .result-title-link,
+  .result-title-plain {
+    font-size: 1.08rem;
+  }
 
-      .result-table {
-        font-size: 0.9rem;
-      }
+  .result-table {
+    font-size: 0.84rem;
+  }
 
-      .result-table thead th {
-        font-size: 0.68rem;
-        padding: 9px 6px 7px;
-      }
+  .result-table thead th {
+    font-size: 0.62rem;
+    padding: 8px 5px 6px;
+  }
 
-      .result-table tbody td {
-        padding: 7px 6px;
-      }
+  .result-table tbody td {
+    padding: 6px 5px;
+  }
 
-      .result-table th:first-child,
-      .result-table td:first-child {
-        padding-left: 10px;
-      }
+  .result-table th:first-child,
+  .result-table td:first-child {
+    padding-left: 8px;
+  }
 
-      .result-table th:last-child,
-      .result-table td:last-child {
-        padding-right: 10px;
-      }
+  .result-table th:last-child,
+  .result-table td:last-child {
+    padding-right: 8px;
+  }
 
-      .result-actions {
-        align-items: stretch;
-      }
+  .result-actions {
+    align-items: stretch;
+  }
 
-      .result-toggle,
-      .result-fallback-link {
-        width: 100%;
-      }
-    }
+  .result-toggle,
+  .result-fallback-link {
+    width: 100%;
+  }
+}
   </style>
 
   <section class="home-grid">
@@ -977,15 +985,15 @@ try {
 
             <div class="result-actions">
               <button
-                type="button"
-                class="result-toggle"
-                id="latestResultToggle"
-                aria-controls="latestResultCollapse"
-                aria-expanded="false"
-                hidden
-              >
-                Expand result
-              </button>
+  type="button"
+  class="result-toggle"
+  id="latestResultToggle"
+  aria-controls="latestResultCollapse"
+  aria-expanded="false"
+  hidden
+>
+  Show more
+</button>
 
               <a class="result-fallback-link" href="/singles/weekly-results">
                 View all weekly results <span aria-hidden="true">→</span>
@@ -1031,20 +1039,20 @@ try {
     </div>
 
     <div class="right-stack">
-      <a
-        class="utility-card udisc-card"
-        href={udiscLeagueUrl}
-        target="_blank"
-        rel="noopener"
-        aria-label="UDisc"
-        title="UDisc"
-      >
-        <img class="udisc-logo-only" src="/udisc-logo.png" alt="UDisc" />
-      </a>
-
       <a class="utility-card desktop-lostfound" href={lostFoundUrl}>
-        <span class="utility-card-text">Lost &amp; Found</span>
-      </a>
+  <span class="utility-card-text">Lost &amp; Found</span>
+</a>
+
+<a
+  class="utility-card udisc-card"
+  href={udiscLeagueUrl}
+  target="_blank"
+  rel="noopener"
+  aria-label="UDisc"
+  title="UDisc"
+>
+  <img class="udisc-logo-only" src="/udisc-logo.png" alt="UDisc" />
+</a>
 
       <div class="card events-card">
         <h2>Upcoming Events</h2>
@@ -1068,60 +1076,59 @@ try {
   </section>
 
   <script>
-    (() => {
-      const card = document.getElementById("latestResultCard");
-      const collapse = document.getElementById("latestResultCollapse");
-      const toggle = document.getElementById("latestResultToggle");
+    <script>
+  (() => {
+    const card = document.getElementById("latestResultCard");
+    const collapse = document.getElementById("latestResultCollapse");
+    const toggle = document.getElementById("latestResultToggle");
 
-      if (!card || !collapse || !toggle) return;
+    if (!card || !collapse || !toggle) return;
 
-      function updateToggleState() {
-        const wasExpanded = card.classList.contains("is-expanded");
+    function syncButton() {
+      const expanded = card.classList.contains("is-expanded");
+      toggle.textContent = expanded ? "Show less" : "Show more";
+      toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+    }
 
-        card.classList.remove("is-expanded");
+    function updateToggleState() {
+      const wasExpanded = card.classList.contains("is-expanded");
 
-        const overflowing = collapse.scrollHeight > collapse.clientHeight + 4;
+      card.classList.remove("is-expanded");
 
-        card.classList.toggle("has-overflow", overflowing);
+      const overflowing = collapse.scrollHeight > collapse.clientHeight + 4;
 
-        if (!overflowing) {
-          card.classList.add("is-expanded");
-          toggle.hidden = true;
-          toggle.setAttribute("aria-expanded", "true");
-          return;
-        }
+      card.classList.toggle("has-overflow", overflowing);
 
-        if (wasExpanded) {
-          card.classList.add("is-expanded");
-        }
-
-        toggle.hidden = false;
-        toggle.textContent = card.classList.contains("is-expanded") ? "Show less" : "Expand result";
-        toggle.setAttribute(
-          "aria-expanded",
-          card.classList.contains("is-expanded") ? "true" : "false"
-        );
+      if (!overflowing) {
+        card.classList.add("is-expanded");
+        toggle.hidden = true;
+        syncButton();
+        return;
       }
 
-      toggle.addEventListener("click", () => {
-        card.classList.toggle("is-expanded");
-        toggle.textContent = card.classList.contains("is-expanded") ? "Show less" : "Expand result";
-        toggle.setAttribute(
-          "aria-expanded",
-          card.classList.contains("is-expanded") ? "true" : "false"
-        );
-      });
-
-      if ("ResizeObserver" in window) {
-        const ro = new ResizeObserver(() => updateToggleState());
-        ro.observe(collapse);
-        ro.observe(document.body);
-      } else {
-        window.addEventListener("resize", updateToggleState);
+      if (wasExpanded) {
+        card.classList.add("is-expanded");
       }
 
-      window.addEventListener("load", updateToggleState);
-      updateToggleState();
-    })();
-  </script>
+      toggle.hidden = false;
+      syncButton();
+    }
+
+    toggle.addEventListener("click", () => {
+      card.classList.toggle("is-expanded");
+      syncButton();
+    });
+
+    if ("ResizeObserver" in window) {
+      const ro = new ResizeObserver(() => updateToggleState());
+      ro.observe(collapse);
+      ro.observe(document.body);
+    } else {
+      window.addEventListener("resize", updateToggleState);
+    }
+
+    window.addEventListener("load", updateToggleState);
+    updateToggleState();
+  })();
+</script>
 </SiteLayout>
