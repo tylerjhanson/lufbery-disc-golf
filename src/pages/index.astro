@@ -444,13 +444,62 @@ function expandWeeklyOccurrences(
   return out;
 }
 
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchCalendarIcs(url: string, attempts = 3) {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+
+    try {
+      const bust = `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}-${attempt}`;
+      const res = await fetch(bust, {
+        redirect: "follow",
+        signal: controller.signal,
+        headers: {
+          accept: "text/calendar,text/plain,*/*",
+        },
+      });
+
+      clearTimeout(timeout);
+
+      if (!res.ok) {
+        throw new Error(`Calendar fetch failed: ${res.status}`);
+      }
+
+      const ics = await res.text();
+
+      if (!ics || !ics.includes("BEGIN:VEVENT")) {
+        throw new Error("Calendar response did not include VEVENT data");
+      }
+
+      return ics;
+    } catch (error) {
+      clearTimeout(timeout);
+      lastError = error;
+
+      if (attempt < attempts) {
+        await delay(700 * attempt);
+      }
+    }
+  }
+
+  throw lastError;
+}
+
 let upcomingEvents: EventItem[] = [];
 
 try {
-  const res = await fetch(calendarIcsUrl);
-  const ics = await res.text();
-
+  const ics = await fetchCalendarIcs(calendarIcsUrl, 3);
   const blocks = getBlocks(ics);
+
+  if (!blocks.length) {
+    throw new Error("Calendar parsed successfully, but no VEVENT blocks were found");
+  }
 
   const overriddenKeys = new Set(
     blocks.flatMap((block) => {
