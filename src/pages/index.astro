@@ -16,6 +16,7 @@ const doublesLinks = [
 ];
 
 const lostFoundUrl = "/lost-and-found";
+const handicapTagsUrl = "/singles/handicaps-tags";
 const udiscLeagueUrl = "https://udisc.com/leagues/lufbery-league";
 
 const calendarIcsUrl =
@@ -70,18 +71,6 @@ function getFirstObjectArray(source: WeeklyResultItem | null, keys: string[]) {
   return [];
 }
 
-function formatLatestResultDate(title: string) {
-  const parts = getEventDateParts(title);
-  if (!parts) return "";
-
-  return new Intl.DateTimeFormat("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(parts.year, parts.month - 1, parts.day));
-}
-
 const latestResult =
   [...weeklyResults]
     .filter((event) => String(event?.title || "").trim())
@@ -89,7 +78,6 @@ const latestResult =
   null;
 
 const latestResultHref = String(latestResult?.url || "/singles/weekly-results");
-const latestResultDate = latestResult ? formatLatestResultDate(String(latestResult.title || "")) : "";
 
 const latestResultMainRows = getFirstObjectArray(latestResult, [
   "rows",
@@ -99,6 +87,7 @@ const latestResultMainRows = getFirstObjectArray(latestResult, [
   "players",
   "scores",
 ]);
+
 const latestResultWorkingRows = getFirstObjectArray(latestResult, [
   "workingRows",
   "workingToHandicapRows",
@@ -526,9 +515,22 @@ try {
   <style>
     .home-grid {
       display: grid;
-      grid-template-columns: 0.95fr 1.08fr 0.97fr;
+      grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.9fr) minmax(250px, 0.78fr);
       gap: 18px;
       align-items: start;
+    }
+
+    .left-stack,
+    .middle-stack,
+    .right-stack {
+      display: grid;
+      gap: 18px;
+      align-content: start;
+      min-width: 0;
+    }
+
+    .mobile-quick-row {
+      display: none;
     }
 
     .card,
@@ -541,6 +543,7 @@ try {
 
     .card {
       padding: 22px 20px 18px;
+      min-width: 0;
     }
 
     .card h2 {
@@ -637,17 +640,17 @@ try {
     }
 
     .latest-result-card {
-      padding-bottom: 12px;
+      min-width: 0;
     }
 
     .result-title-link {
       display: inline-block;
       color: #2563eb;
       text-decoration: none;
-      font-size: 1.5rem;
+      font-size: 1.45rem;
       font-weight: 700;
       line-height: 1.15;
-      margin: 0 0 6px;
+      margin: 0 0 12px;
     }
 
     .result-title-link:hover {
@@ -655,18 +658,34 @@ try {
     }
 
     .result-title-plain {
-      margin: 0 0 6px;
-      font-size: 1.5rem;
+      margin: 0 0 12px;
+      font-size: 1.45rem;
       font-weight: 700;
       line-height: 1.15;
       color: var(--text);
     }
 
-    .result-date {
-      margin: 0 0 14px;
-      color: var(--muted);
-      font-size: 0.95rem;
-      line-height: 1.4;
+    .result-collapse {
+      position: relative;
+      overflow: hidden;
+      max-height: 760px;
+      transition: max-height 0.22s ease;
+    }
+
+    .latest-result-card.is-expanded .result-collapse {
+      max-height: none;
+      overflow: visible;
+    }
+
+    .latest-result-card.has-overflow:not(.is-expanded) .result-collapse::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 76px;
+      background: linear-gradient(to bottom, rgba(255,255,255,0), var(--card) 88%);
+      pointer-events: none;
     }
 
     .result-table-block {
@@ -727,6 +746,34 @@ try {
       line-height: 1.3;
     }
 
+    .result-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .result-toggle {
+      appearance: none;
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      background: var(--button-bg, #f3f5f8);
+      color: var(--text);
+      font: inherit;
+      font-weight: 600;
+      line-height: 1.2;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: background 0.12s ease, transform 0.12s ease;
+    }
+
+    .result-toggle:hover {
+      background: var(--button-bg-hover, #eceff4);
+      transform: translateY(-1px);
+    }
+
     .result-fallback-link {
       display: inline-flex;
       align-items: center;
@@ -738,11 +785,6 @@ try {
 
     .result-fallback-link:hover {
       text-decoration: underline;
-    }
-
-    .event-list {
-      display: grid;
-      gap: 10px;
     }
 
     .event-item {
@@ -773,96 +815,23 @@ try {
       line-height: 1.4;
     }
 
-    .udisc-card {
-      grid-column: 3;
-      grid-row: 1;
-    }
-
-    .lostfound-card {
-      grid-column: 3;
-      grid-row: 2;
-    }
-
-    .latest-result-card {
-      grid-column: 1;
-      grid-row: 1 / span 3;
-    }
-
-    .singles-card {
-      grid-column: 2;
-      grid-row: 1;
-    }
-
-    .doubles-card {
-      grid-column: 2;
-      grid-row: 2;
-    }
-
-    .events-card {
-      grid-column: 3;
-      grid-row: 3;
-    }
-
-    @media (max-width: 1180px) {
-      .home-grid {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .udisc-card,
-      .lostfound-card,
-      .latest-result-card,
-      .singles-card,
-      .doubles-card,
-      .events-card {
-        grid-column: auto;
-        grid-row: auto;
-      }
-
-      .udisc-card {
-        order: 1;
-      }
-
-      .lostfound-card {
-        order: 2;
-      }
-
-      .latest-result-card {
-        order: 3;
-      }
-
-      .singles-card {
-        order: 4;
-      }
-
-      .doubles-card {
-        order: 5;
-      }
-
-      .events-card {
-        order: 6;
-      }
-
-      .latest-result-card {
-        grid-column: 1 / -1;
-      }
-
-      .events-card {
-        grid-column: 1 / -1;
-      }
-    }
-
     @media (max-width: 900px) {
       .home-grid {
         grid-template-columns: 1fr;
       }
 
-      .udisc-card,
-      .lostfound-card,
-      .latest-result-card,
-      .singles-card,
-      .doubles-card,
-      .events-card {
-        grid-column: auto;
+      .mobile-quick-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .desktop-lostfound {
+        display: none;
+      }
+
+      .result-collapse {
+        max-height: 320px;
       }
     }
 
@@ -876,9 +845,13 @@ try {
         padding: 12px 14px;
       }
 
+      .mobile-quick-row {
+        gap: 10px;
+      }
+
       .result-title-link,
       .result-title-plain {
-        font-size: 1.28rem;
+        font-size: 1.22rem;
       }
 
       .result-table {
@@ -903,156 +876,252 @@ try {
       .result-table td:last-child {
         padding-right: 10px;
       }
+
+      .result-actions {
+        align-items: stretch;
+      }
+
+      .result-toggle,
+      .result-fallback-link {
+        width: 100%;
+      }
     }
   </style>
 
   <section class="home-grid">
-    <a
-      class="utility-card udisc-card"
-      href={udiscLeagueUrl}
-      target="_blank"
-      rel="noopener"
-      aria-label="UDisc"
-      title="UDisc"
-    >
-      <img class="udisc-logo-only" src="/udisc-logo.png" alt="UDisc" />
-    </a>
+    <div class="mobile-quick-row">
+      <a class="utility-card" href={lostFoundUrl}>
+        <span class="utility-card-text">Lost &amp; Found</span>
+      </a>
 
-    <a class="utility-card lostfound-card" href={lostFoundUrl}>
-      <span class="utility-card-text">Lost &amp; Found</span>
-    </a>
+      <a class="utility-card" href={handicapTagsUrl}>
+        <span class="utility-card-text">Handicaps &amp; Tags</span>
+      </a>
+    </div>
 
-    <div class="card latest-result-card">
-      <h2>Latest League Result</h2>
+    <div class="left-stack">
+      <div class="card latest-result-card" id="latestResultCard">
+        <h2>Latest League Result</h2>
 
-      {latestResult ? (
-        <>
-          {latestResult.url ? (
-            <a class="result-title-link" href={latestResultHref}>
-              {latestResult.title}
-            </a>
-          ) : (
-            <p class="result-title-plain">{latestResult.title}</p>
-          )}
+        {latestResult ? (
+          <>
+            {latestResult.url ? (
+              <a class="result-title-link" href={latestResultHref}>
+                {latestResult.title}
+              </a>
+            ) : (
+              <p class="result-title-plain">{latestResult.title}</p>
+            )}
 
-          {latestResultDate ? <p class="result-date">{latestResultDate}</p> : null}
-
-          {hasLatestResultTable ? (
-            <>
-              {latestResultMainRows.length > 0 ? (
-                <div class="result-table-block">
-                  <div class="result-table-wrap">
-                    <table class="result-table">
-                      <thead>
-                        <tr>
-                          {latestResultMainColumns.map((column) => (
-                            <th>{column.label}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {latestResultMainRows.map((row) => (
-                          <tr>
-                            {latestResultMainColumns.map((column) => (
-                              <td>{getCellText(row, column.key)}</td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ) : null}
-
-              {latestResultWorkingRows.length > 0 ? (
+            <div class="result-collapse" id="latestResultCollapse">
+              {hasLatestResultTable ? (
                 <>
-                  <p class="working-heading">Working to a handicap</p>
-                  <div class="result-table-wrap">
-                    <table class="result-table">
-                      <thead>
-                        <tr>
-                          {latestResultWorkingColumns.map((column) => (
-                            <th>{column.label}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {latestResultWorkingRows.map((row) => (
-                          <tr>
-                            {latestResultWorkingColumns.map((column) => (
-                              <td>{getCellText(row, column.key)}</td>
+                  {latestResultMainRows.length > 0 ? (
+                    <div class="result-table-block">
+                      <div class="result-table-wrap">
+                        <table class="result-table">
+                          <thead>
+                            <tr>
+                              {latestResultMainColumns.map((column) => (
+                                <th>{column.label}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {latestResultMainRows.map((row) => (
+                              <tr>
+                                {latestResultMainColumns.map((column) => (
+                                  <td>{getCellText(row, column.key)}</td>
+                                ))}
+                              </tr>
                             ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {latestResultWorkingRows.length > 0 ? (
+                    <>
+                      <p class="working-heading">Working to a handicap</p>
+                      <div class="result-table-wrap">
+                        <table class="result-table">
+                          <thead>
+                            <tr>
+                              {latestResultWorkingColumns.map((column) => (
+                                <th>{column.label}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {latestResultWorkingRows.map((row) => (
+                              <tr>
+                                {latestResultWorkingColumns.map((column) => (
+                                  <td>{getCellText(row, column.key)}</td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  ) : null}
                 </>
-              ) : null}
-            </>
-          ) : (
-            <p class="subtle-note">
-              The latest result is available, but the homepage summary data does not include the full
-              score table.
-            </p>
-          )}
+              ) : (
+                <p class="subtle-note">
+                  The latest result is available, but the homepage summary data does not include the full
+                  score table.
+                </p>
+              )}
+            </div>
 
-          <a class="result-fallback-link" href="/singles/weekly-results">
-            View all weekly results <span aria-hidden="true">→</span>
-          </a>
-        </>
-      ) : (
-        <p class="subtle-note">No recent weekly results are available right now.</p>
-      )}
-    </div>
+            <div class="result-actions">
+              <button
+                type="button"
+                class="result-toggle"
+                id="latestResultToggle"
+                aria-controls="latestResultCollapse"
+                aria-expanded="false"
+                hidden
+              >
+                Expand result
+              </button>
 
-    <div class="card singles-card">
-      <h2>Singles</h2>
-      <p class="subtle-note">Thursday evenings April-September</p>
-      <div class="link-list">
-        {singlesLinks.map((item) => (
-          <a class="link-item" href={item.href}>
-            <span class="link-item-label">
-              <span class="link-item-text">{item.label}</span>
-            </span>
-            <span class="link-arrow" aria-hidden="true">→</span>
-          </a>
-        ))}
+              <a class="result-fallback-link" href="/singles/weekly-results">
+                View all weekly results <span aria-hidden="true">→</span>
+              </a>
+            </div>
+          </>
+        ) : (
+          <p class="subtle-note">No recent weekly results are available right now.</p>
+        )}
       </div>
     </div>
 
-    <div class="card doubles-card">
-      <h2>Doubles</h2>
-      <p class="subtle-note">Sundays, 9 a.m., year round</p>
-      <div class="link-list">
-        {doublesLinks.map((item) => (
-          <a class="link-item" href={item.href}>
-            <span class="link-item-label">
-              <span class="link-item-text">{item.label}</span>
-            </span>
-            <span class="link-arrow" aria-hidden="true">→</span>
-          </a>
-        ))}
-      </div>
-    </div>
-
-    <div class="card events-card">
-      <h2>Upcoming Events</h2>
-      {upcomingEvents.length > 0 ? (
-        <div class="event-list">
-          {upcomingEvents.map((event) => (
-            <article class="event-item">
-              <p class="event-date">
-                {event.displayDate} · {event.displayTime}
-              </p>
-              <p class="event-title">{event.title}</p>
-              {event.location ? <p class="event-meta">{event.location}</p> : null}
-            </article>
+    <div class="middle-stack">
+      <div class="card singles-card">
+        <h2>Singles</h2>
+        <p class="subtle-note">Thursday evenings April-September</p>
+        <div class="link-list">
+          {singlesLinks.map((item) => (
+            <a class="link-item" href={item.href}>
+              <span class="link-item-label">
+                <span class="link-item-text">{item.label}</span>
+              </span>
+              <span class="link-arrow" aria-hidden="true">→</span>
+            </a>
           ))}
         </div>
-      ) : (
-        <p class="subtle-note">No upcoming events are available right now.</p>
-      )}
+      </div>
+
+      <div class="card doubles-card">
+        <h2>Doubles</h2>
+        <p class="subtle-note">Sundays, 9 a.m., year round</p>
+        <div class="link-list">
+          {doublesLinks.map((item) => (
+            <a class="link-item" href={item.href}>
+              <span class="link-item-label">
+                <span class="link-item-text">{item.label}</span>
+              </span>
+              <span class="link-arrow" aria-hidden="true">→</span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <div class="right-stack">
+      <a
+        class="utility-card udisc-card"
+        href={udiscLeagueUrl}
+        target="_blank"
+        rel="noopener"
+        aria-label="UDisc"
+        title="UDisc"
+      >
+        <img class="udisc-logo-only" src="/udisc-logo.png" alt="UDisc" />
+      </a>
+
+      <a class="utility-card desktop-lostfound" href={lostFoundUrl}>
+        <span class="utility-card-text">Lost &amp; Found</span>
+      </a>
+
+      <div class="card events-card">
+        <h2>Upcoming Events</h2>
+        {upcomingEvents.length > 0 ? (
+          <div class="event-list">
+            {upcomingEvents.map((event) => (
+              <article class="event-item">
+                <p class="event-date">
+                  {event.displayDate} · {event.displayTime}
+                </p>
+                <p class="event-title">{event.title}</p>
+                {event.location ? <p class="event-meta">{event.location}</p> : null}
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p class="subtle-note">No upcoming events are available right now.</p>
+        )}
+      </div>
     </div>
   </section>
+
+  <script>
+    (() => {
+      const card = document.getElementById("latestResultCard");
+      const collapse = document.getElementById("latestResultCollapse");
+      const toggle = document.getElementById("latestResultToggle");
+
+      if (!card || !collapse || !toggle) return;
+
+      function updateToggleState() {
+        const wasExpanded = card.classList.contains("is-expanded");
+
+        card.classList.remove("is-expanded");
+
+        const overflowing = collapse.scrollHeight > collapse.clientHeight + 4;
+
+        card.classList.toggle("has-overflow", overflowing);
+
+        if (!overflowing) {
+          card.classList.add("is-expanded");
+          toggle.hidden = true;
+          toggle.setAttribute("aria-expanded", "true");
+          return;
+        }
+
+        if (wasExpanded) {
+          card.classList.add("is-expanded");
+        }
+
+        toggle.hidden = false;
+        toggle.textContent = card.classList.contains("is-expanded") ? "Show less" : "Expand result";
+        toggle.setAttribute(
+          "aria-expanded",
+          card.classList.contains("is-expanded") ? "true" : "false"
+        );
+      }
+
+      toggle.addEventListener("click", () => {
+        card.classList.toggle("is-expanded");
+        toggle.textContent = card.classList.contains("is-expanded") ? "Show less" : "Expand result";
+        toggle.setAttribute(
+          "aria-expanded",
+          card.classList.contains("is-expanded") ? "true" : "false"
+        );
+      });
+
+      if ("ResizeObserver" in window) {
+        const ro = new ResizeObserver(() => updateToggleState());
+        ro.observe(collapse);
+        ro.observe(document.body);
+      } else {
+        window.addEventListener("resize", updateToggleState);
+      }
+
+      window.addEventListener("load", updateToggleState);
+      updateToggleState();
+    })();
+  </script>
 </SiteLayout>
