@@ -381,7 +381,12 @@ export const GET: APIRoute = async () => {
         .values()
     ).slice(0, 4);
 
-    return new Response(JSON.stringify({ upcomingEvents }), {
+    return new Response(
+  JSON.stringify({
+    upcomingEvents,
+    debug: "new-calendar-code-is-live",
+  }),
+  {
       status: 200,
       headers: {
         "content-type": "application/json; charset=utf-8",
@@ -389,20 +394,20 @@ export const GET: APIRoute = async () => {
       },
     });
   } catch (error) {
-    console.error("Calendar API failed:", error);
+  console.error("Calendar API failed:", error);
 
-    return new Response(
-      JSON.stringify({
-        upcomingEvents: [],
-        error: error instanceof Error ? error.message : String(error),
-      }),
-      {
-        status: 200,
-        headers: {
-          "content-type": "application/json; charset=utf-8",
-          "cache-control": "no-store",
-        },
-      }
-    );
-  }
-};
+  return new Response(
+    JSON.stringify({
+      upcomingEvents: [],
+      debug: "catch-block-hit",
+      error: error instanceof Error ? error.message : String(error),
+    }),
+    {
+      status: 200,
+      headers: {
+        "content-type": "application/json; charset=utf-8",
+        "cache-control": "no-store",
+      },
+    }
+  );
+}
