@@ -5,6 +5,7 @@ import cloudflare from "@astrojs/cloudflare";
 
 export default defineConfig({
   site: "https://lufberydiscgolf.com",
+  output: "server",
   integrations: [sitemap()],
   adapter: cloudflare(),
 });
