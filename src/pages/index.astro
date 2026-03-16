@@ -1,5 +1,6 @@
 ---
 import SiteLayout from "../layouts/SiteLayout.astro";
+import { getWeeklyResults } from "../lib/data";
 
 const singlesLinks = [
   { href: "/singles/handicaps-tags", label: "Handicaps & Tags" },
@@ -14,12 +15,59 @@ const doublesLinks = [
   { href: "/doubles/aces", label: "Aces" },
 ];
 
-const logoUrl = "https://lufberydiscgolf.com/logo.png";
 const lostFoundUrl = "/lost-and-found";
 const udiscLeagueUrl = "https://udisc.com/leagues/lufbery-league";
 
 const calendarIcsUrl =
   "https://calendar.google.com/calendar/ical/600330c48796b6025429fafaf3799e789f394b9d551c9ac96938c36e31444740%40group.calendar.google.com/public/basic.ics";
+
+type WeeklyResultItem = {
+  title?: string;
+  url?: string;
+  kind?: string;
+};
+
+const weeklyResults = getWeeklyResults() as WeeklyResultItem[];
+
+function getEventDateParts(title: string) {
+  const match = String(title || "").match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if (!match) return null;
+
+  const month = Number(match[1]);
+  const day = Number(match[2]);
+  let year = Number(match[3]);
+
+  if (year < 100) year += 2000;
+
+  return { month, day, year };
+}
+
+function getEventTimestamp(title: string) {
+  const parts = getEventDateParts(title);
+  if (!parts) return 0;
+  return new Date(parts.year, parts.month - 1, parts.day).getTime();
+}
+
+function formatLatestResultDate(title: string) {
+  const parts = getEventDateParts(title);
+  if (!parts) return "";
+
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(parts.year, parts.month - 1, parts.day));
+}
+
+const latestResult =
+  [...weeklyResults]
+    .filter((event) => String(event?.title || "").trim())
+    .sort((a, b) => getEventTimestamp(b.title || "") - getEventTimestamp(a.title || ""))
+    [0] || null;
+
+const latestResultHref = latestResult?.url || "/singles/weekly-results";
+const latestResultDate = latestResult ? formatLatestResultDate(latestResult.title || "") : "";
 
 const WEEKDAY_MAP = {
   SU: 0,
@@ -361,13 +409,18 @@ try {
   <style>
     .home-grid {
       display: grid;
-      grid-template-columns: 1.1fr 1fr;
+      grid-template-columns: 0.85fr 1.1fr 1fr;
       gap: 18px;
+      align-items: start;
     }
+
+    .recent-column,
     .section-stack {
       display: grid;
       gap: 18px;
+      align-content: start;
     }
+
     .card {
       background: var(--card);
       border: 1px solid var(--line-soft);
@@ -375,88 +428,239 @@ try {
       box-shadow: var(--shadow);
       padding: 22px 20px 18px;
     }
+
     .card h2 {
       margin: 0 0 8px;
       font-size: 1.2rem;
       font-weight: 700;
       line-height: 1.2;
     }
+
     .subtle-note {
       color: var(--muted);
       font-size: 0.97rem;
       line-height: 1.6;
       margin: 0 0 14px;
     }
+
     .link-list,
-    .utility-buttons {
-      display: grid;
-      gap: 10px;
-    }
-    .link-item {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 46px;
-      padding: 10px 14px;
-      border: 1px solid var(--line-soft);
-      border-radius: 7px;
-      background: var(--button-bg, #f3f5f8);
-      font-weight: 500;
-      text-align: center;
-      transition: background 0.12s ease, transform 0.12s ease;
-    }
-    .link-item:hover {
-      background: var(--button-bg-hover, #eceff4);
-      transform: translateY(-1px);
-    }
-    .utility-buttons .link-item {
-      background: var(--card);
-    }
-    .utility-buttons .link-item:hover {
-      background: var(--button-bg, #f3f5f8);
-    }
+    .utility-buttons,
     .event-list {
       display: grid;
       gap: 10px;
     }
+
+    .link-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      min-height: 46px;
+      padding: 12px 16px;
+      border: 1px solid var(--line-soft);
+      border-radius: 7px;
+      background: var(--button-bg, #f3f5f8);
+      font-weight: 500;
+      text-align: left;
+      transition: background 0.12s ease, transform 0.12s ease;
+    }
+
+    .link-item:hover {
+      background: var(--button-bg-hover, #eceff4);
+      transform: translateY(-1px);
+    }
+
+    .link-item-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .link-item-text {
+      line-height: 1.35;
+    }
+
+    .link-arrow {
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1;
+      flex: 0 0 auto;
+      transition: transform 0.12s ease, color 0.12s ease;
+    }
+
+    .link-item:hover .link-arrow {
+      transform: translateX(2px);
+      color: var(--text);
+    }
+
+    .utility-buttons .link-item {
+      background: var(--card);
+    }
+
+    .utility-buttons .link-item:hover {
+      background: var(--button-bg, #f3f5f8);
+    }
+
+    .udisc-logo {
+      width: 20px;
+      height: 20px;
+      object-fit: contain;
+      display: block;
+      flex: 0 0 auto;
+    }
+
+    .recent-result-card {
+      min-height: 100%;
+    }
+
+    .result-kicker {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    .result-hero {
+      display: block;
+      padding: 16px;
+      border: 1px solid var(--line-soft);
+      border-radius: 10px;
+      background: var(--button-bg, #f3f5f8);
+      text-decoration: none;
+      transition: background 0.12s ease, transform 0.12s ease;
+    }
+
+    .result-hero:hover {
+      background: var(--button-bg-hover, #eceff4);
+      transform: translateY(-1px);
+    }
+
+    .result-date {
+      margin: 0 0 8px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      line-height: 1.3;
+      color: var(--text);
+    }
+
+    .result-title {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      line-height: 1.45;
+      color: var(--text);
+    }
+
+    .result-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .result-link:hover {
+      text-decoration: underline;
+    }
+
     .event-item {
       border: 1px solid var(--line-soft);
       border-radius: 7px;
       padding: 12px 14px;
       background: var(--button-bg, #f3f5f8);
     }
+
     .event-date {
       margin: 0 0 6px;
       font-weight: 700;
       font-size: 0.94rem;
       line-height: 1.2;
     }
+
     .event-title {
       margin: 0 0 3px;
       font-weight: 400;
       font-size: 0.96rem;
       line-height: 1.35;
     }
+
     .event-meta {
       margin: 0;
       color: var(--muted);
       font-size: 0.88rem;
       line-height: 1.4;
     }
+
+    @media (max-width: 1200px) {
+      .home-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .recent-column {
+        grid-column: 1 / -1;
+      }
+    }
+
     @media (max-width: 900px) {
       .home-grid {
         grid-template-columns: 1fr;
+      }
+
+      .main-links {
+        order: 1;
+      }
+
+      .recent-column {
+        order: 2;
+      }
+
+      .right-rail {
+        order: 3;
       }
     }
   </style>
 
   <section class="home-grid">
-    <div class="section-stack">
+    <div class="recent-column">
+      <div class="card recent-result-card">
+        <h2>Latest League Result</h2>
+
+        {latestResult ? (
+          <>
+            <p class="result-kicker">Most recent entry from Weekly Results</p>
+
+            <a class="result-hero" href={latestResultHref}>
+              {latestResultDate ? <p class="result-date">{latestResultDate}</p> : null}
+              <p class="result-title">{latestResult.title}</p>
+            </a>
+
+            <a class="result-link" href="/singles/weekly-results">
+              See all weekly results <span aria-hidden="true">→</span>
+            </a>
+          </>
+        ) : (
+          <p class="subtle-note">No recent weekly results are available right now.</p>
+        )}
+      </div>
+    </div>
+
+    <div class="section-stack main-links">
       <div class="card">
         <h2>Singles</h2>
         <p class="subtle-note">Thursday evenings April-September</p>
         <div class="link-list">
-          {singlesLinks.map((item) => <a class="link-item" href={item.href}>{item.label}</a>)}
+          {singlesLinks.map((item) => (
+            <a class="link-item" href={item.href}>
+              <span class="link-item-label">
+                <span class="link-item-text">{item.label}</span>
+              </span>
+              <span class="link-arrow" aria-hidden="true">→</span>
+            </a>
+          ))}
         </div>
       </div>
 
@@ -464,15 +668,34 @@ try {
         <h2>Doubles</h2>
         <p class="subtle-note">Sundays, 9 a.m., year round</p>
         <div class="link-list">
-          {doublesLinks.map((item) => <a class="link-item" href={item.href}>{item.label}</a>)}
+          {doublesLinks.map((item) => (
+            <a class="link-item" href={item.href}>
+              <span class="link-item-label">
+                <span class="link-item-text">{item.label}</span>
+              </span>
+              <span class="link-arrow" aria-hidden="true">→</span>
+            </a>
+          ))}
         </div>
       </div>
     </div>
 
-    <div class="section-stack">
+    <div class="section-stack right-rail">
       <div class="utility-buttons">
-        <a class="link-item" href={lostFoundUrl}>Lost &amp; Found</a>
-        <a class="link-item" href={udiscLeagueUrl} target="_blank" rel="noopener">Lufbery on UDisc</a>
+        <a class="link-item" href={lostFoundUrl}>
+          <span class="link-item-label">
+            <span class="link-item-text">Lost &amp; Found</span>
+          </span>
+          <span class="link-arrow" aria-hidden="true">→</span>
+        </a>
+
+        <a class="link-item" href={udiscLeagueUrl} target="_blank" rel="noopener">
+          <span class="link-item-label">
+            <img class="udisc-logo" src="/udisc-logo.png" alt="" />
+            <span class="link-item-text">Lufbery</span>
+          </span>
+          <span class="link-arrow" aria-hidden="true">→</span>
+        </a>
       </div>
 
       <div class="card">
