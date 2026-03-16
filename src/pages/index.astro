@@ -21,10 +21,10 @@ const udiscLeagueUrl = "https://udisc.com/leagues/lufbery-league";
 const calendarIcsUrl =
   "https://calendar.google.com/calendar/ical/600330c48796b6025429fafaf3799e789f394b9d551c9ac96938c36e31444740%40group.calendar.google.com/public/basic.ics";
 
-type WeeklyResultItem = {
+type LooseRow = Record<string, unknown>;
+type WeeklyResultItem = Record<string, unknown> & {
   title?: string;
   url?: string;
-  kind?: string;
 };
 
 const weeklyResults = getWeeklyResults() as WeeklyResultItem[];
@@ -48,6 +48,28 @@ function getEventTimestamp(title: string) {
   return new Date(parts.year, parts.month - 1, parts.day).getTime();
 }
 
+function normalizeKey(value: string) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function asObjectArray(value: unknown): LooseRow[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item) => item && typeof item === "object") as LooseRow[];
+}
+
+function getFirstObjectArray(source: WeeklyResultItem | null, keys: string[]) {
+  if (!source) return [];
+
+  for (const key of keys) {
+    const rows = asObjectArray(source[key]);
+    if (rows.length) return rows;
+  }
+
+  return [];
+}
+
 function formatLatestResultDate(title: string) {
   const parts = getEventDateParts(title);
   if (!parts) return "";
@@ -63,11 +85,106 @@ function formatLatestResultDate(title: string) {
 const latestResult =
   [...weeklyResults]
     .filter((event) => String(event?.title || "").trim())
-    .sort((a, b) => getEventTimestamp(b.title || "") - getEventTimestamp(a.title || ""))
-    [0] || null;
+    .sort((a, b) => getEventTimestamp(String(b.title || "")) - getEventTimestamp(String(a.title || "")))[0] ||
+  null;
 
-const latestResultHref = latestResult?.url || "/singles/weekly-results";
-const latestResultDate = latestResult ? formatLatestResultDate(latestResult.title || "") : "";
+const latestResultHref = String(latestResult?.url || "/singles/weekly-results");
+const latestResultDate = latestResult ? formatLatestResultDate(String(latestResult.title || "")) : "";
+
+const latestResultMainRows = getFirstObjectArray(latestResult, [
+  "rows",
+  "results",
+  "tableRows",
+  "mainRows",
+  "players",
+  "scores",
+]);
+const latestResultWorkingRows = getFirstObjectArray(latestResult, [
+  "workingRows",
+  "workingToHandicapRows",
+  "handicapRows",
+  "provisionalRows",
+  "unratedRows",
+]);
+
+type ResolvedColumn = {
+  key: string;
+  label: string;
+};
+
+const MAIN_COLUMN_DEFS = [
+  { label: "Name", aliases: ["name", "player"] },
+  { label: "Raw", aliases: ["raw", "score", "gross"] },
+  { label: "HCP.", aliases: ["hcp", "handicap"] },
+  { label: "Net", aliases: ["net"] },
+  { label: "Payout", aliases: ["payout", "pay"] },
+  { label: "OVR", aliases: ["ovr", "overall"] },
+  { label: "CTP", aliases: ["ctp"] },
+];
+
+const WORKING_COLUMN_DEFS = [
+  { label: "Name", aliases: ["name", "player"] },
+  { label: "Raw", aliases: ["raw", "score", "gross"] },
+];
+
+function humanizeKey(key: string) {
+  const cleaned = String(key || "").replace(/[_-]+/g, " ").trim();
+  if (!cleaned) return "";
+  return cleaned
+    .split(/\s+/)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function resolveColumns(rows: LooseRow[], defs: { label: string; aliases: string[] }[]) {
+  const keyMap = new Map<string, string>();
+
+  rows.forEach((row) => {
+    Object.keys(row).forEach((key) => {
+      const normalized = normalizeKey(key);
+      if (normalized && !keyMap.has(normalized)) keyMap.set(normalized, key);
+    });
+  });
+
+  const resolved: ResolvedColumn[] = [];
+  const used = new Set<string>();
+
+  defs.forEach((def) => {
+    const actualKey = def.aliases
+      .map((alias) => keyMap.get(normalizeKey(alias)))
+      .find(Boolean);
+
+    if (actualKey && !used.has(actualKey)) {
+      used.add(actualKey);
+      resolved.push({ key: actualKey, label: def.label });
+    }
+  });
+
+  rows.forEach((row) => {
+    Object.keys(row).forEach((key) => {
+      if (!used.has(key)) {
+        used.add(key);
+        resolved.push({ key, label: humanizeKey(key) });
+      }
+    });
+  });
+
+  return resolved;
+}
+
+const latestResultMainColumns = resolveColumns(latestResultMainRows, MAIN_COLUMN_DEFS);
+const latestResultWorkingColumns = resolveColumns(latestResultWorkingRows, WORKING_COLUMN_DEFS);
+
+function getCellText(row: LooseRow, key: string) {
+  const value = row[key];
+
+  if (value === null || value === undefined) return "";
+  if (Array.isArray(value)) return value.map((item) => String(item ?? "")).join(", ");
+  return String(value);
+}
+
+const hasLatestResultTable =
+  latestResultMainRows.length > 0 || latestResultWorkingRows.length > 0;
 
 const WEEKDAY_MAP = {
   SU: 0,
@@ -409,23 +526,20 @@ try {
   <style>
     .home-grid {
       display: grid;
-      grid-template-columns: 0.85fr 1.1fr 1fr;
+      grid-template-columns: 0.95fr 1.08fr 0.97fr;
       gap: 18px;
       align-items: start;
     }
 
-    .recent-column,
-    .section-stack {
-      display: grid;
-      gap: 18px;
-      align-content: start;
-    }
-
-    .card {
+    .card,
+    .utility-card {
       background: var(--card);
       border: 1px solid var(--line-soft);
       border-radius: 12px;
       box-shadow: var(--shadow);
+    }
+
+    .card {
       padding: 22px 20px 18px;
     }
 
@@ -444,7 +558,6 @@ try {
     }
 
     .link-list,
-    .utility-buttons,
     .event-list {
       display: grid;
       gap: 10px;
@@ -495,76 +608,141 @@ try {
       color: var(--text);
     }
 
-    .utility-buttons .link-item {
-      background: var(--card);
-    }
-
-    .utility-buttons .link-item:hover {
-      background: var(--button-bg, #f3f5f8);
-    }
-
-    .udisc-logo {
-      width: 20px;
-      height: 20px;
-      object-fit: contain;
-      display: block;
-      flex: 0 0 auto;
-    }
-
-    .recent-result-card {
-      min-height: 100%;
-    }
-
-    .result-kicker {
-      margin: 0 0 12px;
-      color: var(--muted);
-      font-size: 0.92rem;
-      line-height: 1.5;
-    }
-
-    .result-hero {
-      display: block;
-      padding: 16px;
-      border: 1px solid var(--line-soft);
-      border-radius: 10px;
-      background: var(--button-bg, #f3f5f8);
+    .utility-card {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 64px;
+      padding: 14px 16px;
       text-decoration: none;
       transition: background 0.12s ease, transform 0.12s ease;
     }
 
-    .result-hero:hover {
-      background: var(--button-bg-hover, #eceff4);
+    .utility-card:hover {
+      background: var(--button-bg, #f3f5f8);
       transform: translateY(-1px);
     }
 
-    .result-date {
-      margin: 0 0 8px;
-      font-size: 0.92rem;
-      font-weight: 700;
+    .utility-card-text {
+      font-weight: 500;
       line-height: 1.3;
+      text-align: center;
+    }
+
+    .udisc-logo-only {
+      display: block;
+      height: 20px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .latest-result-card {
+      padding-bottom: 12px;
+    }
+
+    .result-title-link {
+      display: inline-block;
+      color: #2563eb;
+      text-decoration: none;
+      font-size: 1.5rem;
+      font-weight: 700;
+      line-height: 1.15;
+      margin: 0 0 6px;
+    }
+
+    .result-title-link:hover {
+      text-decoration: underline;
+    }
+
+    .result-title-plain {
+      margin: 0 0 6px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      line-height: 1.15;
       color: var(--text);
     }
 
-    .result-title {
-      margin: 0;
+    .result-date {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+
+    .result-table-block {
+      margin-top: 4px;
+    }
+
+    .result-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line-soft);
+      border-radius: 12px;
+      background: var(--button-bg, #f3f5f8);
+    }
+
+    .result-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.96rem;
+    }
+
+    .result-table thead th {
+      padding: 10px 8px 8px;
+      border-bottom: 1px solid var(--line-soft);
+      color: var(--muted);
+      font-size: 0.73rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .result-table tbody td {
+      padding: 8px;
+      border-bottom: 1px solid var(--line-soft);
+      white-space: nowrap;
+      line-height: 1.25;
+    }
+
+    .result-table tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .result-table th:first-child,
+    .result-table td:first-child {
+      padding-left: 12px;
+    }
+
+    .result-table th:last-child,
+    .result-table td:last-child {
+      padding-right: 12px;
+    }
+
+    .working-heading {
+      margin: 16px 0 8px;
       font-size: 1rem;
-      font-weight: 600;
-      line-height: 1.45;
-      color: var(--text);
+      font-weight: 700;
+      color: var(--muted);
+      line-height: 1.3;
     }
 
-    .result-link {
+    .result-fallback-link {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      margin-top: 14px;
       font-weight: 600;
       color: var(--text);
       text-decoration: none;
     }
 
-    .result-link:hover {
+    .result-fallback-link:hover {
       text-decoration: underline;
+    }
+
+    .event-list {
+      display: grid;
+      gap: 10px;
     }
 
     .event-item {
@@ -595,12 +773,80 @@ try {
       line-height: 1.4;
     }
 
-    @media (max-width: 1200px) {
+    .udisc-card {
+      grid-column: 3;
+      grid-row: 1;
+    }
+
+    .lostfound-card {
+      grid-column: 3;
+      grid-row: 2;
+    }
+
+    .latest-result-card {
+      grid-column: 1;
+      grid-row: 1 / span 3;
+    }
+
+    .singles-card {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    .doubles-card {
+      grid-column: 2;
+      grid-row: 2;
+    }
+
+    .events-card {
+      grid-column: 3;
+      grid-row: 3;
+    }
+
+    @media (max-width: 1180px) {
       .home-grid {
         grid-template-columns: 1fr 1fr;
       }
 
-      .recent-column {
+      .udisc-card,
+      .lostfound-card,
+      .latest-result-card,
+      .singles-card,
+      .doubles-card,
+      .events-card {
+        grid-column: auto;
+        grid-row: auto;
+      }
+
+      .udisc-card {
+        order: 1;
+      }
+
+      .lostfound-card {
+        order: 2;
+      }
+
+      .latest-result-card {
+        order: 3;
+      }
+
+      .singles-card {
+        order: 4;
+      }
+
+      .doubles-card {
+        order: 5;
+      }
+
+      .events-card {
+        order: 6;
+      }
+
+      .latest-result-card {
+        grid-column: 1 / -1;
+      }
+
+      .events-card {
         grid-column: 1 / -1;
       }
     }
@@ -610,112 +856,203 @@ try {
         grid-template-columns: 1fr;
       }
 
-      .main-links {
-        order: 1;
+      .udisc-card,
+      .lostfound-card,
+      .latest-result-card,
+      .singles-card,
+      .doubles-card,
+      .events-card {
+        grid-column: auto;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .card {
+        padding: 18px 14px 14px;
       }
 
-      .recent-column {
-        order: 2;
+      .utility-card {
+        min-height: 58px;
+        padding: 12px 14px;
       }
 
-      .right-rail {
-        order: 3;
+      .result-title-link,
+      .result-title-plain {
+        font-size: 1.28rem;
+      }
+
+      .result-table {
+        font-size: 0.9rem;
+      }
+
+      .result-table thead th {
+        font-size: 0.68rem;
+        padding: 9px 6px 7px;
+      }
+
+      .result-table tbody td {
+        padding: 7px 6px;
+      }
+
+      .result-table th:first-child,
+      .result-table td:first-child {
+        padding-left: 10px;
+      }
+
+      .result-table th:last-child,
+      .result-table td:last-child {
+        padding-right: 10px;
       }
     }
   </style>
 
   <section class="home-grid">
-    <div class="recent-column">
-      <div class="card recent-result-card">
-        <h2>Latest League Result</h2>
+    <a
+      class="utility-card udisc-card"
+      href={udiscLeagueUrl}
+      target="_blank"
+      rel="noopener"
+      aria-label="UDisc"
+      title="UDisc"
+    >
+      <img class="udisc-logo-only" src="/udisc-logo.png" alt="UDisc" />
+    </a>
 
-        {latestResult ? (
-          <>
-            <p class="result-kicker">Most recent entry from Weekly Results</p>
+    <a class="utility-card lostfound-card" href={lostFoundUrl}>
+      <span class="utility-card-text">Lost &amp; Found</span>
+    </a>
 
-            <a class="result-hero" href={latestResultHref}>
-              {latestResultDate ? <p class="result-date">{latestResultDate}</p> : null}
-              <p class="result-title">{latestResult.title}</p>
+    <div class="card latest-result-card">
+      <h2>Latest League Result</h2>
+
+      {latestResult ? (
+        <>
+          {latestResult.url ? (
+            <a class="result-title-link" href={latestResultHref}>
+              {latestResult.title}
             </a>
+          ) : (
+            <p class="result-title-plain">{latestResult.title}</p>
+          )}
 
-            <a class="result-link" href="/singles/weekly-results">
-              See all weekly results <span aria-hidden="true">→</span>
-            </a>
-          </>
-        ) : (
-          <p class="subtle-note">No recent weekly results are available right now.</p>
-        )}
+          {latestResultDate ? <p class="result-date">{latestResultDate}</p> : null}
+
+          {hasLatestResultTable ? (
+            <>
+              {latestResultMainRows.length > 0 ? (
+                <div class="result-table-block">
+                  <div class="result-table-wrap">
+                    <table class="result-table">
+                      <thead>
+                        <tr>
+                          {latestResultMainColumns.map((column) => (
+                            <th>{column.label}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {latestResultMainRows.map((row) => (
+                          <tr>
+                            {latestResultMainColumns.map((column) => (
+                              <td>{getCellText(row, column.key)}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : null}
+
+              {latestResultWorkingRows.length > 0 ? (
+                <>
+                  <p class="working-heading">Working to a handicap</p>
+                  <div class="result-table-wrap">
+                    <table class="result-table">
+                      <thead>
+                        <tr>
+                          {latestResultWorkingColumns.map((column) => (
+                            <th>{column.label}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {latestResultWorkingRows.map((row) => (
+                          <tr>
+                            {latestResultWorkingColumns.map((column) => (
+                              <td>{getCellText(row, column.key)}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              ) : null}
+            </>
+          ) : (
+            <p class="subtle-note">
+              The latest result is available, but the homepage summary data does not include the full
+              score table.
+            </p>
+          )}
+
+          <a class="result-fallback-link" href="/singles/weekly-results">
+            View all weekly results <span aria-hidden="true">→</span>
+          </a>
+        </>
+      ) : (
+        <p class="subtle-note">No recent weekly results are available right now.</p>
+      )}
+    </div>
+
+    <div class="card singles-card">
+      <h2>Singles</h2>
+      <p class="subtle-note">Thursday evenings April-September</p>
+      <div class="link-list">
+        {singlesLinks.map((item) => (
+          <a class="link-item" href={item.href}>
+            <span class="link-item-label">
+              <span class="link-item-text">{item.label}</span>
+            </span>
+            <span class="link-arrow" aria-hidden="true">→</span>
+          </a>
+        ))}
       </div>
     </div>
 
-    <div class="section-stack main-links">
-      <div class="card">
-        <h2>Singles</h2>
-        <p class="subtle-note">Thursday evenings April-September</p>
-        <div class="link-list">
-          {singlesLinks.map((item) => (
-            <a class="link-item" href={item.href}>
-              <span class="link-item-label">
-                <span class="link-item-text">{item.label}</span>
-              </span>
-              <span class="link-arrow" aria-hidden="true">→</span>
-            </a>
-          ))}
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Doubles</h2>
-        <p class="subtle-note">Sundays, 9 a.m., year round</p>
-        <div class="link-list">
-          {doublesLinks.map((item) => (
-            <a class="link-item" href={item.href}>
-              <span class="link-item-label">
-                <span class="link-item-text">{item.label}</span>
-              </span>
-              <span class="link-arrow" aria-hidden="true">→</span>
-            </a>
-          ))}
-        </div>
+    <div class="card doubles-card">
+      <h2>Doubles</h2>
+      <p class="subtle-note">Sundays, 9 a.m., year round</p>
+      <div class="link-list">
+        {doublesLinks.map((item) => (
+          <a class="link-item" href={item.href}>
+            <span class="link-item-label">
+              <span class="link-item-text">{item.label}</span>
+            </span>
+            <span class="link-arrow" aria-hidden="true">→</span>
+          </a>
+        ))}
       </div>
     </div>
 
-    <div class="section-stack right-rail">
-      <div class="utility-buttons">
-        <a class="link-item" href={lostFoundUrl}>
-          <span class="link-item-label">
-            <span class="link-item-text">Lost &amp; Found</span>
-          </span>
-          <span class="link-arrow" aria-hidden="true">→</span>
-        </a>
-
-        <a class="link-item" href={udiscLeagueUrl} target="_blank" rel="noopener">
-          <span class="link-item-label">
-            <img class="udisc-logo" src="/udisc-logo.png" alt="" />
-            <span class="link-item-text">Lufbery</span>
-          </span>
-          <span class="link-arrow" aria-hidden="true">→</span>
-        </a>
-      </div>
-
-      <div class="card">
-        <h2>Upcoming Events</h2>
-        {upcomingEvents.length > 0 ? (
-          <div class="event-list">
-            {upcomingEvents.map((event) => (
-              <article class="event-item">
-                <p class="event-date">
-                  {event.displayDate} · {event.displayTime}
-                </p>
-                <p class="event-title">{event.title}</p>
-                {event.location ? <p class="event-meta">{event.location}</p> : null}
-              </article>
-            ))}
-          </div>
-        ) : (
-          <p class="subtle-note">No upcoming events are available right now.</p>
-        )}
-      </div>
+    <div class="card events-card">
+      <h2>Upcoming Events</h2>
+      {upcomingEvents.length > 0 ? (
+        <div class="event-list">
+          {upcomingEvents.map((event) => (
+            <article class="event-item">
+              <p class="event-date">
+                {event.displayDate} · {event.displayTime}
+              </p>
+              <p class="event-title">{event.title}</p>
+              {event.location ? <p class="event-meta">{event.location}</p> : null}
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p class="subtle-note">No upcoming events are available right now.</p>
+      )}
     </div>
   </section>
 </SiteLayout>
