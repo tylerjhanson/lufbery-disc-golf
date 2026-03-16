@@ -253,7 +253,7 @@ function formatMonthDay(year: number, month: number, day: number) {
 }
 
 function formatTime12(hour: number, minute: number) {
-  const ampm = hour >= 12 ? "PM" : "AM";
+  const ampm = hour >= 12 ? "p.m." : "a.m.";
   let h = hour % 12;
   if (h === 0) h = 12;
   return `${h}:${String(minute).padStart(2, "0")} ${ampm}`;
@@ -565,10 +565,10 @@ try {
     }
 
     .desktop-lostfound .utility-card-text {
-      color: var(--muted);
-      font-size: 0.97rem;
-      font-weight: 400;
-      line-height: 1.6;
+      color: var(--text);
+      font-size: 1.2rem;
+      font-weight: 700;
+      line-height: 1.2;
     }
 
     .link-list,
@@ -866,21 +866,28 @@ try {
     }
 
     .event-date {
-      margin: 0 0 5px;
+      margin: 0 0 3px;
       font-weight: 700;
       font-size: 0.92rem;
       line-height: 1.2;
     }
 
+    .event-time {
+      margin: 0 0 5px;
+      color: var(--text);
+      font-size: 0.92rem;
+      line-height: 1.25;
+    }
+
     .event-title {
-      margin: 0 0 2px;
+      margin: 0;
       font-weight: 400;
       font-size: 0.94rem;
       line-height: 1.35;
     }
 
     .event-meta {
-      margin: 0;
+      margin: 4px 0 0;
       color: var(--muted);
       font-size: 0.88rem;
       line-height: 1.4;
@@ -1155,9 +1162,8 @@ try {
           <div class="event-list">
             {upcomingEvents.map((event) => (
               <article class="event-item">
-                <p class="event-date">
-                  {event.displayDate} · {event.displayTime}
-                </p>
+                <p class="event-date">{event.displayDate}</p>
+                <p class="event-time">{event.displayTime}</p>
                 <p class="event-title">{event.title}</p>
                 {event.location ? <p class="event-meta">{event.location}</p> : null}
               </article>
