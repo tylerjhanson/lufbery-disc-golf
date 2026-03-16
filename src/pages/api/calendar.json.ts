@@ -1,5 +1,7 @@
 import type { APIRoute } from "astro";
 
+export const prerender = false;
+
 const calendarIcsUrl =
   "https://calendar.google.com/calendar/ical/600330c48796b6025429fafaf3799e789f394b9d551c9ac96938c36e31444740%40group.calendar.google.com/public/basic.ics";
 
