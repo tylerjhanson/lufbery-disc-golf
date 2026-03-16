@@ -295,22 +295,33 @@ async function fetchCalendarIcs(url: string, attempts = 3) {
         throw new Error(`Calendar fetch failed: ${res.status}`);
       }
 
-      const ics = await res.text();
+      const contentType = res.headers.get("content-type") || "";
+const finalUrl = res.url || url;
+const ics = await res.text();
 
-      if (!ics || !ics.includes("BEGIN:VEVENT")) {
-        throw new Error("Calendar response did not include VEVENT data");
-      }
+if (!ics || !ics.includes("BEGIN:VEVENT")) {
+  throw new Error(
+    `Calendar response missing VEVENT data. status=${res.status} contentType=${contentType} url=${finalUrl} length=${ics.length}`
+  );
+}
 
       return ics;
-    } catch (error) {
-      lastError = error;
-      if (attempt < attempts) {
-        await delay(700 * attempt);
-      }
-    }
-  }
+   } catch (error) {
+  console.error("Calendar API failed:", error);
 
-  throw lastError;
+  return new Response(
+    JSON.stringify({
+      upcomingEvents: [],
+      error: error instanceof Error ? error.message : String(error),
+    }),
+    {
+      status: 200,
+      headers: {
+        "content-type": "application/json; charset=utf-8",
+        "cache-control": "no-store",
+      },
+    }
+  );
 }
 
 export const GET: APIRoute = async () => {
