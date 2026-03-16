@@ -393,21 +393,22 @@ export const GET: APIRoute = async () => {
         "cache-control": "no-store",
       },
     });
-  } catch (error) {
-  console.error("Calendar API failed:", error);
+    } catch (error) {
+    console.error("Calendar API failed:", error);
 
-  return new Response(
-    JSON.stringify({
-      upcomingEvents: [],
-      debug: "catch-block-hit",
-      error: error instanceof Error ? error.message : String(error),
-    }),
-    {
-      status: 200,
-      headers: {
-        "content-type": "application/json; charset=utf-8",
-        "cache-control": "no-store",
-      },
-    }
-  );
-}
+    return new Response(
+      JSON.stringify({
+        upcomingEvents: [],
+        debug: "catch-block-hit",
+        error: error instanceof Error ? error.message : String(error),
+      }),
+      {
+        status: 200,
+        headers: {
+          "content-type": "application/json; charset=utf-8",
+          "cache-control": "no-store",
+        },
+      }
+    );
+  }
+};
