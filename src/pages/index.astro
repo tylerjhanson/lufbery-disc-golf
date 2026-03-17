@@ -25,15 +25,6 @@ type WeeklyResultItem = Record<string, unknown> & {
   url?: string;
 };
 
-type EventItem = {
-  key: string;
-  title: string;
-  location: string;
-  stamp: string;
-  displayDate: string;
-  displayTime: string;
-};
-
 const weeklyResults = getWeeklyResults() as WeeklyResultItem[];
 
 function getEventDateParts(title: string) {
@@ -178,8 +169,6 @@ function getCellText(row: LooseRow, key: string) {
 
 const hasLatestResultTable =
   latestResultMainRows.length > 0 || latestResultWorkingRows.length > 0;
-
-let upcomingEvents: EventItem[] = [];
 ---
 
 <SiteLayout title="Lufbery Disc Golf" showBrandBar={true}>
@@ -229,18 +218,13 @@ let upcomingEvents: EventItem[] = [];
     }
 
     .events-card {
-      padding-bottom: 16px;
-      min-height: 456px;
+      padding-bottom: 38px;
     }
 
     .subtle-note {
       color: var(--muted);
       font-size: 0.97rem;
       line-height: 1.6;
-      margin: 0 0 14px;
-    }
-
-    #eventsEmpty {
       margin: 0;
     }
 
@@ -255,10 +239,6 @@ let upcomingEvents: EventItem[] = [];
     .event-list {
       display: grid;
       gap: 10px;
-    }
-
-    .event-list {
-      align-content: start;
     }
 
     .link-item {
@@ -526,7 +506,7 @@ let upcomingEvents: EventItem[] = [];
     .result-actions {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-start;
       gap: 12px;
       flex-wrap: wrap;
       margin-top: 12px;
@@ -551,17 +531,9 @@ let upcomingEvents: EventItem[] = [];
       transform: translateY(-1px);
     }
 
-    .result-fallback-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 600;
-      color: var(--text);
-      text-decoration: none;
-    }
-
-    .result-fallback-link:hover {
-      text-decoration: underline;
+    .event-list {
+      display: grid;
+      gap: 10px;
     }
 
     .event-item {
@@ -599,6 +571,10 @@ let upcomingEvents: EventItem[] = [];
       line-height: 1.4;
     }
 
+    #eventsEmpty {
+      margin-top: 2px;
+    }
+
     @media (max-width: 1120px) {
       .home-grid {
         grid-template-columns: minmax(0, 1fr) minmax(0, 0.92fr) minmax(210px, 0.7fr);
@@ -622,8 +598,7 @@ let upcomingEvents: EventItem[] = [];
 
       .events-card {
         order: 1;
-        min-height: 0;
-        padding-bottom: 16px;
+        padding-bottom: 20px;
       }
 
       .udisc-card {
@@ -699,8 +674,7 @@ let upcomingEvents: EventItem[] = [];
         align-items: stretch;
       }
 
-      .result-toggle,
-      .result-fallback-link {
+      .result-toggle {
         width: 100%;
       }
     }
@@ -804,10 +778,6 @@ let upcomingEvents: EventItem[] = [];
               >
                 Show more
               </button>
-
-              <a class="result-fallback-link" href="/singles/weekly-results">
-                View all weekly results <span aria-hidden="true">→</span>
-              </a>
             </div>
           </>
         ) : (
@@ -867,19 +837,8 @@ let upcomingEvents: EventItem[] = [];
 
       <div class="card events-card">
         <h2>Upcoming Events</h2>
-        <div id="eventsList" class="event-list" data-has-server-events={upcomingEvents.length > 0 ? "true" : "false"}>
-          {upcomingEvents.length > 0 ? (
-            upcomingEvents.map((event) => (
-              <article class="event-item">
-                <p class="event-date">{event.displayDate}</p>
-                <p class="event-time">{event.displayTime}</p>
-                <p class="event-title">{event.title}</p>
-                {event.location ? <p class="event-meta">{event.location}</p> : null}
-              </article>
-            ))
-          ) : (
-            <p id="eventsEmpty" class="subtle-note">Loading upcoming events...</p>
-          )}
+        <div id="eventsList" class="event-list">
+          <p id="eventsEmpty" class="subtle-note">Loading upcoming events...</p>
         </div>
       </div>
     </div>
@@ -957,7 +916,8 @@ let upcomingEvents: EventItem[] = [];
 
       function renderEvents(events) {
         if (!Array.isArray(events) || !events.length) {
-          eventsList.innerHTML = `<p id="eventsEmpty" class="subtle-note">No upcoming events are available right now.</p>`;
+          eventsList.innerHTML =
+            `<p id="eventsEmpty" class="subtle-note">No upcoming events are available right now.</p>`;
           return;
         }
 
@@ -979,8 +939,9 @@ let upcomingEvents: EventItem[] = [];
           .join("");
       }
 
-      fetch("https://silent-hill-50calufbery-calendar-api.tylerjhanson.workers.dev", {
+      fetch("/api/calendar.json", {
         cache: "no-store",
+        mode: "cors",
       })
         .then((res) => {
           if (!res.ok) throw new Error(`Calendar API failed: ${res.status}`);
