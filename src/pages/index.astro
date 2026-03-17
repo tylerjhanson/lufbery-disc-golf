@@ -210,6 +210,10 @@ const hasLatestResultTable =
       min-width: 0;
     }
 
+    .events-card {
+      padding-bottom: 25px;
+    }
+
     .card h2 {
       margin: 0 0 8px;
       font-size: 1.2rem;
@@ -217,15 +221,11 @@ const hasLatestResultTable =
       line-height: 1.2;
     }
 
-    .events-card {
-      padding-bottom: 38px;
-    }
-
     .subtle-note {
       color: var(--muted);
       font-size: 0.97rem;
       line-height: 1.6;
-      margin: 0;
+      margin: 0 0 14px;
     }
 
     .desktop-lostfound .utility-card-text {
@@ -531,11 +531,6 @@ const hasLatestResultTable =
       transform: translateY(-1px);
     }
 
-    .event-list {
-      display: grid;
-      gap: 10px;
-    }
-
     .event-item {
       border: 1px solid var(--line-soft);
       border-radius: 7px;
@@ -571,10 +566,6 @@ const hasLatestResultTable =
       line-height: 1.4;
     }
 
-    #eventsEmpty {
-      margin-top: 2px;
-    }
-
     @media (max-width: 1120px) {
       .home-grid {
         grid-template-columns: minmax(0, 1fr) minmax(0, 0.92fr) minmax(210px, 0.7fr);
@@ -598,7 +589,7 @@ const hasLatestResultTable =
 
       .events-card {
         order: 1;
-        padding-bottom: 20px;
+        padding-bottom: 16px;
       }
 
       .udisc-card {
@@ -916,8 +907,7 @@ const hasLatestResultTable =
 
       function renderEvents(events) {
         if (!Array.isArray(events) || !events.length) {
-          eventsList.innerHTML =
-            `<p id="eventsEmpty" class="subtle-note">No upcoming events are available right now.</p>`;
+          eventsList.innerHTML = `<p id="eventsEmpty" class="subtle-note">No upcoming events are available right now.</p>`;
           return;
         }
 
@@ -939,10 +929,7 @@ const hasLatestResultTable =
           .join("");
       }
 
-      fetch("/api/calendar.json", {
-        cache: "no-store",
-        mode: "cors",
-      })
+      fetch("/api/calendar.json", { cache: "no-store" })
         .then((res) => {
           if (!res.ok) throw new Error(`Calendar API failed: ${res.status}`);
           return res.json();
