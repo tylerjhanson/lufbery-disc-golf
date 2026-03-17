@@ -25,15 +25,6 @@ type WeeklyResultItem = Record<string, unknown> & {
   url?: string;
 };
 
-type EventItem = {
-  key: string;
-  title: string;
-  location: string;
-  stamp: string;
-  displayDate: string;
-  displayTime: string;
-};
-
 const weeklyResults = getWeeklyResults() as WeeklyResultItem[];
 
 function getEventDateParts(title: string) {
@@ -178,8 +169,6 @@ function getCellText(row: LooseRow, key: string) {
 
 const hasLatestResultTable =
   latestResultMainRows.length > 0 || latestResultWorkingRows.length > 0;
-
-let upcomingEvents: EventItem[] = [];
 ---
 
 <SiteLayout title="Lufbery Disc Golf" showBrandBar={true}>
@@ -229,7 +218,7 @@ let upcomingEvents: EventItem[] = [];
     }
 
     .events-card {
-      padding-bottom: 25px;
+      padding-bottom: 38px;
     }
 
     .subtle-note {
@@ -246,8 +235,12 @@ let upcomingEvents: EventItem[] = [];
       line-height: 1.2;
     }
 
-    .link-list,
-    .event-list {
+    .link-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    :global(.event-list) {
       display: grid;
       gap: 10px;
     }
@@ -542,35 +535,35 @@ let upcomingEvents: EventItem[] = [];
       transform: translateY(-1px);
     }
 
-    .event-item {
+    :global(.event-item) {
       border: 1px solid var(--line-soft);
       border-radius: 7px;
       padding: 11px 13px;
       background: var(--button-bg, #f3f5f8);
     }
 
-    .event-date {
+    :global(.event-date) {
       margin: 0 0 3px;
       font-weight: 700;
       font-size: 0.92rem;
       line-height: 1.2;
     }
 
-    .event-time {
+    :global(.event-time) {
       margin: 0 0 5px;
       color: var(--text);
       font-size: 0.92rem;
       line-height: 1.25;
     }
 
-    .event-title {
+    :global(.event-title) {
       margin: 0;
       font-weight: 400;
       font-size: 0.94rem;
       line-height: 1.35;
     }
 
-    .event-meta {
+    :global(.event-meta) {
       margin: 4px 0 0;
       color: var(--muted);
       font-size: 0.88rem;
@@ -838,19 +831,8 @@ let upcomingEvents: EventItem[] = [];
 
       <div class="card events-card">
         <h2>Upcoming Events</h2>
-        <div id="eventsList" class="event-list" data-has-server-events={upcomingEvents.length > 0 ? "true" : "false"}>
-          {upcomingEvents.length > 0 ? (
-            upcomingEvents.map((event) => (
-              <article class="event-item">
-                <p class="event-date">{event.displayDate}</p>
-                <p class="event-time">{event.displayTime}</p>
-                <p class="event-title">{event.title}</p>
-                {event.location ? <p class="event-meta">{event.location}</p> : null}
-              </article>
-            ))
-          ) : (
-            <p id="eventsEmpty" class="subtle-note">Loading upcoming events...</p>
-          )}
+        <div id="eventsList" class="event-list">
+          <p id="eventsEmpty" class="subtle-note">Loading upcoming events...</p>
         </div>
       </div>
     </div>
@@ -912,56 +894,60 @@ let upcomingEvents: EventItem[] = [];
     })();
   </script>
 
- <script>
-  (() => {
-    const eventsList = document.getElementById("eventsList");
-    if (!eventsList) return;
+  <script>
+    (() => {
+      const eventsList = document.getElementById("eventsList");
+      if (!eventsList) return;
 
-    function escapeHtml(value) {
-      return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-    }
-
-    function renderEvents(events) {
-      if (!Array.isArray(events) || !events.length) {
-        eventsList.innerHTML = `<p id="eventsEmpty" class="subtle-note">No upcoming events are available right now.</p>`;
-        return;
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
       }
 
-      eventsList.innerHTML = events
-        .map((event) => {
-          const locationHtml = event.location
-            ? `<p class="event-meta">${escapeHtml(event.location)}</p>`
-            : "";
+      function renderEvents(events) {
+        if (!Array.isArray(events) || !events.length) {
+          eventsList.innerHTML = '<p id="eventsEmpty" class="subtle-note">No upcoming events are available right now.</p>';
+          return;
+        }
 
-          return `
-            <article class="event-item">
-              <p class="event-date">${escapeHtml(event.displayDate)}</p>
-              <p class="event-time">${escapeHtml(event.displayTime)}</p>
-              <p class="event-title">${escapeHtml(event.title)}</p>
-              ${locationHtml}
-            </article>
-          `;
+        eventsList.innerHTML = events
+          .map((event) => {
+            const locationHtml = event.location
+              ? '<p class="event-meta">' + escapeHtml(event.location) + "</p>"
+              : "";
+
+            return (
+              '<article class="event-item">' +
+                '<p class="event-date">' + escapeHtml(event.displayDate) + "</p>" +
+                '<p class="event-time">' + escapeHtml(event.displayTime) + "</p>" +
+                '<p class="event-title">' + escapeHtml(event.title) + "</p>" +
+                locationHtml +
+              "</article>"
+            );
+          })
+          .join("");
+      }
+
+      fetch("https://lufberydiscgolf.com/api/calendar.json", {
+        method: "GET",
+        cache: "no-store",
+        mode: "cors",
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error("Calendar API failed: " + res.status);
+          return res.json();
         })
-        .join("");
-    }
-
-    fetch("/api/calendar.json", { cache: "no-store" })
-      .then((res) => {
-        if (!res.ok) throw new Error("Calendar API failed: " + res.status);
-        return res.json();
-      })
-      .then((data) => {
-        renderEvents(data?.upcomingEvents || []);
-      })
-      .catch((error) => {
-        console.error("Client calendar load failed:", error);
-        renderEvents([]);
-      });
-  })();
-</script>
+        .then((data) => {
+          renderEvents(data && Array.isArray(data.upcomingEvents) ? data.upcomingEvents : []);
+        })
+        .catch((error) => {
+          console.error("Client calendar load failed:", error);
+          renderEvents([]);
+        });
+    })();
+  </script>
 </SiteLayout>
