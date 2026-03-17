@@ -912,56 +912,56 @@ let upcomingEvents: EventItem[] = [];
     })();
   </script>
 
-  <script>
-    (() => {
-      const eventsList = document.getElementById("eventsList");
-      if (!eventsList) return;
+ <script>
+  (() => {
+    const eventsList = document.getElementById("eventsList");
+    if (!eventsList) return;
 
-      function escapeHtml(value) {
-        return String(value ?? "")
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#39;");
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function renderEvents(events) {
+      if (!Array.isArray(events) || !events.length) {
+        eventsList.innerHTML = `<p id="eventsEmpty" class="subtle-note">No upcoming events are available right now.</p>`;
+        return;
       }
 
-      function renderEvents(events) {
-        if (!Array.isArray(events) || !events.length) {
-          eventsList.innerHTML = `<p id="eventsEmpty" class="subtle-note">No upcoming events are available right now.</p>`;
-          return;
-        }
+      eventsList.innerHTML = events
+        .map((event) => {
+          const locationHtml = event.location
+            ? `<p class="event-meta">${escapeHtml(event.location)}</p>`
+            : "";
 
-        eventsList.innerHTML = events
-          .map((event) => {
-            const locationHtml = event.location
-              ? `<p class="event-meta">${escapeHtml(event.location)}</p>`
-              : "";
-
-            return `
-              <article class="event-item">
-                <p class="event-date">${escapeHtml(event.displayDate)}</p>
-                <p class="event-time">${escapeHtml(event.displayTime)}</p>
-                <p class="event-title">${escapeHtml(event.title)}</p>
-                ${locationHtml}
-              </article>
-            `;
-          })
-          .join("");
-      }
-
-      fetch("/api/calendar.json", { cache: "no-store" })
-        .then((res) => {
-          if (!res.ok) throw new Error(\`Calendar API failed: \${res.status}\`);
-          return res.json();
+          return `
+            <article class="event-item">
+              <p class="event-date">${escapeHtml(event.displayDate)}</p>
+              <p class="event-time">${escapeHtml(event.displayTime)}</p>
+              <p class="event-title">${escapeHtml(event.title)}</p>
+              ${locationHtml}
+            </article>
+          `;
         })
-        .then((data) => {
-          renderEvents(data?.upcomingEvents || []);
-        })
-        .catch((error) => {
-          console.error("Client calendar load failed:", error);
-          renderEvents([]);
-        });
-    })();
-  </script>
+        .join("");
+    }
+
+    fetch("/api/calendar.json", { cache: "no-store" })
+      .then((res) => {
+        if (!res.ok) throw new Error("Calendar API failed: " + res.status);
+        return res.json();
+      })
+      .then((data) => {
+        renderEvents(data?.upcomingEvents || []);
+      })
+      .catch((error) => {
+        console.error("Client calendar load failed:", error);
+        renderEvents([]);
+      });
+  })();
+</script>
 </SiteLayout>
