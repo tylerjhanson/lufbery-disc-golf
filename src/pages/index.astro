@@ -229,7 +229,8 @@ let upcomingEvents: EventItem[] = [];
     }
 
     .events-card {
-      padding-bottom: 42px;
+      padding-bottom: 16px;
+      min-height: 456px;
     }
 
     .subtle-note {
@@ -237,6 +238,10 @@ let upcomingEvents: EventItem[] = [];
       font-size: 0.97rem;
       line-height: 1.6;
       margin: 0 0 14px;
+    }
+
+    #eventsEmpty {
+      margin: 0;
     }
 
     .desktop-lostfound .utility-card-text {
@@ -250,6 +255,10 @@ let upcomingEvents: EventItem[] = [];
     .event-list {
       display: grid;
       gap: 10px;
+    }
+
+    .event-list {
+      align-content: start;
     }
 
     .link-item {
@@ -542,6 +551,19 @@ let upcomingEvents: EventItem[] = [];
       transform: translateY(-1px);
     }
 
+    .result-fallback-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .result-fallback-link:hover {
+      text-decoration: underline;
+    }
+
     .event-item {
       border: 1px solid var(--line-soft);
       border-radius: 7px;
@@ -600,7 +622,8 @@ let upcomingEvents: EventItem[] = [];
 
       .events-card {
         order: 1;
-        padding-bottom: 24px;
+        min-height: 0;
+        padding-bottom: 16px;
       }
 
       .udisc-card {
@@ -676,7 +699,8 @@ let upcomingEvents: EventItem[] = [];
         align-items: stretch;
       }
 
-      .result-toggle {
+      .result-toggle,
+      .result-fallback-link {
         width: 100%;
       }
     }
@@ -780,6 +804,10 @@ let upcomingEvents: EventItem[] = [];
               >
                 Show more
               </button>
+
+              <a class="result-fallback-link" href="/singles/weekly-results">
+                View all weekly results <span aria-hidden="true">→</span>
+              </a>
             </div>
           </>
         ) : (
@@ -951,7 +979,7 @@ let upcomingEvents: EventItem[] = [];
           .join("");
       }
 
-      fetch("/api/calendar.json", {
+      fetch("https://silent-hill-50calufbery-calendar-api.tylerjhanson.workers.dev", {
         cache: "no-store",
       })
         .then((res) => {
