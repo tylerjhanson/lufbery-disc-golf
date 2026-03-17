@@ -295,16 +295,15 @@ export function getWeeklyResults() {
 
           while (i < rows.length && isBlankRow(rows[i])) i++;
 
-          let workingHeaders = ["Name", "Raw"];
+          const defaultLabels = ["Name", "Raw", "Hcp.", "Net", "Payout", "Ovr", "CTP"];
 
+          let headerSource = cells;
           if (i < rows.length && normalize(rows[i][0] || "") === "name") {
-            workingHeaders = rows[i].filter(Boolean);
+            headerSource = rows[i];
             i++;
-          } else if (cells.slice(1).some(Boolean)) {
-            workingHeaders = ["Name", ...cells.slice(1).filter(Boolean)];
           }
 
-          const workingRows: string[][] = [];
+          const rawWorkingRows: string[][] = [];
 
           while (i < rows.length) {
             const sub = rows[i];
@@ -316,13 +315,35 @@ export function getWeeklyResults() {
             }
             if (isWorkingTitle(sub[0] || "")) break;
 
-            workingRows.push([
+            rawWorkingRows.push([
               sub[0] || "",
               sub[1] || "",
+              sub[2] || "",
+              sub[3] || "",
+              sub[4] || "",
+              sub[5] || "",
+              sub[6] || "",
             ]);
 
             i++;
           }
+
+          const usedIndexes = defaultLabels
+            .map((_, idx) => idx)
+            .filter(
+              (idx) =>
+                idx < 2 ||
+                !!(headerSource[idx] || "") ||
+                rawWorkingRows.some((workingRow) => !!workingRow[idx])
+            );
+
+          const workingHeaders = usedIndexes.map(
+            (idx) => headerSource[idx] || defaultLabels[idx]
+          );
+
+          const workingRows = rawWorkingRows.map((workingRow) =>
+            usedIndexes.map((idx) => workingRow[idx] || "")
+          );
 
           event.working = {
             title: workingTitle,
