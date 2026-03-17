@@ -951,7 +951,7 @@ let upcomingEvents: EventItem[] = [];
           .join("");
       }
 
-      fetch("https://silent-hill-50calufbery-calendar-api.tylerjhanson.workers.dev", {
+      fetch("/api/calendar.json", {
         cache: "no-store",
       })
         .then((res) => {
