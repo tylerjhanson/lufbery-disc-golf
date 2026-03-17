@@ -25,6 +25,15 @@ type WeeklyResultItem = Record<string, unknown> & {
   url?: string;
 };
 
+type EventItem = {
+  key: string;
+  title: string;
+  location: string;
+  stamp: string;
+  displayDate: string;
+  displayTime: string;
+};
+
 const weeklyResults = getWeeklyResults() as WeeklyResultItem[];
 
 function getEventDateParts(title: string) {
@@ -169,6 +178,8 @@ function getCellText(row: LooseRow, key: string) {
 
 const hasLatestResultTable =
   latestResultMainRows.length > 0 || latestResultWorkingRows.length > 0;
+
+let upcomingEvents: EventItem[] = [];
 ---
 
 <SiteLayout title="Lufbery Disc Golf" showBrandBar={true}>
@@ -210,15 +221,15 @@ const hasLatestResultTable =
       min-width: 0;
     }
 
-    .events-card {
-      padding-bottom: 25px;
-    }
-
     .card h2 {
       margin: 0 0 8px;
       font-size: 1.2rem;
       font-weight: 700;
       line-height: 1.2;
+    }
+
+    .events-card {
+      padding-bottom: 25px;
     }
 
     .subtle-note {
@@ -589,7 +600,6 @@ const hasLatestResultTable =
 
       .events-card {
         order: 1;
-        padding-bottom: 16px;
       }
 
       .udisc-card {
@@ -828,8 +838,19 @@ const hasLatestResultTable =
 
       <div class="card events-card">
         <h2>Upcoming Events</h2>
-        <div id="eventsList" class="event-list">
-          <p id="eventsEmpty" class="subtle-note">Loading upcoming events...</p>
+        <div id="eventsList" class="event-list" data-has-server-events={upcomingEvents.length > 0 ? "true" : "false"}>
+          {upcomingEvents.length > 0 ? (
+            upcomingEvents.map((event) => (
+              <article class="event-item">
+                <p class="event-date">{event.displayDate}</p>
+                <p class="event-time">{event.displayTime}</p>
+                <p class="event-title">{event.title}</p>
+                {event.location ? <p class="event-meta">{event.location}</p> : null}
+              </article>
+            ))
+          ) : (
+            <p id="eventsEmpty" class="subtle-note">Loading upcoming events...</p>
+          )}
         </div>
       </div>
     </div>
@@ -931,7 +952,7 @@ const hasLatestResultTable =
 
       fetch("/api/calendar.json", { cache: "no-store" })
         .then((res) => {
-          if (!res.ok) throw new Error(`Calendar API failed: ${res.status}`);
+          if (!res.ok) throw new Error(\`Calendar API failed: \${res.status}\`);
           return res.json();
         })
         .then((data) => {
