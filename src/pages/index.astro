@@ -363,45 +363,6 @@ const hasLatestResultTable =
       text-decoration: underline;
     }
 
-    .result-title-link-inline {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .result-udisc-icon {
-      height: 0.82em;
-      width: auto;
-      display: inline-block;
-      vertical-align: middle;
-      flex: 0 0 auto;
-      opacity: 0.98;
-      transform: translateY(0.02em);
-    }
-
-    .result-udisc-icon--dark {
-      display: none;
-    }
-
-    html[data-theme="dark"] .result-udisc-icon--light {
-      display: none;
-    }
-
-    html[data-theme="dark"] .result-udisc-icon--dark {
-      display: inline-block;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      html[data-theme="system"] .result-udisc-icon--light {
-        display: none;
-      }
-
-      html[data-theme="system"] .result-udisc-icon--dark {
-        display: inline-block;
-      }
-    }
-
     .result-title-plain {
       color: var(--muted);
     }
@@ -662,10 +623,6 @@ const hasLatestResultTable =
         font-size: 0.97rem;
       }
 
-      .result-udisc-icon {
-        height: 0.78em;
-      }
-
       .result-main-table thead th {
         font-size: 0.56rem;
         padding: 6px 2px;
@@ -735,27 +692,8 @@ const hasLatestResultTable =
         {latestResult ? (
           <>
             {latestResult.url ? (
-              <a
-                class="result-title-link result-title-link-inline"
-                href={latestResultHref}
-                target="_blank"
-                rel="noopener"
-              >
-                <span>{latestResult.title}</span>
-                <img
-                  class="result-udisc-icon result-udisc-icon--light"
-                  src="https://lufberydiscgolf.com/udisc-icon.png"
-                  alt="UDisc"
-                  loading="lazy"
-                  decoding="async"
-                />
-                <img
-                  class="result-udisc-icon result-udisc-icon--dark"
-                  src="https://lufberydiscgolf.com/udisc-icon-white.png"
-                  alt="UDisc"
-                  loading="lazy"
-                  decoding="async"
-                />
+              <a class="result-title-link" href={latestResultHref}>
+                {latestResult.title}
               </a>
             ) : (
               <p class="result-title-plain">{latestResult.title}</p>
@@ -977,9 +915,14 @@ const hasLatestResultTable =
           .replace(/'/g, "&#39;");
       }
 
+      function renderEmpty(message) {
+        eventsList.innerHTML =
+          '<p class="subtle-note">' + escapeHtml(message) + "</p>";
+      }
+
       function renderEvents(events) {
         if (!Array.isArray(events) || !events.length) {
-          eventsList.innerHTML = '<p id="eventsEmpty" class="subtle-note">No upcoming events are available right now.</p>';
+          renderEmpty("No upcoming events are available right now.");
           return;
         }
 
@@ -1001,22 +944,35 @@ const hasLatestResultTable =
           .join("");
       }
 
-      fetch("/api/calendar.json", {
-  method: "GET",
-  cache: "default",
-  headers: { accept: "application/json" },
-})
-        .then((res) => {
-          if (!res.ok) throw new Error("Calendar API failed: " + res.status);
-          return res.json();
-        })
-        .then((data) => {
-          renderEvents(data && Array.isArray(data.upcomingEvents) ? data.upcomingEvents : []);
-        })
-        .catch((error) => {
+      async function loadEvents() {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+        try {
+          const res = await fetch("/api/calendar.json", {
+            method: "GET",
+            cache: "default",
+            headers: { accept: "application/json" },
+            signal: controller.signal,
+          });
+
+          if (!res.ok) {
+            throw new Error("Calendar API failed: " + res.status);
+          }
+
+          const data = await res.json();
+          renderEvents(
+            data && Array.isArray(data.upcomingEvents) ? data.upcomingEvents : []
+          );
+        } catch (error) {
           console.error("Client calendar load failed:", error);
-          renderEvents([]);
-        });
+          renderEmpty("Unable to load upcoming events right now.");
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      }
+
+      loadEvents();
     })();
   </script>
 </SiteLayout>
