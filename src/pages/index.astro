@@ -1001,11 +1001,11 @@ const hasLatestResultTable =
           .join("");
       }
 
-      fetch("https://lufberydiscgolf.com/api/calendar.json", {
-        method: "GET",
-        cache: "no-store",
-        mode: "cors",
-      })
+      fetch("/api/calendar.json", {
+  method: "GET",
+  cache: "default",
+  headers: { accept: "application/json" },
+})
         .then((res) => {
           if (!res.ok) throw new Error("Calendar API failed: " + res.status);
           return res.json();
