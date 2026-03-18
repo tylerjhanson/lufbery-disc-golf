@@ -14,19 +14,166 @@ function readCsv(filename: string): CsvRow[] {
   }) as CsvRow[];
 }
 
+function parseUsDate(value: string) {
+  const parts = String(value || "").split("/");
+  if (parts.length !== 3) return new Date(0);
+
+  const month = Number(parts[0]);
+  const day = Number(parts[1]);
+  let year = Number(parts[2]);
+
+  if (year < 100) year += 2000;
+
+  return new Date(year, month - 1, day);
+}
+
+function parseMonthDay(value: string) {
+  const match = String(value || "").trim().match(/^(\d{1,2})\/(\d{1,2})$/);
+  if (!match) return null;
+
+  return {
+    month: Number(match[1]),
+    day: Number(match[2]),
+  };
+}
+
+function getLastActiveHandicapColumn(rows: CsvRow[]) {
+  const header = rows[0] || [];
+
+  for (let i = header.length - 1; i >= 6; i -= 1) {
+    if (!parseMonthDay(header[i])) continue;
+
+    const hasAnyScore = rows.slice(1).some((row) => String(row[i] || "").trim() !== "");
+    if (hasAnyScore) return i;
+  }
+
+  return 5;
+}
+
+function buildHandicapDateMap(rows: CsvRow[]) {
+  const header = rows[0] || [];
+  const lastActiveColumn = getLastActiveHandicapColumn(rows);
+
+  const dateColumns = header
+    .slice(6, lastActiveColumn + 1)
+    .map((label, offset) => {
+      const parts = parseMonthDay(label);
+      if (!parts) return null;
+
+      return {
+        index: offset + 6,
+        month: parts.month,
+        day: parts.day,
+      };
+    })
+    .filter(
+      (
+        value
+      ): value is {
+        index: number;
+        month: number;
+        day: number;
+      } => Boolean(value)
+    );
+
+  if (!dateColumns.length) return new Map<number, string>();
+
+  const today = new Date();
+  const todayMonth = today.getMonth() + 1;
+  const todayDay = today.getDate();
+
+  const anchor = dateColumns[dateColumns.length - 1];
+  let year = today.getFullYear();
+
+  if (
+    anchor.month > todayMonth ||
+    (anchor.month === todayMonth && anchor.day > todayDay)
+  ) {
+    year -= 1;
+  }
+
+  const dateMap = new Map<number, string>();
+
+  let nextMonth = 0;
+  let nextDay = 0;
+  let hasNext = false;
+
+  for (let i = dateColumns.length - 1; i >= 0; i -= 1) {
+    const current = dateColumns[i];
+
+    if (
+      hasNext &&
+      (current.month > nextMonth ||
+        (current.month === nextMonth && current.day > nextDay))
+    ) {
+      year -= 1;
+    }
+
+    dateMap.set(current.index, `${current.month}/${current.day}/${String(year).slice(-2)}`);
+
+    nextMonth = current.month;
+    nextDay = current.day;
+    hasNext = true;
+  }
+
+  return dateMap;
+}
+
 export function getHandicaps() {
   const rows = readCsv("hcp.csv");
+  const dateMap = buildHandicapDateMap(rows);
+
+  const orderedDateEntries = Array.from(dateMap.entries()).sort((a, b) => a[0] - b[0]);
 
   return rows
     .slice(1)
     .filter((row) => row[0]?.trim())
-    .map((row) => ({
-      name: row[0] || "",
-      hcp: row[1] || "",
-      tag: row[2] || "",
-      rounds: row[3] || "",
-      best: row[4] || "",
-    }));
+    .map((row) => {
+      const roundHistory = orderedDateEntries
+        .map(([index, date]) => {
+          const raw = String(row[index] || "").trim();
+          if (!raw) return null;
+
+          const score = Number(raw);
+          if (Number.isNaN(score)) return null;
+
+          return { date, score };
+        })
+        .filter((value): value is { date: string; score: number } => Boolean(value));
+
+      const recentRounds = roundHistory.slice(-5);
+
+      const droppedIndex =
+        recentRounds.length >= 4
+          ? recentRounds.reduce((worstIndex, round, index, arr) => {
+              return round.score > arr[worstIndex].score ? index : worstIndex;
+            }, 0)
+          : -1;
+
+      const keptRounds = recentRounds.filter((_, index) => index !== droppedIndex);
+
+      const average =
+        keptRounds.length > 0
+          ? keptRounds.reduce((sum, round) => sum + round.score, 0) / keptRounds.length
+          : null;
+
+      const averageDisplay = average == null ? "" : average.toFixed(1);
+      const handicapValue = String(row[1] || "").trim();
+
+      return {
+        name: row[0] || "",
+        hcp: handicapValue,
+        tag: row[2] || "",
+        rounds: row[3] || "",
+        best: row[4] || "",
+        recentRounds: recentRounds.map((round, index) => ({
+          ...round,
+          dropped: index === droppedIndex,
+        })),
+        recentRoundsAverage: averageDisplay,
+        handicapEstablished: handicapValue !== "" && recentRounds.length >= 3,
+      };
+    });
 }
 
 export function getWeeklyWinners() {
@@ -41,19 +188,6 @@ export function getWeeklyWinners() {
       date: row[2] || "",
       url: row[3] || "",
     }));
-
-  function parseUsDate(value: string) {
-    const parts = value.split("/");
-    if (parts.length !== 3) return new Date(0);
-
-    const month = Number(parts[0]);
-    const day = Number(parts[1]);
-    let year = Number(parts[2]);
-
-    if (year < 100) year += 2000;
-
-    return new Date(year, month - 1, day);
-  }
 
   parsed.sort(
     (a, b) => parseUsDate(b.date).getTime() - parseUsDate(a.date).getTime()
@@ -75,19 +209,6 @@ export function getSinglesAces() {
       url: row[3] || "",
     }));
 
-  function parseUsDate(value: string) {
-    const parts = value.split("/");
-    if (parts.length !== 3) return new Date(0);
-
-    const month = Number(parts[0]);
-    const day = Number(parts[1]);
-    let year = Number(parts[2]);
-
-    if (year < 100) year += 2000;
-
-    return new Date(year, month - 1, day);
-  }
-
   parsed.sort(
     (a, b) => parseUsDate(b.date).getTime() - parseUsDate(a.date).getTime()
   );
@@ -107,19 +228,6 @@ export function getDoublesAces() {
       date: row[2] || "",
       url: row[3] || "",
     }));
-
-  function parseUsDate(value: string) {
-    const parts = value.split("/");
-    if (parts.length !== 3) return new Date(0);
-
-    const month = Number(parts[0]);
-    const day = Number(parts[1]);
-    let year = Number(parts[2]);
-
-    if (year < 100) year += 2000;
-
-    return new Date(year, month - 1, day);
-  }
 
   parsed.sort(
     (a, b) => parseUsDate(b.date).getTime() - parseUsDate(a.date).getTime()
@@ -273,7 +381,6 @@ export function getWeeklyResults() {
 
     const firstHeader = rows[i][0] || "";
 
-    // Handicap format
     if (firstHeader === "Name") {
       event.kind = "handicap";
       event.headers = ["Name", "Raw", "Hcp.", "Net", "Payout", "Overall", "CTP"];
@@ -371,7 +478,6 @@ export function getWeeklyResults() {
       continue;
     }
 
-    // Pool formats (monthly + July 4)
     event.kind = "pools";
 
     while (i < rows.length) {
