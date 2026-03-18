@@ -73,6 +73,21 @@ function getCellValueByHeaders(headers: unknown[], row: unknown[], headerNames: 
   return "";
 }
 
+function getHeaderLabelByHeaders(headers: unknown[], headerNames: string[], fallback = "") {
+  const normalizedHeaders = (headers || []).map((header) =>
+    cleanPlayerName(header).toLowerCase()
+  );
+
+  for (const headerName of headerNames) {
+    const index = normalizedHeaders.indexOf(headerName.toLowerCase());
+    if (index !== -1) {
+      return cleanPlayerName(headers[index]);
+    }
+  }
+
+  return fallback;
+}
+
 function getVisibleColumnIndexes(headers: unknown[], hiddenHeaders: string[]) {
   const hidden = hiddenHeaders.map((header) => normalizeHeaderValue(header));
 
@@ -303,8 +318,34 @@ const defaultRoundType = "all";
       min-width: 0;
     }
 
-    .weekly-results-page table.handicap-table {
+    .weekly-results-page table.handicap-table,
+    .weekly-results-page table.working-table {
       table-layout: fixed;
+    }
+
+    .weekly-results-page table.handicap-table col.col-name,
+    .weekly-results-page table.working-table col.col-name {
+      width: 42%;
+    }
+
+    .weekly-results-page table.handicap-table col.col-raw,
+    .weekly-results-page table.working-table col.col-raw {
+      width: 11%;
+    }
+
+    .weekly-results-page table.handicap-table col.col-hcp,
+    .weekly-results-page table.working-table col.col-hcp {
+      width: 10%;
+    }
+
+    .weekly-results-page table.handicap-table col.col-net,
+    .weekly-results-page table.working-table col.col-net {
+      width: 10%;
+    }
+
+    .weekly-results-page table.handicap-table col.col-payout,
+    .weekly-results-page table.working-table col.col-payout {
+      width: 27%;
     }
 
     thead th {
@@ -376,44 +417,39 @@ const defaultRoundType = "all";
       box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.18);
     }
 
-    .weekly-results-page table.handicap-table thead th {
+    .weekly-results-page table.handicap-table thead th,
+    .weekly-results-page table.working-table thead th {
       font-size: 0.66rem !important;
       padding: 8px 4px !important;
       line-height: 1.05 !important;
     }
 
-    .weekly-results-page table.handicap-table tbody td {
+    .weekly-results-page table.handicap-table tbody td,
+    .weekly-results-page table.working-table tbody td {
       font-size: 0.82rem !important;
       padding: 7px 4px !important;
       line-height: 1.08 !important;
       vertical-align: top !important;
     }
 
-    .weekly-results-page table.handicap-table thead th:first-child,
-    .weekly-results-page table.handicap-table tbody td:first-child {
-      width: 34% !important;
-    }
-
     .weekly-results-page table.handicap-table th:nth-child(n + 2),
-    .weekly-results-page table.handicap-table td:nth-child(n + 2) {
+    .weekly-results-page table.handicap-table td:nth-child(n + 2),
+    .weekly-results-page table.working-table th:nth-child(n + 2),
+    .weekly-results-page table.working-table td:nth-child(n + 2) {
       text-align: center !important;
     }
 
-    .weekly-results-page table.working-table thead th,
     .weekly-results-page table.pool-table thead th {
       font-size: 0.68rem !important;
       padding: 8px 5px !important;
     }
 
-    .weekly-results-page table.working-table tbody td,
     .weekly-results-page table.pool-table tbody td {
       font-size: 0.84rem !important;
       padding: 8px 5px !important;
       line-height: 1.1 !important;
     }
 
-    .weekly-results-page table.working-table thead th:first-child,
-    .weekly-results-page table.working-table tbody td:first-child,
     .weekly-results-page table.pool-table thead th:first-child,
     .weekly-results-page table.pool-table tbody td:first-child {
       width: 32% !important;
@@ -481,30 +517,50 @@ const defaultRoundType = "all";
         overflow-x: visible;
       }
 
-      .weekly-results-page table.handicap-table thead th {
+      .weekly-results-page table.handicap-table thead th,
+      .weekly-results-page table.working-table thead th {
         font-size: 0.58rem !important;
         padding: 6px 2px !important;
         letter-spacing: 0 !important;
       }
 
-      .weekly-results-page table.handicap-table tbody td {
+      .weekly-results-page table.handicap-table tbody td,
+      .weekly-results-page table.working-table tbody td {
         font-size: 0.76rem !important;
         padding: 6px 2px !important;
         line-height: 1.06 !important;
       }
 
-      .weekly-results-page table.handicap-table thead th:first-child,
-      .weekly-results-page table.handicap-table tbody td:first-child {
-        width: 32% !important;
+      .weekly-results-page table.handicap-table col.col-name,
+      .weekly-results-page table.working-table col.col-name {
+        width: 44%;
       }
 
-      .weekly-results-page table.working-table thead th,
+      .weekly-results-page table.handicap-table col.col-raw,
+      .weekly-results-page table.working-table col.col-raw {
+        width: 10%;
+      }
+
+      .weekly-results-page table.handicap-table col.col-hcp,
+      .weekly-results-page table.working-table col.col-hcp {
+        width: 9%;
+      }
+
+      .weekly-results-page table.handicap-table col.col-net,
+      .weekly-results-page table.working-table col.col-net {
+        width: 9%;
+      }
+
+      .weekly-results-page table.handicap-table col.col-payout,
+      .weekly-results-page table.working-table col.col-payout {
+        width: 28%;
+      }
+
       .weekly-results-page table.pool-table thead th {
         font-size: 0.64rem !important;
         padding: 8px 4px !important;
       }
 
-      .weekly-results-page table.working-table tbody td,
       .weekly-results-page table.pool-table tbody td {
         font-size: 0.82rem !important;
         padding: 8px 4px !important;
@@ -528,11 +584,6 @@ const defaultRoundType = "all";
       tbody td {
         font-size: 0.74rem;
         padding: 6px 3px;
-      }
-
-      thead th:first-child,
-      tbody td:first-child {
-        width: 30%;
       }
     }
   </style>
@@ -648,6 +699,13 @@ const defaultRoundType = "all";
               <div class="section-block">
                 <div class="table-wrap">
                   <table class="handicap-table">
+                    <colgroup>
+                      <col class="col-name" />
+                      <col class="col-raw" />
+                      <col class="col-hcp" />
+                      <col class="col-net" />
+                      <col class="col-payout" />
+                    </colgroup>
                     <thead>
                       <tr>
                         {["Name", "Raw", "Hcp.", "Net", "Payout"].map((header) => (
@@ -677,11 +735,26 @@ const defaultRoundType = "all";
                 <div class="section-block">
                   <div class="table-wrap">
                     <table class="working-table">
+                      <colgroup>
+                        <col class="col-name" />
+                        <col class="col-raw" />
+                        <col class="col-hcp" />
+                        <col class="col-net" />
+                        <col class="col-payout" />
+                      </colgroup>
                       <thead>
                         <tr>
-                          {getVisibleColumnIndexes(event.working.headers, ["Overall", "Ovr", "CTP"]).map(
-                            (idx) => <th>{event.working.headers[idx]}</th>
-                          )}
+                          <th>{cleanPlayerName(event.working.headers?.[0] || "Working to a handicap")}</th>
+                          <th>
+                            {getHeaderLabelByHeaders(
+                              event.working.headers,
+                              ["Raw", "R1", "Round 1", "Score"],
+                              "Raw"
+                            )}
+                          </th>
+                          <th aria-hidden="true"></th>
+                          <th aria-hidden="true"></th>
+                          <th aria-hidden="true"></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -694,16 +767,37 @@ const defaultRoundType = "all";
                               ["R1", "Round 1", "Raw", "Score"]
                             )}
                           >
-                            {getVisibleColumnIndexes(event.working.headers, ["Overall", "Ovr", "CTP"]).map(
-                              (idx) => (
-                                <td
-                                  data-label={event.working.headers[idx] || ""}
-                                  class={idx === 0 ? "player-name-cell" : undefined}
-                                >
-                                  {row[idx]}
-                                </td>
-                              )
-                            )}
+                            <td data-label={cleanPlayerName(event.working.headers?.[0] || "Working to a handicap")} class="player-name-cell">
+                              {row?.[0] || ""}
+                            </td>
+                            <td data-label="Raw">
+                              {getCellValueByHeaders(
+                                event.working.headers,
+                                row,
+                                ["R1", "Round 1", "Raw", "Score"]
+                              )}
+                            </td>
+                            <td data-label="Hcp.">
+                              {getCellValueByHeaders(
+                                event.working.headers,
+                                row,
+                                ["Hcp.", "Hcp", "Handicap"]
+                              )}
+                            </td>
+                            <td data-label="Net">
+                              {getCellValueByHeaders(
+                                event.working.headers,
+                                row,
+                                ["Net"]
+                              )}
+                            </td>
+                            <td data-label="Payout">
+                              {getCellValueByHeaders(
+                                event.working.headers,
+                                row,
+                                ["Payout"]
+                              )}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
