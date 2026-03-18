@@ -9,6 +9,7 @@ const HANDICAP_HISTORY_START_COLUMN = 56; // BE
 type WeeklyPrizeLine = {
   name: string;
   text: string;
+  sortHole: number | null;
 };
 
 type WeeklySummary = {
@@ -48,78 +49,6 @@ function parseMonthDay(value: string) {
     month: Number(match[1]),
     day: Number(match[2]),
   };
-}
-
-function normalizeValue(value: string) {
-  return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
-}
-
-function cleanSummaryText(value: string) {
-  return String(value || "").replace(/\s+/g, " ").trim();
-}
-
-function splitAwardSegments(value: string) {
-  const text = cleanSummaryText(value);
-  if (!text) return [];
-
-  return text
-    .split(/\s*;\s*/)
-    .map((part) => cleanSummaryText(part))
-    .filter(Boolean);
-}
-
-function formatHoleLabel(value: string) {
-  const holeText = cleanSummaryText(value).replace(/\.$/, "");
-  if (!holeText) return "";
-
-  if (/^holes?\b/i.test(holeText)) return holeText;
-
-  const multiple = /[,&]/.test(holeText) || /\band\b/i.test(holeText);
-  return `${multiple ? "Holes" : "Hole"} ${holeText}`;
-}
-
-function buildPrizeDisplay(
-  name: string,
-  rawValue: string,
-  kind: "overall" | "ctp" | "ace"
-) {
-  const text = cleanSummaryText(rawValue);
-  if (!text) return "";
-
-  if (kind === "overall") {
-    return `${name}: ${text}`;
-  }
-
-  let working = text.replace(/^:\s*/, "");
-
-  if (kind === "ace") {
-    working = working.replace(/^ace\b\s*/i, "").replace(/^:\s*/, "").trim();
-  }
-
-  const match = working.match(/^([^:]+):\s*(.+)$/);
-
-  if (match && /^\d/.test(match[1].trim())) {
-    return `${name} (${formatHoleLabel(match[1])}): ${match[2].trim()}`;
-  }
-
-  return `${name}: ${working}`;
-}
-
-function appendSummaryEntries(summary: WeeklySummary, name: string, rawValue: string) {
-  splitAwardSegments(rawValue).forEach((segment) => {
-    const cleaned = cleanSummaryText(segment);
-    if (!cleaned) return;
-
-    const isAce = /^ace\b/i.test(cleaned);
-    const text = buildPrizeDisplay(name, cleaned, isAce ? "ace" : "ctp");
-    if (!text) return;
-
-    if (isAce) {
-      summary.aces.push({ name, text });
-    } else {
-      summary.ctps.push({ name, text });
-    }
-  });
 }
 
 function getLastActiveHandicapColumn(rows: CsvRow[]) {
@@ -212,6 +141,125 @@ function buildHandicapDateMap(rows: CsvRow[]) {
   }
 
   return dateMap;
+}
+
+function normalizeSummaryValue(value: string) {
+  return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function cleanSummaryText(value: string) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function splitAwardSegments(value: string) {
+  const text = cleanSummaryText(value);
+  if (!text) return [];
+
+  return text
+    .split(/\s*;\s*/)
+    .map((part) => cleanSummaryText(part))
+    .filter(Boolean);
+}
+
+function hasDollarAmount(value: string) {
+  return /\$\s*\d/.test(String(value || ""));
+}
+
+function extractLowestHoleNumber(value: string) {
+  const matches = Array.from(String(value || "").matchAll(/\b(\d{1,2})\b/g))
+    .map((match) => Number(match[1]))
+    .filter((n) => Number.isFinite(n) && n >= 1 && n <= 27);
+
+  return matches.length ? Math.min(...matches) : null;
+}
+
+function formatHoleLabel(value: string) {
+  const holeText = cleanSummaryText(value).replace(/\.$/, "");
+  if (!holeText) return "";
+
+  if (/^holes?\b/i.test(holeText)) return holeText;
+
+  const multiple = /[,&]/.test(holeText) || /\band\b/i.test(holeText);
+  return `${multiple ? "Holes" : "Hole"} ${holeText}`;
+}
+
+function addOverallSummary(summary: WeeklySummary, name: string, rawValue: string) {
+  const text = cleanSummaryText(rawValue);
+  if (!text || !hasDollarAmount(text)) return;
+
+  if (/\b(?:ctp|ace|hole)\b/i.test(text)) return;
+
+  summary.overall.push({
+    name,
+    text: `${name}: ${text}`,
+    sortHole: null,
+  });
+}
+
+function parseAwardEntry(name: string, rawValue: string) {
+  const cleaned = cleanSummaryText(rawValue);
+  if (!cleaned) return null;
+  if (!hasDollarAmount(cleaned)) return null;
+  if (/disc/i.test(cleaned)) return null;
+
+  const isAce = /^ace\b/i.test(cleaned);
+
+  let working = cleaned.replace(/^:\s*/, "");
+  if (isAce) {
+    working = working.replace(/^ace\b\s*/i, "").replace(/^:\s*/, "").trim();
+  } else {
+    working = working.replace(/^ctp\b\s*/i, "").replace(/^:\s*/, "").trim();
+  }
+
+  let label = "";
+  let amount = working;
+
+  const match = working.match(/^([^:]+):\s*(.+)$/);
+  if (match && hasDollarAmount(match[2])) {
+    label = cleanSummaryText(match[1]);
+    amount = cleanSummaryText(match[2]);
+  }
+
+  return {
+    kind: isAce ? "ace" : "ctp",
+    line: {
+      name,
+      text: label
+        ? `${name} (${formatHoleLabel(label)}): ${amount}`
+        : `${name}: ${amount}`,
+      sortHole: label ? extractLowestHoleNumber(label) : null,
+    } as WeeklyPrizeLine,
+  };
+}
+
+function addAwardSummary(summary: WeeklySummary, name: string, rawValue: string) {
+  splitAwardSegments(rawValue).forEach((segment) => {
+    const parsed = parseAwardEntry(name, segment);
+    if (!parsed) return;
+
+    if (parsed.kind === "ace") {
+      summary.aces.push(parsed.line);
+    } else {
+      summary.ctps.push(parsed.line);
+    }
+  });
+}
+
+function sortPrizeLines(lines: WeeklyPrizeLine[]) {
+  lines.sort((a, b) => {
+    if (a.sortHole != null && b.sortHole != null && a.sortHole !== b.sortHole) {
+      return a.sortHole - b.sortHole;
+    }
+    if (a.sortHole != null && b.sortHole == null) return -1;
+    if (a.sortHole == null && b.sortHole != null) return 1;
+
+    return a.text.localeCompare(b.text, undefined, { sensitivity: "base" });
+  });
+}
+
+function sortWeeklySummary(summary: WeeklySummary) {
+  sortPrizeLines(summary.ctps);
+  sortPrizeLines(summary.aces);
 }
 
 export function getHandicaps() {
@@ -441,7 +489,7 @@ export function getWeeklyResults() {
   }
 
   function isWorkingTitle(value: string) {
-    const v = normalizeValue(value);
+    const v = normalizeSummaryValue(value);
     return v === "working to a handicap" || v === "working towards a handicap";
   }
 
@@ -475,6 +523,7 @@ export function getWeeklyResults() {
     while (i < rows.length && isBlankRow(rows[i])) i++;
 
     if (i >= rows.length) {
+      sortWeeklySummary(event.summary);
       events.push(event);
       break;
     }
@@ -505,7 +554,7 @@ export function getWeeklyResults() {
           const defaultLabels = ["Name", "Raw", "Hcp.", "Net", "Payout", "Ovr", "CTP"];
 
           let headerSource = cells;
-          if (i < rows.length && normalizeValue(rows[i][0] || "") === "name") {
+          if (i < rows.length && normalizeSummaryValue(rows[i][0] || "") === "name") {
             headerSource = rows[i];
             i++;
           }
@@ -552,6 +601,28 @@ export function getWeeklyResults() {
             usedIndexes.map((idx) => workingRow[idx] || "")
           );
 
+          const overallIndex = workingHeaders.findIndex((header) => {
+            const h = normalizeSummaryValue(header);
+            return h === "overall" || h === "ovr";
+          });
+
+          const ctpIndex = workingHeaders.findIndex(
+            (header) => normalizeSummaryValue(header) === "ctp"
+          );
+
+          workingRows.forEach((workingRow) => {
+            const playerName = workingRow[0] || "";
+            if (!playerName) return;
+
+            if (overallIndex !== -1) {
+              addOverallSummary(event.summary, playerName, workingRow[overallIndex] || "");
+            }
+
+            if (ctpIndex !== -1) {
+              addAwardSummary(event.summary, playerName, workingRow[ctpIndex] || "");
+            }
+          });
+
           event.working = {
             title: workingTitle,
             headers: workingHeaders,
@@ -565,18 +636,9 @@ export function getWeeklyResults() {
         const overallValue = cells[5] || "";
         const ctpValue = cells[6] || "";
 
-        if (overallValue && normalizeValue(overallValue) !== "ovr") {
-          const text = buildPrizeDisplay(playerName, overallValue, "overall");
-          if (text) {
-            event.summary.overall.push({
-              name: playerName,
-              text,
-            });
-          }
-        }
-
-        if (ctpValue && normalizeValue(ctpValue) !== "ctp") {
-          appendSummaryEntries(event.summary, playerName, ctpValue);
+        if (playerName) {
+          addOverallSummary(event.summary, playerName, overallValue);
+          addAwardSummary(event.summary, playerName, ctpValue);
         }
 
         event.rows.push({
@@ -592,6 +654,7 @@ export function getWeeklyResults() {
         i++;
       }
 
+      sortWeeklySummary(event.summary);
       events.push(event);
       continue;
     }
@@ -622,8 +685,14 @@ export function getWeeklyResults() {
       i++;
 
       const sectionRows: string[][] = [];
+
+      const overallIndex = sectionHeaders.findIndex((header) => {
+        const h = normalizeSummaryValue(header);
+        return h === "overall" || h === "ovr";
+      });
+
       const ctpIndex = sectionHeaders.findIndex(
-        (header) => normalizeValue(header) === "ctp"
+        (header) => normalizeSummaryValue(header) === "ctp"
       );
 
       while (i < rows.length) {
@@ -651,12 +720,14 @@ export function getWeeklyResults() {
           sub[4] || "",
         ];
 
-        if (ctpIndex !== -1) {
-          const playerName = rowValues[0] || "";
-          const ctpValue = rowValues[ctpIndex] || "";
+        const playerName = rowValues[0] || "";
+        if (playerName) {
+          if (overallIndex !== -1) {
+            addOverallSummary(event.summary, playerName, rowValues[overallIndex] || "");
+          }
 
-          if (playerName && ctpValue && normalizeValue(ctpValue) !== "ctp") {
-            appendSummaryEntries(event.summary, playerName, ctpValue);
+          if (ctpIndex !== -1) {
+            addAwardSummary(event.summary, playerName, rowValues[ctpIndex] || "");
           }
         }
 
@@ -671,6 +742,7 @@ export function getWeeklyResults() {
       });
     }
 
+    sortWeeklySummary(event.summary);
     events.push(event);
   }
 
