@@ -189,10 +189,10 @@ Jack Midkiff,59,6,53,$7.50,,
 William Elwell,54,1,53,$7.50,,
 Aaron Summers,57,3,54,$1.20,,
 Dave McHale,60,6,54,$1.20,,
-Jon Mas,57,3,54,$1.20,,$16.00
+Jon Mas,57,3,54,$1.20,,$16
 Matthew Viens,58,4,54,$1.20,,
 Wesley Krombel,55,1,54,$1.20,,
-Dave Smith,60,5,55,,,$16.00
+Dave Smith,60,5,55,,,$16
 PJ Bergeron,56,1,55,,,
 Stephen Irons,61,6,55,,,
 Peter Zaffina,71,15,56,,,
@@ -494,7 +494,7 @@ A Pool,Raw,Payout,CTP,,,
 Jason Cebula,49,$29.00,,,,
 Duncan Farquharson,50,$15.00,,,,
 Bryan Smith,51,$10.00,,,,
-Liam Wolfram,54,$7.50,8: $31; Ace $51,,,
+Liam Wolfram,54,$7.50,8: $31; Ace 8: $51,,,
 Neuton Matthews,54,$7.50,,,,
 PJ Bergeron,55,$6.00,,,,
 Tim Breault,56,,,,,
@@ -1272,7 +1272,7 @@ PJ Bergeron,54,1,53,,,
 Wesley Krombel,57,4,53,,,
 Ryan Thorne,57,3,54,,,
 Doug Latham,65,10,55,,,
-William Elwell,56,1,55,,$27 CTP Hole 16,16: $27
+William Elwell,56,1,55,,,16: $27
 Tyler Hanson,57,1,56,,,
 Aaron Summers,60,3,57,,,
 Skyler Phelan,61,4,57,,,
