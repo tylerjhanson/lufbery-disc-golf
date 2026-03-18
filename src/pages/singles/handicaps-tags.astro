@@ -350,32 +350,18 @@ const rows = getHandicaps();
     }
 
     .round-summary {
+      margin-top: 8px;
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 4px;
+      gap: 4px;
     }
 
-    .round-summary-card {
-      border: 1px solid var(--line-soft);
-      border-radius: 14px;
-      background: #fbfdff;
-      padding: 12px 12px 10px;
-    }
-
-    .round-summary-label {
-      color: var(--muted);
-      font-size: 0.78rem;
-      line-height: 1.1;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-      margin-bottom: 6px;
-    }
-
-    .round-summary-value {
+    .round-summary-row {
+      font-size: 0.98rem;
+      line-height: 1.3;
       color: var(--text);
-      font-size: 1.45rem;
-      line-height: 1;
+    }
+
+    .round-summary-row strong {
       font-weight: 800;
     }
 
@@ -479,18 +465,6 @@ const rows = getHandicaps();
         font-size: 0.92rem;
         padding: 9px 0;
       }
-
-      .round-summary {
-        gap: 8px;
-      }
-
-      .round-summary-card {
-        padding: 10px;
-      }
-
-      .round-summary-value {
-        font-size: 1.3rem;
-      }
     }
 
     @media (max-width: 420px) {
@@ -517,10 +491,6 @@ const rows = getHandicaps();
       tbody td {
         font-size: 0.74rem;
         padding: 6px 2px;
-      }
-
-      .round-summary {
-        grid-template-columns: 1fr 1fr;
       }
     }
   </style>
@@ -783,14 +753,11 @@ const rows = getHandicaps();
           </tr>
         `;
 
-      const averageDisplay = average
-        ? `<div class="round-summary-value">${escapeHtml(average)}</div>`
-        : `<div class="round-summary-value round-muted">—</div>`;
-
-      const handicapDisplay =
+      const averageValue = average ? escapeHtml(average) : "—";
+      const handicapValue =
         established && handicap !== ""
-          ? `<div class="round-summary-value">${escapeHtml(handicap)}</div>`
-          : `<div class="round-summary-value round-muted">—</div>`;
+          ? escapeHtml(handicap)
+          : "—";
 
       const establishmentNote =
         established || rounds.length >= 3
@@ -811,15 +778,8 @@ const rows = getHandicaps();
         </table>
 
         <div class="round-summary">
-          <div class="round-summary-card">
-            <div class="round-summary-label">Average</div>
-            ${averageDisplay}
-          </div>
-
-          <div class="round-summary-card">
-            <div class="round-summary-label">Handicap</div>
-            ${handicapDisplay}
-          </div>
+          <div class="round-summary-row">Average: <strong>${averageValue}</strong></div>
+          <div class="round-summary-row">Handicap: <strong>${handicapValue}</strong></div>
         </div>
 
         ${establishmentNote}
