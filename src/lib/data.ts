@@ -6,6 +6,17 @@ type CsvRow = string[];
 
 const HANDICAP_HISTORY_START_COLUMN = 56; // BE
 
+type WeeklyPrizeLine = {
+  name: string;
+  text: string;
+};
+
+type WeeklySummary = {
+  overall: WeeklyPrizeLine[];
+  ctps: WeeklyPrizeLine[];
+  aces: WeeklyPrizeLine[];
+};
+
 function readCsv(filename: string): CsvRow[] {
   const filePath = path.join(process.cwd(), "src", "data", filename);
   const raw = fs.readFileSync(filePath, "utf8");
@@ -37,6 +48,78 @@ function parseMonthDay(value: string) {
     month: Number(match[1]),
     day: Number(match[2]),
   };
+}
+
+function normalizeValue(value: string) {
+  return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function cleanSummaryText(value: string) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function splitAwardSegments(value: string) {
+  const text = cleanSummaryText(value);
+  if (!text) return [];
+
+  return text
+    .split(/\s*;\s*/)
+    .map((part) => cleanSummaryText(part))
+    .filter(Boolean);
+}
+
+function formatHoleLabel(value: string) {
+  const holeText = cleanSummaryText(value).replace(/\.$/, "");
+  if (!holeText) return "";
+
+  if (/^holes?\b/i.test(holeText)) return holeText;
+
+  const multiple = /[,&]/.test(holeText) || /\band\b/i.test(holeText);
+  return `${multiple ? "Holes" : "Hole"} ${holeText}`;
+}
+
+function buildPrizeDisplay(
+  name: string,
+  rawValue: string,
+  kind: "overall" | "ctp" | "ace"
+) {
+  const text = cleanSummaryText(rawValue);
+  if (!text) return "";
+
+  if (kind === "overall") {
+    return `${name}: ${text}`;
+  }
+
+  let working = text.replace(/^:\s*/, "");
+
+  if (kind === "ace") {
+    working = working.replace(/^ace\b\s*/i, "").replace(/^:\s*/, "").trim();
+  }
+
+  const match = working.match(/^([^:]+):\s*(.+)$/);
+
+  if (match && /^\d/.test(match[1].trim())) {
+    return `${name} (${formatHoleLabel(match[1])}): ${match[2].trim()}`;
+  }
+
+  return `${name}: ${working}`;
+}
+
+function appendSummaryEntries(summary: WeeklySummary, name: string, rawValue: string) {
+  splitAwardSegments(rawValue).forEach((segment) => {
+    const cleaned = cleanSummaryText(segment);
+    if (!cleaned) return;
+
+    const isAce = /^ace\b/i.test(cleaned);
+    const text = buildPrizeDisplay(name, cleaned, isAce ? "ace" : "ctp");
+    if (!text) return;
+
+    if (isAce) {
+      summary.aces.push({ name, text });
+    } else {
+      summary.ctps.push({ name, text });
+    }
+  });
 }
 
 function getLastActiveHandicapColumn(rows: CsvRow[]) {
@@ -350,18 +433,15 @@ export function getWeeklyResults() {
   function isTitleRow(cells: string[]) {
     const first = cells[0] || "";
     const rest = cells.slice(1);
+
     return (
       first.includes(" - ") &&
       rest.every((cell) => !cell || /^https?:\/\//i.test(cell))
     );
   }
 
-  function normalize(value: string) {
-    return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
-  }
-
   function isWorkingTitle(value: string) {
-    const v = normalize(value);
+    const v = normalizeValue(value);
     return v === "working to a handicap" || v === "working towards a handicap";
   }
 
@@ -383,11 +463,17 @@ export function getWeeklyResults() {
       rows: [],
       working: null,
       pools: [],
+      summary: {
+        overall: [],
+        ctps: [],
+        aces: [],
+      } as WeeklySummary,
     };
 
     i++;
 
     while (i < rows.length && isBlankRow(rows[i])) i++;
+
     if (i >= rows.length) {
       events.push(event);
       break;
@@ -419,7 +505,7 @@ export function getWeeklyResults() {
           const defaultLabels = ["Name", "Raw", "Hcp.", "Net", "Payout", "Ovr", "CTP"];
 
           let headerSource = cells;
-          if (i < rows.length && normalize(rows[i][0] || "") === "name") {
+          if (i < rows.length && normalizeValue(rows[i][0] || "") === "name") {
             headerSource = rows[i];
             i++;
           }
@@ -475,14 +561,32 @@ export function getWeeklyResults() {
           continue;
         }
 
+        const playerName = cells[0] || "";
+        const overallValue = cells[5] || "";
+        const ctpValue = cells[6] || "";
+
+        if (overallValue && normalizeValue(overallValue) !== "ovr") {
+          const text = buildPrizeDisplay(playerName, overallValue, "overall");
+          if (text) {
+            event.summary.overall.push({
+              name: playerName,
+              text,
+            });
+          }
+        }
+
+        if (ctpValue && normalizeValue(ctpValue) !== "ctp") {
+          appendSummaryEntries(event.summary, playerName, ctpValue);
+        }
+
         event.rows.push({
-          name: cells[0] || "",
+          name: playerName,
           raw: cells[1] || "",
           hcp: cells[2] || "",
           net: cells[3] || "",
           payout: cells[4] || "",
-          overall: cells[5] || "",
-          ctp: cells[6] || "",
+          overall: overallValue,
+          ctp: ctpValue,
         });
 
         i++;
@@ -498,6 +602,7 @@ export function getWeeklyResults() {
       const cells = rows[i];
 
       if (isTitleRow(cells)) break;
+
       if (isBlankRow(cells)) {
         i++;
         continue;
@@ -517,11 +622,15 @@ export function getWeeklyResults() {
       i++;
 
       const sectionRows: string[][] = [];
+      const ctpIndex = sectionHeaders.findIndex(
+        (header) => normalizeValue(header) === "ctp"
+      );
 
       while (i < rows.length) {
         const sub = rows[i];
 
         if (isTitleRow(sub)) break;
+
         if (isBlankRow(sub)) {
           i++;
           break;
@@ -534,14 +643,24 @@ export function getWeeklyResults() {
 
         if (nextIsPoolSection) break;
 
-        sectionRows.push([
+        const rowValues = [
           sub[0] || "",
           sub[1] || "",
           sub[2] || "",
           sub[3] || "",
           sub[4] || "",
-        ]);
+        ];
 
+        if (ctpIndex !== -1) {
+          const playerName = rowValues[0] || "";
+          const ctpValue = rowValues[ctpIndex] || "";
+
+          if (playerName && ctpValue && normalizeValue(ctpValue) !== "ctp") {
+            appendSummaryEntries(event.summary, playerName, ctpValue);
+          }
+        }
+
+        sectionRows.push(rowValues);
         i++;
       }
 
