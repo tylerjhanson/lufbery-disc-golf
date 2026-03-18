@@ -73,50 +73,6 @@ function getCellValueByHeaders(headers: unknown[], row: unknown[], headerNames: 
   return "";
 }
 
-function isValidPlayerOption(value: unknown) {
-  const name = cleanPlayerName(value).toLowerCase();
-
-  return (
-    !!name &&
-    name !== "name" &&
-    name !== "working towards a handicap" &&
-    name !== "working to a handicap"
-  );
-}
-
-function getEventPlayers(event: any) {
-  const values: string[] = [];
-
-  if (event.kind === "handicap") {
-    if (Array.isArray(event.rows)) {
-      event.rows.forEach((row: any) => {
-        const name = cleanPlayerName(row?.name);
-        if (isValidPlayerOption(name)) values.push(name);
-      });
-    }
-
-    if (event.working?.rows && Array.isArray(event.working.rows)) {
-      event.working.rows.forEach((row: any[]) => {
-        const name = cleanPlayerName(row?.[0]);
-        if (isValidPlayerOption(name)) values.push(name);
-      });
-    }
-  }
-
-  if (event.kind === "pools" && Array.isArray(event.pools)) {
-    event.pools.forEach((pool: any) => {
-      if (Array.isArray(pool?.rows)) {
-        pool.rows.forEach((row: any[]) => {
-          const name = cleanPlayerName(row?.[0]);
-          if (isValidPlayerOption(name)) values.push(name);
-        });
-      }
-    });
-  }
-
-  return [...new Set(values)];
-}
-
 function getVisibleColumnIndexes(headers: unknown[], hiddenHeaders: string[]) {
   const hidden = hiddenHeaders.map((header) => normalizeHeaderValue(header));
 
@@ -766,7 +722,7 @@ const defaultRoundType = "all";
                   <table class="pool-table">
                     <thead>
                       <tr>
-                        {getVisibleColumnIndexes(pool.headers, ["CTP"]).map((idx) => (
+                        {getVisibleColumnIndexes(pool.headers, ["Overall", "Ovr", "CTP"]).map((idx) => (
                           <th>{pool.headers[idx]}</th>
                         ))}
                       </tr>
@@ -781,7 +737,7 @@ const defaultRoundType = "all";
                             ["R1", "Round 1", "Raw", "Score"]
                           )}
                         >
-                          {getVisibleColumnIndexes(pool.headers, ["CTP"]).map((idx) => (
+                          {getVisibleColumnIndexes(pool.headers, ["Overall", "Ovr", "CTP"]).map((idx) => (
                             <td
                               data-label={pool.headers[idx] || ""}
                               class={idx === 0 ? "player-name-cell" : undefined}
