@@ -269,12 +269,6 @@ const rows = getHandicaps();
       line-height: 1.2;
     }
 
-    .round-modal-subtitle {
-      margin: 6px 0 14px;
-      color: var(--muted);
-      font-size: 0.88rem;
-    }
-
     .round-history-table {
       width: 100%;
       border-collapse: collapse;
@@ -294,10 +288,12 @@ const rows = getHandicaps();
       text-align: right;
     }
 
-    .round-row-dropped td {
-      text-decoration: line-through;
-      color: var(--muted);
-    }
+    .round-cell-dropped {
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  text-decoration-skip-ink: auto;
+  color: var(--muted);
+}
 
     .round-summary {
       margin-top: 12px;
@@ -525,9 +521,8 @@ const rows = getHandicaps();
       </button>
 
       <h2 id="roundModalTitle" class="round-modal-title">Recent rounds</h2>
-      <p class="round-modal-subtitle">Most recent scores used for handicap</p>
-
-      <div id="roundModalBody"></div>
+      
+<div id="roundModalBody"></div>
     </div>
   </div>
 
@@ -641,65 +636,67 @@ const rows = getHandicaps();
     }
 
     function renderRoundModal(playerName, rounds, average, handicap, established) {
-      if (!roundModalTitle || !roundModalBody) return;
+  if (!roundModalTitle || !roundModalBody) return;
 
-      roundModalTitle.textContent = playerName;
+  roundModalTitle.textContent = playerName;
 
-      const rowsHtml = rounds.length
-        ? rounds
-            .map((round) => {
-              return `
-                <tr class="${round.dropped ? "round-row-dropped" : ""}">
-                  <td>${escapeHtml(round.date)}</td>
-                  <td>${escapeHtml(formatScoreWithPar(round.score))}</td>
-                </tr>
-              `;
-            })
-            .join("")
-        : `
-          <tr>
-            <td colspan="2" class="round-muted">No recent rounds found.</td>
-          </tr>
-        `;
+  const rowsHtml = rounds.length
+    ? rounds
+        .map((round) => {
+          const droppedClass = round.dropped ? "round-cell-dropped" : "";
 
-      const handicapDisplay =
-        established && handicap !== ""
-          ? `<strong>${escapeHtml(handicap)}</strong>`
-          : `<strong class="round-muted">Not established</strong>`;
-
-      const establishmentNote =
-        established || rounds.length >= 3
-          ? ""
-          : `<p class="round-note">3 rounds are required to establish a handicap.</p>`;
-
-      roundModalBody.innerHTML = `
-        <table class="round-history-table">
-          <thead>
+          return `
             <tr>
-              <th>Date</th>
-              <th>Score</th>
+              <td><span class="${droppedClass}">${escapeHtml(round.date)}</span></td>
+              <td><span class="${droppedClass}">${escapeHtml(formatScoreWithPar(round.score))}</span></td>
             </tr>
-          </thead>
-          <tbody>
-            ${rowsHtml}
-          </tbody>
-        </table>
+          `;
+        })
+        .join("")
+    : `
+      <tr>
+        <td colspan="2" class="round-muted">No recent rounds found.</td>
+      </tr>
+    `;
 
-        <div class="round-summary">
-          <div class="round-summary-row">
-            <span>Average</span>
-            <strong>${average ? escapeHtml(average) : "—"}</strong>
-          </div>
+  const handicapDisplay =
+    established && handicap !== ""
+      ? `<strong>${escapeHtml(handicap)}</strong>`
+      : `<strong class="round-muted">Not established</strong>`;
 
-          <div class="round-summary-row">
-            <span>Handicap</span>
-            ${handicapDisplay}
-          </div>
-        </div>
+  const establishmentNote =
+    established || rounds.length >= 3
+      ? ""
+      : `<p class="round-note">3 rounds are required to establish a handicap.</p>`;
 
-        ${establishmentNote}
-      `;
-    }
+  roundModalBody.innerHTML = `
+    <table class="round-history-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rowsHtml}
+      </tbody>
+    </table>
+
+    <div class="round-summary">
+      <div class="round-summary-row">
+        <span>Average</span>
+        <strong>${average ? escapeHtml(average) : "—"}</strong>
+      </div>
+
+      <div class="round-summary-row">
+        <span>Handicap</span>
+        ${handicapDisplay}
+      </div>
+    </div>
+
+    ${establishmentNote}
+  `;
+}
 
     function openRoundModal(button) {
       if (!button || !roundModal) return;
