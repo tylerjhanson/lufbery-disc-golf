@@ -57,20 +57,63 @@ const rows = getHandicaps();
 
     .toolbar {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
       margin-top: 12px;
     }
 
-    .search-input {
+    .search-wrap {
+      position: relative;
       width: min(360px, 100%);
-      padding: 11px 13px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 11px 42px 11px 13px;
       border: 1px solid var(--line-soft);
       border-radius: 9px;
       background: var(--card);
       color: var(--text);
       font: inherit;
+    }
+
+    .search-clear {
+      position: absolute;
+      top: 50%;
+      right: 9px;
+      transform: translateY(-50%);
+      width: 26px;
+      height: 26px;
+      border: 1px solid var(--line-soft);
+      border-radius: 999px;
+      background: #fff;
+      color: #94a3b8;
+      font-size: 0.95rem;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+    }
+
+    .search-wrap.has-value .search-clear {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .search-clear:hover {
+      color: var(--text);
+      background: #f8fafc;
+    }
+
+    .click-note {
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.35;
     }
 
     h1 {
@@ -237,21 +280,23 @@ const rows = getHandicaps();
     .round-modal-panel {
       position: relative;
       z-index: 1;
-      width: min(92vw, 420px);
-      margin: 8vh auto 0;
+      width: min(92vw, 460px);
+      margin: 6vh auto 0;
       background: var(--card);
       border: 1px solid var(--line-soft);
-      border-radius: 18px;
+      border-radius: 22px;
       box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
       padding: 18px 18px 16px;
+      max-height: 88vh;
+      overflow-y: auto;
     }
 
     .round-modal-close {
       position: absolute;
-      top: 10px;
-      right: 10px;
-      width: 34px;
-      height: 34px;
+      top: 12px;
+      right: 12px;
+      width: 36px;
+      height: 36px;
       border: 1px solid var(--line-soft);
       border-radius: 999px;
       background: #fff;
@@ -267,23 +312,36 @@ const rows = getHandicaps();
     }
 
     .round-modal-title {
-      margin: 0;
-      font-size: 1.1rem;
+      margin: 0 42px 12px 0;
+      font-size: 1.12rem;
       line-height: 1.2;
+      font-weight: 800;
     }
 
     .round-history-table {
       width: 100%;
       border-collapse: collapse;
-      margin: 0 0 10px;
+      margin: 0 0 14px;
     }
 
     .round-history-table th,
     .round-history-table td {
-      padding: 8px 0;
+      padding: 10px 0;
       border-bottom: 1px solid var(--line-soft);
-      font-size: 0.92rem;
+      font-size: 0.98rem;
       text-align: left;
+    }
+
+    .round-history-table thead th {
+      position: static;
+      background: transparent;
+      border-bottom: 1px solid var(--line-soft);
+      color: var(--text);
+      font-size: 0.82rem;
+      text-transform: none;
+      letter-spacing: 0;
+      padding-top: 0;
+      padding-bottom: 8px;
     }
 
     .round-history-table th:last-child,
@@ -292,28 +350,33 @@ const rows = getHandicaps();
     }
 
     .round-summary {
-      margin-top: 12px;
-      border-top: 1px solid var(--line-soft);
-      padding-top: 12px;
       display: grid;
-      gap: 8px;
-    }
-
-    .round-summary-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
-      font-size: 0.92rem;
+      margin-top: 4px;
     }
 
-    .round-summary-row span {
+    .round-summary-card {
+      border: 1px solid var(--line-soft);
+      border-radius: 14px;
+      background: #fbfdff;
+      padding: 12px 12px 10px;
+    }
+
+    .round-summary-label {
       color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.1;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-bottom: 6px;
     }
 
-    .round-summary-row strong {
+    .round-summary-value {
       color: var(--text);
-      font-weight: 700;
+      font-size: 1.45rem;
+      line-height: 1;
+      font-weight: 800;
     }
 
     .round-muted {
@@ -322,7 +385,7 @@ const rows = getHandicaps();
     }
 
     .round-note {
-      margin: 10px 0 0;
+      margin: 12px 0 0;
       color: var(--muted);
       font-size: 0.83rem;
       line-height: 1.35;
@@ -349,9 +412,17 @@ const rows = getHandicaps();
         margin-top: 10px;
       }
 
+      .search-wrap {
+        width: 100%;
+      }
+
       .search-input {
         width: 100%;
-        padding: 10px 12px;
+        padding: 10px 40px 10px 12px;
+      }
+
+      .click-note {
+        font-size: 0.82rem;
       }
 
       .table-wrap {
@@ -392,9 +463,33 @@ const rows = getHandicaps();
       }
 
       .round-modal-panel {
-        width: min(94vw, 420px);
-        margin-top: 6vh;
+        width: min(94vw, 460px);
+        margin-top: 4vh;
         padding: 16px 14px 14px;
+        border-radius: 20px;
+      }
+
+      .round-modal-title {
+        font-size: 1.05rem;
+        margin-bottom: 10px;
+      }
+
+      .round-history-table th,
+      .round-history-table td {
+        font-size: 0.92rem;
+        padding: 9px 0;
+      }
+
+      .round-summary {
+        gap: 8px;
+      }
+
+      .round-summary-card {
+        padding: 10px;
+      }
+
+      .round-summary-value {
+        font-size: 1.3rem;
       }
     }
 
@@ -423,6 +518,10 @@ const rows = getHandicaps();
         font-size: 0.74rem;
         padding: 6px 2px;
       }
+
+      .round-summary {
+        grid-template-columns: 1fr 1fr;
+      }
     }
   </style>
 
@@ -431,13 +530,29 @@ const rows = getHandicaps();
       <div class="card-header">
         <h1>Handicaps &amp; Tags</h1>
         <div class="toolbar">
-          <input
-            id="playerSearch"
-            class="search-input"
-            type="search"
-            placeholder="Search player"
-            aria-label="Search player"
-          />
+          <div id="searchWrap" class="search-wrap">
+            <input
+              id="playerSearch"
+              class="search-input"
+              type="text"
+              placeholder="Search player"
+              aria-label="Search player"
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+            />
+            <button
+              id="clearSearch"
+              class="search-clear"
+              type="button"
+              aria-label="Clear search"
+              title="Clear search"
+            >
+              ×
+            </button>
+          </div>
+
+          <div class="click-note">Click a player name to view most recent five rounds.</div>
         </div>
       </div>
 
@@ -531,6 +646,8 @@ const rows = getHandicaps();
     const tbody = table ? table.querySelector("tbody") : null;
     const headers = table ? table.querySelectorAll("thead th.sortable") : [];
     const playerSearch = document.getElementById("playerSearch");
+    const searchWrap = document.getElementById("searchWrap");
+    const clearSearch = document.getElementById("clearSearch");
 
     const roundModal = document.getElementById("roundModal");
     const roundModalTitle = document.getElementById("roundModalTitle");
@@ -597,6 +714,11 @@ const rows = getHandicaps();
       updateIndicators(columnIndex, direction);
     }
 
+    function updateSearchClear() {
+      if (!searchWrap || !playerSearch) return;
+      searchWrap.classList.toggle("has-value", !!playerSearch.value.trim());
+    }
+
     function applySearchFilter() {
       if (!tbody) return;
 
@@ -611,6 +733,8 @@ const rows = getHandicaps();
 
         row.style.display = !query || name.includes(query) ? "" : "none";
       });
+
+      updateSearchClear();
     }
 
     function escapeHtml(value) {
@@ -659,10 +783,14 @@ const rows = getHandicaps();
           </tr>
         `;
 
+      const averageDisplay = average
+        ? `<div class="round-summary-value">${escapeHtml(average)}</div>`
+        : `<div class="round-summary-value round-muted">—</div>`;
+
       const handicapDisplay =
         established && handicap !== ""
-          ? `<strong>${escapeHtml(handicap)}</strong>`
-          : `<strong class="round-muted">Not established</strong>`;
+          ? `<div class="round-summary-value">${escapeHtml(handicap)}</div>`
+          : `<div class="round-summary-value round-muted">—</div>`;
 
       const establishmentNote =
         established || rounds.length >= 3
@@ -683,13 +811,13 @@ const rows = getHandicaps();
         </table>
 
         <div class="round-summary">
-          <div class="round-summary-row">
-            <span>Average</span>
-            <strong>${average ? escapeHtml(average) : "—"}</strong>
+          <div class="round-summary-card">
+            <div class="round-summary-label">Average</div>
+            ${averageDisplay}
           </div>
 
-          <div class="round-summary-row">
-            <span>Handicap</span>
+          <div class="round-summary-card">
+            <div class="round-summary-label">Handicap</div>
             ${handicapDisplay}
           </div>
         </div>
@@ -753,6 +881,15 @@ const rows = getHandicaps();
       playerSearch.addEventListener("input", applySearchFilter);
     }
 
+    if (clearSearch) {
+      clearSearch.addEventListener("click", () => {
+        if (!playerSearch) return;
+        playerSearch.value = "";
+        applySearchFilter();
+        playerSearch.focus();
+      });
+    }
+
     playerButtons.forEach((button) => {
       button.addEventListener("click", () => openRoundModal(button));
     });
@@ -773,5 +910,6 @@ const rows = getHandicaps();
 
     sortTable(currentColumn, "number", currentDirection);
     applySearchFilter();
+    updateSearchClear();
   </script>
 </SiteLayout>
