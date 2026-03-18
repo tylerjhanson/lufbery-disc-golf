@@ -124,10 +124,11 @@ const rows = getHandicaps();
     }
 
     .table-wrap {
-  padding: 0 10px 8px;
-  overflow: visible;
-  max-height: none;
-}
+      padding: 0 10px 8px;
+      overflow-x: visible;
+      overflow-y: auto;
+      max-height: calc(100vh - 250px);
+    }
 
     table {
       width: 100%;
@@ -411,11 +412,10 @@ const rows = getHandicaps();
       }
 
       .table-wrap {
-  padding: 0 2px 6px;
-  overflow-y: auto;
-  overflow-x: visible;
-  max-height: calc(100vh - 190px);
-}
+        padding: 0 2px 6px;
+        overflow-y: auto;
+        max-height: calc(100vh - 190px);
+      }
 
       col.name-col {
         width: 36%;
