@@ -838,61 +838,68 @@ const hasLatestResultTable =
     </div>
   </section>
 
-  <script>
-    (() => {
-      const card = document.getElementById("latestResultCard");
-      const collapse = document.getElementById("latestResultCollapse");
-      const toggle = document.getElementById("latestResultToggle");
+ <script>
+  (() => {
+    const card = document.getElementById("latestResultCard");
+    const collapse = document.getElementById("latestResultCollapse");
+    const toggle = document.getElementById("latestResultToggle");
 
-      if (!card || !collapse || !toggle) return;
+    if (!card || !collapse || !toggle) return;
 
-      function syncButton() {
-        const expanded = card.classList.contains("is-expanded");
-        toggle.textContent = expanded ? "Show less" : "Show more";
-        toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
-      }
+    let userExpanded = false;
 
-      function updateToggleState() {
-        const wasExpanded = card.classList.contains("is-expanded");
+    function syncButton() {
+      const expanded = card.classList.contains("is-expanded");
+      toggle.textContent = expanded ? "Show less" : "Show more";
+      toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+    }
 
-        card.classList.remove("is-expanded");
+    function updateToggleState() {
+      card.classList.remove("is-expanded");
 
-        const overflowing = collapse.scrollHeight > collapse.clientHeight + 4;
+      const overflowing = collapse.scrollHeight > collapse.clientHeight + 4;
 
-        card.classList.toggle("has-overflow", overflowing);
+      card.classList.toggle("has-overflow", overflowing);
 
-        if (!overflowing) {
-          card.classList.add("is-expanded");
-          toggle.hidden = true;
-          syncButton();
-          return;
-        }
-
-        if (wasExpanded) {
-          card.classList.add("is-expanded");
-        }
-
-        toggle.hidden = false;
+      if (!overflowing) {
+        card.classList.add("is-expanded");
+        toggle.hidden = true;
         syncButton();
+        return;
       }
 
-      toggle.addEventListener("click", () => {
-        card.classList.toggle("is-expanded");
-        syncButton();
-      });
-
-      if ("ResizeObserver" in window) {
-        const ro = new ResizeObserver(() => updateToggleState());
-        ro.observe(collapse);
-        ro.observe(document.body);
-      } else {
-        window.addEventListener("resize", updateToggleState);
+      if (userExpanded) {
+        card.classList.add("is-expanded");
       }
 
-      window.addEventListener("load", updateToggleState);
+      toggle.hidden = false;
+      syncButton();
+    }
+
+    toggle.addEventListener("click", () => {
+      userExpanded = !card.classList.contains("is-expanded");
+      card.classList.toggle("is-expanded");
+      syncButton();
+    });
+
+    function runUpdate() {
       updateToggleState();
-    })();
-  </script>
+      requestAnimationFrame(updateToggleState);
+    }
+
+    if ("ResizeObserver" in window) {
+      const ro = new ResizeObserver(() => runUpdate());
+      ro.observe(collapse);
+      ro.observe(document.body);
+    } else {
+      window.addEventListener("resize", runUpdate);
+    }
+
+    window.addEventListener("load", runUpdate);
+    window.addEventListener("pageshow", runUpdate);
+    runUpdate();
+  })();
+</script>
 
   <script>
     (() => {
