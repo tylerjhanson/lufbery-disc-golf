@@ -4,6 +4,8 @@ import { parse } from "csv-parse/sync";
 
 type CsvRow = string[];
 
+const HANDICAP_HISTORY_START_COLUMN = 56; // BE
+
 function readCsv(filename: string): CsvRow[] {
   const filePath = path.join(process.cwd(), "src", "data", filename);
   const raw = fs.readFileSync(filePath, "utf8");
@@ -40,28 +42,35 @@ function parseMonthDay(value: string) {
 function getLastActiveHandicapColumn(rows: CsvRow[]) {
   const header = rows[0] || [];
 
-  for (let i = header.length - 1; i >= 6; i -= 1) {
+  for (let i = header.length - 1; i >= HANDICAP_HISTORY_START_COLUMN; i -= 1) {
     if (!parseMonthDay(header[i])) continue;
 
-    const hasAnyScore = rows.slice(1).some((row) => String(row[i] || "").trim() !== "");
+    const hasAnyScore = rows
+      .slice(1)
+      .some((row) => String(row[i] || "").trim() !== "");
+
     if (hasAnyScore) return i;
   }
 
-  return 5;
+  return HANDICAP_HISTORY_START_COLUMN - 1;
 }
 
 function buildHandicapDateMap(rows: CsvRow[]) {
   const header = rows[0] || [];
   const lastActiveColumn = getLastActiveHandicapColumn(rows);
 
+  if (lastActiveColumn < HANDICAP_HISTORY_START_COLUMN) {
+    return new Map<number, string>();
+  }
+
   const dateColumns = header
-    .slice(6, lastActiveColumn + 1)
+    .slice(HANDICAP_HISTORY_START_COLUMN, lastActiveColumn + 1)
     .map((label, offset) => {
       const parts = parseMonthDay(label);
       if (!parts) return null;
 
       return {
-        index: offset + 6,
+        index: HANDICAP_HISTORY_START_COLUMN + offset,
         month: parts.month,
         day: parts.day,
       };
@@ -109,7 +118,10 @@ function buildHandicapDateMap(rows: CsvRow[]) {
       year -= 1;
     }
 
-    dateMap.set(current.index, `${current.month}/${current.day}/${String(year).slice(-2)}`);
+    dateMap.set(
+      current.index,
+      `${current.month}/${current.day}/${String(year).slice(-2)}`
+    );
 
     nextMonth = current.month;
     nextDay = current.day;
@@ -123,7 +135,9 @@ export function getHandicaps() {
   const rows = readCsv("hcp.csv");
   const dateMap = buildHandicapDateMap(rows);
 
-  const orderedDateEntries = Array.from(dateMap.entries()).sort((a, b) => a[0] - b[0]);
+  const orderedDateEntries = Array.from(dateMap.entries()).sort(
+    (a, b) => a[0] - b[0]
+  );
 
   return rows
     .slice(1)
@@ -139,7 +153,9 @@ export function getHandicaps() {
 
           return { date, score };
         })
-        .filter((value): value is { date: string; score: number } => Boolean(value));
+        .filter(
+          (value): value is { date: string; score: number } => Boolean(value)
+        );
 
       const recentRounds = roundHistory.slice(-5);
 
@@ -154,7 +170,8 @@ export function getHandicaps() {
 
       const average =
         keptRounds.length > 0
-          ? keptRounds.reduce((sum, round) => sum + round.score, 0) / keptRounds.length
+          ? keptRounds.reduce((sum, round) => sum + round.score, 0) /
+            keptRounds.length
           : null;
 
       const averageDisplay = average == null ? "" : average.toFixed(1);
@@ -345,10 +362,7 @@ export function getWeeklyResults() {
 
   function isWorkingTitle(value: string) {
     const v = normalize(value);
-    return (
-      v === "working to a handicap" ||
-      v === "working towards a handicap"
-    );
+    return v === "working to a handicap" || v === "working towards a handicap";
   }
 
   let i = 0;
