@@ -294,16 +294,9 @@ const rows = getHandicaps();
       text-align: right;
     }
 
-    .round-score-dropped {
+    .round-row-dropped td {
       text-decoration: line-through;
       color: var(--muted);
-    }
-
-    .round-note {
-      margin: 10px 0 0;
-      color: var(--muted);
-      font-size: 0.83rem;
-      line-height: 1.35;
     }
 
     .round-summary {
@@ -334,6 +327,13 @@ const rows = getHandicaps();
     .round-muted {
       color: var(--muted);
       font-weight: 600;
+    }
+
+    .round-note {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 0.83rem;
+      line-height: 1.35;
     }
 
     @media (max-width: 700px) {
@@ -649,11 +649,9 @@ const rows = getHandicaps();
         ? rounds
             .map((round) => {
               return `
-                <tr>
+                <tr class="${round.dropped ? "round-row-dropped" : ""}">
                   <td>${escapeHtml(round.date)}</td>
-                  <td class="${round.dropped ? "round-score-dropped" : ""}">
-                    ${escapeHtml(formatScoreWithPar(round.score))}
-                  </td>
+                  <td>${escapeHtml(formatScoreWithPar(round.score))}</td>
                 </tr>
               `;
             })
@@ -663,10 +661,6 @@ const rows = getHandicaps();
             <td colspan="2" class="round-muted">No recent rounds found.</td>
           </tr>
         `;
-
-      const removedNote = rounds.length >= 4
-        ? `<p class="round-note">The highest score is struck through and removed from the average.</p>`
-        : `<p class="round-note">All available rounds are included in the average.</p>`;
 
       const handicapDisplay =
         established && handicap !== ""
@@ -691,11 +685,9 @@ const rows = getHandicaps();
           </tbody>
         </table>
 
-        ${removedNote}
-
         <div class="round-summary">
           <div class="round-summary-row">
-            <span>Average used</span>
+            <span>Average</span>
             <strong>${average ? escapeHtml(average) : "—"}</strong>
           </div>
 
