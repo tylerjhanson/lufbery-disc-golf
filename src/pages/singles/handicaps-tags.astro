@@ -288,14 +288,7 @@ const rows = getHandicaps();
       text-align: right;
     }
 
-    .round-cell-dropped {
-  text-decoration: line-through;
-  text-decoration-thickness: 1.5px;
-  text-decoration-skip-ink: auto;
-  color: var(--muted);
-}
-
-    .round-summary {
+      .round-summary {
       margin-top: 12px;
       border-top: 1px solid var(--line-soft);
       padding-top: 12px;
@@ -641,23 +634,25 @@ const rows = getHandicaps();
   roundModalTitle.textContent = playerName;
 
   const rowsHtml = rounds.length
-    ? rounds
-        .map((round) => {
-          const droppedClass = round.dropped ? "round-cell-dropped" : "";
+  ? rounds
+      .map((round) => {
+        const droppedStyle = round.dropped
+          ? 'style="text-decoration: line-through; text-decoration-thickness: 1.5px; color: #6b7280;"'
+          : "";
 
-          return `
-            <tr>
-              <td><span class="${droppedClass}">${escapeHtml(round.date)}</span></td>
-              <td><span class="${droppedClass}">${escapeHtml(formatScoreWithPar(round.score))}</span></td>
-            </tr>
-          `;
-        })
-        .join("")
-    : `
-      <tr>
-        <td colspan="2" class="round-muted">No recent rounds found.</td>
-      </tr>
-    `;
+        return `
+          <tr>
+            <td><span ${droppedStyle}>${escapeHtml(round.date)}</span></td>
+            <td><span ${droppedStyle}>${escapeHtml(formatScoreWithPar(round.score))}</span></td>
+          </tr>
+        `;
+      })
+      .join("")
+  : `
+    <tr>
+      <td colspan="2" class="round-muted">No recent rounds found.</td>
+    </tr>
+  `;
 
   const handicapDisplay =
     established && handicap !== ""
