@@ -968,6 +968,8 @@ const hasLatestResultTable =
       const eventsList = document.getElementById("eventsList");
       if (!eventsList) return;
 
+      const CALENDAR_CACHE_KEY = "fa_home_upcoming_events_v1";
+
       function escapeHtml(value) {
         return String(value ?? "")
           .replace(/&/g, "&amp;")
@@ -977,9 +979,14 @@ const hasLatestResultTable =
           .replace(/'/g, "&#39;");
       }
 
+      function renderEmpty(message) {
+        eventsList.innerHTML =
+          '<p class="subtle-note">' + escapeHtml(message) + "</p>";
+      }
+
       function renderEvents(events) {
         if (!Array.isArray(events) || !events.length) {
-          eventsList.innerHTML = '<p id="eventsEmpty" class="subtle-note">No upcoming events are available right now.</p>';
+          renderEmpty("No upcoming events are available right now.");
           return;
         }
 
@@ -1001,22 +1008,92 @@ const hasLatestResultTable =
           .join("");
       }
 
-      fetch("https://lufberydiscgolf.com/api/calendar.json", {
-        method: "GET",
-        cache: "no-store",
-        mode: "cors",
-      })
-        .then((res) => {
-          if (!res.ok) throw new Error("Calendar API failed: " + res.status);
-          return res.json();
-        })
-        .then((data) => {
-          renderEvents(data && Array.isArray(data.upcomingEvents) ? data.upcomingEvents : []);
-        })
-        .catch((error) => {
-          console.error("Client calendar load failed:", error);
-          renderEvents([]);
-        });
+      function readCachedEvents() {
+        try {
+          const raw = localStorage.getItem(CALENDAR_CACHE_KEY);
+          if (!raw) return null;
+
+          const parsed = JSON.parse(raw);
+          return Array.isArray(parsed) ? parsed : null;
+        } catch (error) {
+          console.warn("Unable to read cached calendar events:", error);
+          return null;
+        }
+      }
+
+      function writeCachedEvents(events) {
+        try {
+          localStorage.setItem(CALENDAR_CACHE_KEY, JSON.stringify(events));
+        } catch (error) {
+          console.warn("Unable to cache calendar events:", error);
+        }
+      }
+
+      function getCalendarUrls() {
+        const urls = [
+          "https://lufberydiscgolf.com/api/calendar.json",
+          window.location.origin + "/api/calendar.json",
+        ];
+
+        return [...new Set(urls)];
+      }
+
+      async function fetchJsonWithTimeout(url, timeoutMs) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+        try {
+          const res = await fetch(url, {
+            method: "GET",
+            cache: "default",
+            mode: "cors",
+            signal: controller.signal,
+          });
+
+          if (!res.ok) {
+            throw new Error("Calendar API failed: " + res.status);
+          }
+
+          return await res.json();
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      }
+
+      async function loadEvents() {
+        const cachedEvents = readCachedEvents();
+
+        if (cachedEvents && cachedEvents.length) {
+          renderEvents(cachedEvents);
+        }
+
+        const urls = getCalendarUrls();
+        let lastError = null;
+
+        for (const url of urls) {
+          try {
+            const data = await fetchJsonWithTimeout(url, 15000);
+            const events =
+              data && Array.isArray(data.upcomingEvents) ? data.upcomingEvents : [];
+
+            writeCachedEvents(events);
+            renderEvents(events);
+            return;
+          } catch (error) {
+            lastError = error;
+            console.error("Client calendar load failed for " + url + ":", error);
+          }
+        }
+
+        if (cachedEvents && cachedEvents.length) {
+          return;
+        }
+
+        console.error("All calendar fetch attempts failed:", lastError);
+        renderEmpty("Unable to load upcoming events right now.");
+      }
+
+      loadEvents();
     })();
   </script>
 </SiteLayout>
