@@ -190,18 +190,150 @@ const rows = getHandicaps();
       word-break: break-word;
     }
 
-    .footer-link {
-      padding: 16px 20px 20px;
-    }
-
-    .footer-link a {
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .footer-link a:hover {
+    .player-button {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      font-weight: inherit;
+      padding: 0;
+      margin: 0;
+      cursor: pointer;
+      text-align: left;
       text-decoration: underline;
+      text-decoration-color: transparent;
+      text-underline-offset: 2px;
+      transition: color 0.15s ease, text-decoration-color 0.15s ease;
+    }
+
+    .player-button:hover,
+    .player-button:focus-visible {
+      color: var(--accent);
+      text-decoration-color: currentColor;
+      outline: none;
+    }
+
+    .round-modal[hidden] {
+      display: none;
+    }
+
+    .round-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+    }
+
+    .round-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(2px);
+    }
+
+    .round-modal-panel {
+      position: relative;
+      z-index: 1;
+      width: min(92vw, 420px);
+      margin: 8vh auto 0;
+      background: var(--card);
+      border: 1px solid var(--line-soft);
+      border-radius: 18px;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+      padding: 18px 18px 16px;
+    }
+
+    .round-modal-close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--line-soft);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 1.15rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .round-modal-close:hover {
+      color: var(--text);
+      background: #f8fafc;
+    }
+
+    .round-modal-title {
+      margin: 0;
+      font-size: 1.1rem;
+      line-height: 1.2;
+    }
+
+    .round-modal-subtitle {
+      margin: 6px 0 14px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .round-history-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 0 10px;
+    }
+
+    .round-history-table th,
+    .round-history-table td {
+      padding: 8px 0;
+      border-bottom: 1px solid var(--line-soft);
+      font-size: 0.92rem;
+      text-align: left;
+    }
+
+    .round-history-table th:last-child,
+    .round-history-table td:last-child {
+      text-align: right;
+    }
+
+    .round-score-dropped {
+      text-decoration: line-through;
+      color: var(--muted);
+    }
+
+    .round-note {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 0.83rem;
+      line-height: 1.35;
+    }
+
+    .round-summary {
+      margin-top: 12px;
+      border-top: 1px solid var(--line-soft);
+      padding-top: 12px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .round-summary-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 0.92rem;
+    }
+
+    .round-summary-row span {
+      color: var(--muted);
+    }
+
+    .round-summary-row strong {
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .round-muted {
+      color: var(--muted);
+      font-weight: 600;
     }
 
     @media (max-width: 700px) {
@@ -265,8 +397,10 @@ const rows = getHandicaps();
         flex-basis: 8px;
       }
 
-      .footer-link {
-        padding: 12px 12px 16px;
+      .round-modal-panel {
+        width: min(94vw, 420px);
+        margin-top: 6vh;
+        padding: 16px 14px 14px;
       }
     }
 
@@ -346,7 +480,20 @@ const rows = getHandicaps();
           <tbody>
             {rows.map((row) => (
               <tr>
-                <td>{row.name}</td>
+                <td>
+                  <button
+                    class="player-button"
+                    type="button"
+                    data-player={row.name}
+                    data-rounds={encodeURIComponent(JSON.stringify(row.recentRounds))}
+                    data-average={row.recentRoundsAverage}
+                    data-handicap={row.hcp}
+                    data-established={row.handicapEstablished ? "true" : "false"}
+                    aria-label={`View recent handicap rounds for ${row.name}`}
+                  >
+                    {row.name}
+                  </button>
+                </td>
                 <td>{row.hcp}</td>
                 <td>{row.tag}</td>
                 <td>{row.rounds}</td>
@@ -356,21 +503,56 @@ const rows = getHandicaps();
           </tbody>
         </table>
       </div>
+    </div>
+  </div>
 
-         </div>
+  <div id="roundModal" class="round-modal" hidden>
+    <div class="round-modal-backdrop" data-close-modal></div>
+
+    <div
+      class="round-modal-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="roundModalTitle"
+    >
+      <button
+        id="roundModalClose"
+        class="round-modal-close"
+        type="button"
+        aria-label="Close recent rounds popup"
+      >
+        ×
+      </button>
+
+      <h2 id="roundModalTitle" class="round-modal-title">Recent rounds</h2>
+      <p class="round-modal-subtitle">Most recent scores used for handicap</p>
+
+      <div id="roundModalBody"></div>
+    </div>
   </div>
 
   <script>
+    const HANDICAP_PAR = 56;
+
     const table = document.getElementById("sortable-table");
-    const tbody = table?.querySelector("tbody");
-    const headers = table?.querySelectorAll("thead th.sortable") || [];
+    const tbody = table ? table.querySelector("tbody") : null;
+    const headers = table ? table.querySelectorAll("thead th.sortable") : [];
     const playerSearch = document.getElementById("playerSearch");
 
+    const roundModal = document.getElementById("roundModal");
+    const roundModalTitle = document.getElementById("roundModalTitle");
+    const roundModalBody = document.getElementById("roundModalBody");
+    const roundModalClose = document.getElementById("roundModalClose");
+    const playerButtons = document.querySelectorAll(".player-button");
+
     let currentColumn = 1;
-let currentDirection = "asc";
+    let currentDirection = "asc";
+    let lastTrigger = null;
 
     function getCellValue(row, columnIndex) {
-      return row.children[columnIndex]?.textContent?.trim() ?? "";
+      return row.children[columnIndex] && row.children[columnIndex].textContent
+        ? row.children[columnIndex].textContent.trim()
+        : "";
     }
 
     function compareValues(a, b, type, direction) {
@@ -425,31 +607,180 @@ let currentDirection = "asc";
     function applySearchFilter() {
       if (!tbody) return;
 
-      const query = (playerSearch?.value || "").trim().toLowerCase();
+      const query = playerSearch && playerSearch.value
+        ? playerSearch.value.trim().toLowerCase()
+        : "";
 
       Array.from(tbody.querySelectorAll("tr")).forEach((row) => {
-        const name = row.children[0]?.textContent?.trim().toLowerCase() || "";
+        const name = row.children[0] && row.children[0].textContent
+          ? row.children[0].textContent.trim().toLowerCase()
+          : "";
+
         row.style.display = !query || name.includes(query) ? "" : "none";
       });
     }
 
-    headers.forEach((header) => {
-  header.addEventListener("click", () => {
-    const columnIndex = Number(header.dataset.column);
-    const type = header.dataset.type || "text";
-
-    if (currentColumn === columnIndex) {
-      currentDirection = currentDirection === "asc" ? "desc" : "asc";
-    } else {
-      currentColumn = columnIndex;
-      currentDirection = columnIndex === 3 ? "desc" : "asc";
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
     }
 
-    sortTable(columnIndex, type, currentDirection);
-  });
-});
+    function formatScoreWithPar(score) {
+      const numericScore = Number(score);
+      const diff = numericScore - HANDICAP_PAR;
 
-    playerSearch?.addEventListener("input", applySearchFilter);
+      let diffText = "E";
+      if (diff > 0) diffText = `+${diff}`;
+      if (diff < 0) diffText = `${diff}`;
+
+      return `${numericScore} (${diffText})`;
+    }
+
+    function renderRoundModal(playerName, rounds, average, handicap, established) {
+      if (!roundModalTitle || !roundModalBody) return;
+
+      roundModalTitle.textContent = playerName;
+
+      const rowsHtml = rounds.length
+        ? rounds
+            .map((round) => {
+              return `
+                <tr>
+                  <td>${escapeHtml(round.date)}</td>
+                  <td class="${round.dropped ? "round-score-dropped" : ""}">
+                    ${escapeHtml(formatScoreWithPar(round.score))}
+                  </td>
+                </tr>
+              `;
+            })
+            .join("")
+        : `
+          <tr>
+            <td colspan="2" class="round-muted">No recent rounds found.</td>
+          </tr>
+        `;
+
+      const removedNote = rounds.length >= 4
+        ? `<p class="round-note">The highest score is struck through and removed from the average.</p>`
+        : `<p class="round-note">All available rounds are included in the average.</p>`;
+
+      const handicapDisplay =
+        established && handicap !== ""
+          ? `<strong>${escapeHtml(handicap)}</strong>`
+          : `<strong class="round-muted">Not established</strong>`;
+
+      const establishmentNote =
+        established || rounds.length >= 3
+          ? ""
+          : `<p class="round-note">3 rounds are required to establish a handicap.</p>`;
+
+      roundModalBody.innerHTML = `
+        <table class="round-history-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+
+        ${removedNote}
+
+        <div class="round-summary">
+          <div class="round-summary-row">
+            <span>Average used</span>
+            <strong>${average ? escapeHtml(average) : "—"}</strong>
+          </div>
+
+          <div class="round-summary-row">
+            <span>Handicap</span>
+            ${handicapDisplay}
+          </div>
+        </div>
+
+        ${establishmentNote}
+      `;
+    }
+
+    function openRoundModal(button) {
+      if (!button || !roundModal) return;
+
+      lastTrigger = button;
+
+      let rounds = [];
+      try {
+        rounds = JSON.parse(decodeURIComponent(button.dataset.rounds || "[]"));
+      } catch (error) {
+        rounds = [];
+      }
+
+      renderRoundModal(
+        button.dataset.player || "Recent rounds",
+        rounds,
+        button.dataset.average || "",
+        button.dataset.handicap || "",
+        button.dataset.established === "true"
+      );
+
+      roundModal.removeAttribute("hidden");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeRoundModal() {
+      if (!roundModal) return;
+
+      roundModal.setAttribute("hidden", "");
+      document.body.style.overflow = "";
+
+      if (lastTrigger && typeof lastTrigger.focus === "function") {
+        lastTrigger.focus();
+      }
+    }
+
+    headers.forEach((header) => {
+      header.addEventListener("click", () => {
+        const columnIndex = Number(header.dataset.column);
+        const type = header.dataset.type || "text";
+
+        if (currentColumn === columnIndex) {
+          currentDirection = currentDirection === "asc" ? "desc" : "asc";
+        } else {
+          currentColumn = columnIndex;
+          currentDirection = columnIndex === 3 ? "desc" : "asc";
+        }
+
+        sortTable(columnIndex, type, currentDirection);
+      });
+    });
+
+    if (playerSearch) {
+      playerSearch.addEventListener("input", applySearchFilter);
+    }
+
+    playerButtons.forEach((button) => {
+      button.addEventListener("click", () => openRoundModal(button));
+    });
+
+    if (roundModalClose) {
+      roundModalClose.addEventListener("click", closeRoundModal);
+    }
+
+    document.querySelectorAll("[data-close-modal]").forEach((element) => {
+      element.addEventListener("click", closeRoundModal);
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && roundModal && !roundModal.hasAttribute("hidden")) {
+        closeRoundModal();
+      }
+    });
 
     sortTable(currentColumn, "number", currentDirection);
     applySearchFilter();
