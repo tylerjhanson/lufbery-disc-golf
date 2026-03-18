@@ -273,21 +273,36 @@ const defaultRoundType = "all";
     .event-link-inline {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       flex-wrap: wrap;
     }
 
     .udisc-icon {
-      width: 13px;
-      height: 13px;
+      height: 0.9em;
+      width: auto;
       display: inline-block;
       vertical-align: middle;
       flex: 0 0 auto;
-      opacity: 0.95;
+      opacity: 0.98;
+      transform: translateY(0.02em);
     }
 
     .udisc-icon--dark {
       display: none;
+    }
+
+    :global(html.dark) .udisc-icon--light,
+    :global(html[data-theme="dark"]) .udisc-icon--light,
+    :global(body.dark) .udisc-icon--light,
+    :global(body[data-theme="dark"]) .udisc-icon--light {
+      display: none;
+    }
+
+    :global(html.dark) .udisc-icon--dark,
+    :global(html[data-theme="dark"]) .udisc-icon--dark,
+    :global(body.dark) .udisc-icon--dark,
+    :global(body[data-theme="dark"]) .udisc-icon--dark {
+      display: inline-block;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -532,8 +547,7 @@ const defaultRoundType = "all";
       }
 
       .udisc-icon {
-        width: 12px;
-        height: 12px;
+        height: 0.86em;
       }
 
       .summary-label {
@@ -816,7 +830,12 @@ const defaultRoundType = "all";
                               ["R1", "Round 1", "Raw", "Score"]
                             )}
                           >
-                            <td data-label={cleanPlayerName(event.working.headers?.[0] || "Working to a handicap")} class="player-name-cell">
+                            <td
+                              data-label={cleanPlayerName(
+                                event.working.headers?.[0] || "Working to a handicap"
+                              )}
+                              class="player-name-cell"
+                            >
                               {row?.[0] || ""}
                             </td>
                             <td data-label="Raw">
@@ -834,18 +853,10 @@ const defaultRoundType = "all";
                               )}
                             </td>
                             <td data-label="Net">
-                              {getCellValueByHeaders(
-                                event.working.headers,
-                                row,
-                                ["Net"]
-                              )}
+                              {getCellValueByHeaders(event.working.headers, row, ["Net"])}
                             </td>
                             <td data-label="Payout">
-                              {getCellValueByHeaders(
-                                event.working.headers,
-                                row,
-                                ["Payout"]
-                              )}
+                              {getCellValueByHeaders(event.working.headers, row, ["Payout"])}
                             </td>
                           </tr>
                         ))}
@@ -865,9 +876,11 @@ const defaultRoundType = "all";
                   <table class="pool-table">
                     <thead>
                       <tr>
-                        {getVisibleColumnIndexes(pool.headers, ["Overall", "Ovr", "CTP"]).map((idx) => (
-                          <th>{pool.headers[idx]}</th>
-                        ))}
+                        {getVisibleColumnIndexes(pool.headers, ["Overall", "Ovr", "CTP"]).map(
+                          (idx) => (
+                            <th>{pool.headers[idx]}</th>
+                          )
+                        )}
                       </tr>
                     </thead>
                     <tbody>
@@ -880,14 +893,16 @@ const defaultRoundType = "all";
                             ["R1", "Round 1", "Raw", "Score"]
                           )}
                         >
-                          {getVisibleColumnIndexes(pool.headers, ["Overall", "Ovr", "CTP"]).map((idx) => (
-                            <td
-                              data-label={pool.headers[idx] || ""}
-                              class={idx === 0 ? "player-name-cell" : undefined}
-                            >
-                              {row[idx]}
-                            </td>
-                          ))}
+                          {getVisibleColumnIndexes(pool.headers, ["Overall", "Ovr", "CTP"]).map(
+                            (idx) => (
+                              <td
+                                data-label={pool.headers[idx] || ""}
+                                class={idx === 0 ? "player-name-cell" : undefined}
+                              >
+                                {row[idx]}
+                              </td>
+                            )
+                          )}
                         </tr>
                       ))}
                     </tbody>
