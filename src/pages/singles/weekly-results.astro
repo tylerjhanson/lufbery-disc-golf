@@ -270,6 +270,36 @@ const defaultRoundType = "all";
       text-decoration: underline;
     }
 
+    .event-link-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .udisc-icon {
+      width: 13px;
+      height: 13px;
+      display: inline-block;
+      vertical-align: middle;
+      flex: 0 0 auto;
+      opacity: 0.95;
+    }
+
+    .udisc-icon--dark {
+      display: none;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .udisc-icon--light {
+        display: none;
+      }
+
+      .udisc-icon--dark {
+        display: inline-block;
+      }
+    }
+
     .event-summary {
       margin-top: 10px;
       display: grid;
@@ -501,6 +531,11 @@ const defaultRoundType = "all";
         font-size: 0.95rem !important;
       }
 
+      .udisc-icon {
+        width: 12px;
+        height: 12px;
+      }
+
       .summary-label {
         font-size: 0.83rem;
       }
@@ -650,8 +685,22 @@ const defaultRoundType = "all";
           <div class="card-header">
             <h2 class="card-title">
               {event.url ? (
-                <a class="event-link" href={event.url} target="_blank" rel="noopener">
-                  {event.title}
+                <a class="event-link event-link-inline" href={event.url} target="_blank" rel="noopener">
+                  <span>{event.title}</span>
+                  <img
+                    class="udisc-icon udisc-icon--light"
+                    src="https://lufberydiscgolf.com/udisc-icon.png"
+                    alt="UDisc"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <img
+                    class="udisc-icon udisc-icon--dark"
+                    src="https://lufberydiscgolf.com/udisc-icon-white.png"
+                    alt="UDisc"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </a>
               ) : (
                 event.title
