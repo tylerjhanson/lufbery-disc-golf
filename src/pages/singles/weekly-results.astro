@@ -54,6 +54,10 @@ function cleanPlayerName(value: unknown) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
 
+function normalizeHeaderValue(value: unknown) {
+  return cleanPlayerName(value).toLowerCase();
+}
+
 function getCellValueByHeaders(headers: unknown[], row: unknown[], headerNames: string[]) {
   const normalizedHeaders = (headers || []).map((header) =>
     cleanPlayerName(header).toLowerCase()
@@ -75,7 +79,8 @@ function isValidPlayerOption(value: unknown) {
   return (
     !!name &&
     name !== "name" &&
-    name !== "working towards a handicap"
+    name !== "working towards a handicap" &&
+    name !== "working to a handicap"
   );
 }
 
@@ -112,6 +117,14 @@ function getEventPlayers(event: any) {
   return [...new Set(values)];
 }
 
+function getVisibleColumnIndexes(headers: unknown[], hiddenHeaders: string[]) {
+  const hidden = hiddenHeaders.map((header) => normalizeHeaderValue(header));
+
+  return (headers || [])
+    .map((_, index) => index)
+    .filter((index) => !hidden.includes(normalizeHeaderValue(headers[index])));
+}
+
 const sortedEvents = [...events].sort(
   (a, b) => getEventTimestamp(b.title) - getEventTimestamp(a.title)
 );
@@ -120,17 +133,8 @@ const eventYears = [
   ...new Set(sortedEvents.map((event) => getEventYear(event.title)).filter(Boolean)),
 ].sort((a, b) => Number(b) - Number(a));
 
-const playerOptions = [
-  ...new Set(
-    sortedEvents
-      .flatMap((event) => getEventPlayers(event))
-      .filter((player) => isValidPlayerOption(player))
-  ),
-].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
-
 const defaultYear = "all";
 const defaultRoundType = "all";
-const defaultPlayer = "all";
 ---
 
 <SiteLayout title="Weekly Results" showBrandBar={true}>
@@ -149,7 +153,9 @@ const defaultPlayer = "all";
       --radius: 22px;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
@@ -182,6 +188,58 @@ const defaultPlayer = "all";
       margin-bottom: 10px;
     }
 
+    .results-toolbar label {
+      min-width: 150px;
+    }
+
+    .search-wrap {
+      position: relative;
+      width: min(360px, 100%);
+      flex: 1 1 280px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 11px 42px 11px 13px;
+      border: 1px solid var(--line-soft);
+      border-radius: 9px;
+      background: var(--card);
+      color: var(--text);
+      font: inherit;
+    }
+
+    .search-clear {
+      position: absolute;
+      top: 50%;
+      right: 9px;
+      transform: translateY(-50%);
+      width: 26px;
+      height: 26px;
+      border: 1px solid var(--line-soft);
+      border-radius: 999px;
+      background: #fff;
+      color: #94a3b8;
+      font-size: 0.95rem;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+    }
+
+    .search-wrap.has-value .search-clear {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .search-clear:hover {
+      color: var(--text);
+      background: #f8fafc;
+    }
+
     .filter-select {
       min-width: 170px;
       padding: 10px 12px;
@@ -191,18 +249,6 @@ const defaultPlayer = "all";
       color: var(--text);
       font: inherit;
     }
-
-    .player-average {
-  display: none;
-  margin: 0 0 14px;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--card);
-  color: var(--text);
-  font-size: 0.95rem;
-  font-weight: 600;
-}
 
     .empty-state {
       display: none;
@@ -231,7 +277,7 @@ const defaultPlayer = "all";
     }
 
     .card-header {
-      padding: 12px 12px 6px;
+      padding: 12px 12px 10px;
     }
 
     .card-title {
@@ -251,6 +297,30 @@ const defaultPlayer = "all";
     .event-link:focus-visible {
       color: #1d4ed8;
       text-decoration: underline;
+    }
+
+    .event-summary {
+      margin-top: 10px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .summary-group {
+      display: grid;
+      gap: 4px;
+    }
+
+    .summary-label {
+      color: var(--text);
+      font-size: 0.88rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .summary-item {
+      color: var(--text);
+      font-size: 0.9rem;
+      line-height: 1.3;
     }
 
     .section-block {
@@ -351,35 +421,26 @@ const defaultPlayer = "all";
     }
 
     .weekly-results-page table.handicap-table thead th {
-      font-size: 0.64rem !important;
-      padding: 7px 3px !important;
+      font-size: 0.66rem !important;
+      padding: 8px 4px !important;
       line-height: 1.05 !important;
     }
 
     .weekly-results-page table.handicap-table tbody td {
-      font-size: 0.8rem !important;
-      padding: 7px 3px !important;
+      font-size: 0.82rem !important;
+      padding: 7px 4px !important;
       line-height: 1.08 !important;
       vertical-align: top !important;
     }
 
     .weekly-results-page table.handicap-table thead th:first-child,
     .weekly-results-page table.handicap-table tbody td:first-child {
-      width: 28% !important;
+      width: 34% !important;
     }
 
-    .weekly-results-page table.handicap-table th:nth-child(n+2),
-    .weekly-results-page table.handicap-table td:nth-child(n+2) {
+    .weekly-results-page table.handicap-table th:nth-child(n + 2),
+    .weekly-results-page table.handicap-table td:nth-child(n + 2) {
       text-align: center !important;
-    }
-
-    .weekly-results-page table.handicap-table td:nth-child(5),
-    .weekly-results-page table.handicap-table td:nth-child(6),
-    .weekly-results-page table.handicap-table td:nth-child(7),
-    .weekly-results-page table.handicap-table th:nth-child(5),
-    .weekly-results-page table.handicap-table th:nth-child(6),
-    .weekly-results-page table.handicap-table th:nth-child(7) {
-      white-space: nowrap;
     }
 
     .weekly-results-page table.working-table thead th,
@@ -406,51 +467,54 @@ const defaultPlayer = "all";
       font-weight: 400 !important;
     }
 
-    .footer-link {
-      margin-top: 20px;
-      padding: 0 2px;
-    }
-
-    .footer-link a {
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .footer-link a:hover {
-      text-decoration: underline;
-    }
-
     @media (max-width: 700px) {
       body {
         padding: 8px;
       }
 
       .results-toolbar {
-  display: grid;
-  grid-template-columns: 1.35fr 0.9fr 1.05fr;
-  gap: 8px;
-  align-items: stretch;
-}
+        display: grid;
+        grid-template-columns: 1.35fr 0.9fr 1.05fr;
+        gap: 8px;
+        align-items: stretch;
+      }
 
-.results-toolbar label {
-  min-width: 0;
-  width: 100%;
-}
+      .results-toolbar label {
+        min-width: 0;
+        width: 100%;
+      }
 
-.filter-select {
-  min-width: 0;
-  width: 100%;
-  padding: 9px 10px;
-  font-size: 0.92rem;
-}
+      .search-wrap {
+        width: 100%;
+      }
+
+      .search-input {
+        width: 100%;
+        padding: 10px 40px 10px 12px;
+        font-size: 0.92rem;
+      }
+
+      .filter-select {
+        min-width: 0;
+        width: 100%;
+        padding: 9px 10px;
+        font-size: 0.92rem;
+      }
 
       .card-header {
-        padding: 10px 10px 6px !important;
+        padding: 10px 10px 8px !important;
       }
 
       .card-title {
         font-size: 0.95rem !important;
+      }
+
+      .summary-label {
+        font-size: 0.83rem;
+      }
+
+      .summary-item {
+        font-size: 0.84rem;
       }
 
       .section-block {
@@ -462,7 +526,7 @@ const defaultPlayer = "all";
       }
 
       .weekly-results-page table.handicap-table thead th {
-        font-size: 0.56rem !important;
+        font-size: 0.58rem !important;
         padding: 6px 2px !important;
         letter-spacing: 0 !important;
       }
@@ -475,7 +539,7 @@ const defaultPlayer = "all";
 
       .weekly-results-page table.handicap-table thead th:first-child,
       .weekly-results-page table.handicap-table tbody td:first-child {
-        width: 26% !important;
+        width: 32% !important;
       }
 
       .weekly-results-page table.working-table thead th,
@@ -523,14 +587,27 @@ const defaultPlayer = "all";
     </div>
 
     <div class="results-toolbar">
-      <label>
-        <select id="playerFilter" class="filter-select" aria-label="Filter results by player">
-          <option value="all" selected={defaultPlayer === "all"}>All players</option>
-          {playerOptions.map((player) => (
-            <option value={player}>{player}</option>
-          ))}
-        </select>
-      </label>
+      <div id="searchWrap" class="search-wrap">
+        <input
+          id="playerSearch"
+          class="search-input"
+          type="text"
+          placeholder="Search player"
+          aria-label="Search player"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+        />
+        <button
+          id="clearSearch"
+          class="search-clear"
+          type="button"
+          aria-label="Clear search"
+          title="Clear search"
+        >
+          ×
+        </button>
+      </div>
 
       <label>
         <select id="yearFilter" class="filter-select" aria-label="Filter results by year">
@@ -542,7 +619,11 @@ const defaultPlayer = "all";
       </label>
 
       <label>
-        <select id="roundTypeFilter" class="filter-select" aria-label="Filter results by round type">
+        <select
+          id="roundTypeFilter"
+          class="filter-select"
+          aria-label="Filter results by round type"
+        >
           <option value="all" selected={defaultRoundType === "all"}>All Rounds</option>
           <option value="handicap">Handicap</option>
           <option value="monthly">Monthly</option>
@@ -550,8 +631,6 @@ const defaultPlayer = "all";
         </select>
       </label>
     </div>
-
-    <div id="playerAverage" class="player-average" aria-live="polite"></div>
 
     <div id="resultsEvents" class="events">
       {sortedEvents.map((event) => (
@@ -571,6 +650,41 @@ const defaultPlayer = "all";
                 event.title
               )}
             </h2>
+
+            {(event.summary?.overall?.length ||
+              event.summary?.ctps?.length ||
+              event.summary?.aces?.length) > 0 && (
+              <div class="event-summary">
+                {event.summary?.overall?.length > 0 && (
+                  <div class="summary-group">
+                    <div class="summary-label">Best Overall</div>
+                    {event.summary.overall.map((item: any) => (
+                      <div class="summary-item">{item.text}</div>
+                    ))}
+                  </div>
+                )}
+
+                {event.summary?.ctps?.length > 0 && (
+                  <div class="summary-group">
+                    <div class="summary-label">CTP&apos;s</div>
+                    {event.summary.ctps.map((item: any) => (
+                      <div class="summary-item">{item.text}</div>
+                    ))}
+                  </div>
+                )}
+
+                {event.summary?.aces?.length > 0 && (
+                  <div class="summary-group">
+                    <div class="summary-label">
+                      {event.summary.aces.length === 1 ? "Ace" : "Aces"}
+                    </div>
+                    {event.summary.aces.map((item: any) => (
+                      <div class="summary-item">{item.text}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {event.kind === "handicap" && (
@@ -580,13 +694,13 @@ const defaultPlayer = "all";
                   <table class="handicap-table">
                     <thead>
                       <tr>
-                        {event.headers.map((header) => (
-                          <th>{header === "Overall" ? "OVR" : header}</th>
+                        {["Name", "Raw", "Hcp.", "Net", "Payout"].map((header) => (
+                          <th>{header}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {event.rows.map((row) => (
+                      {event.rows.map((row: any) => (
                         <tr
                           data-player-name={cleanPlayerName(row.name)}
                           data-raw-score={String(row.raw ?? "")}
@@ -596,8 +710,6 @@ const defaultPlayer = "all";
                           <td data-label="Hcp.">{row.hcp}</td>
                           <td data-label="Net">{row.net}</td>
                           <td data-label="Payout">{row.payout}</td>
-                          <td data-label="Overall">{row.overall}</td>
-                          <td data-label="CTP">{row.ctp}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -607,28 +719,35 @@ const defaultPlayer = "all";
 
               {event.working && event.working.rows.length > 0 && (
                 <div class="section-block">
-                  <div class="subheading">{event.working.title}</div>
                   <div class="table-wrap">
                     <table class="working-table">
                       <thead>
                         <tr>
-                          {event.working.headers.map((header) => <th>{header}</th>)}
+                          {getVisibleColumnIndexes(event.working.headers, ["Overall", "Ovr", "CTP"]).map(
+                            (idx) => <th>{event.working.headers[idx]}</th>
+                          )}
                         </tr>
                       </thead>
                       <tbody>
-                        {event.working.rows.map((row) => (
+                        {event.working.rows.map((row: any[]) => (
                           <tr
-  data-player-name={cleanPlayerName(row?.[0])}
-  data-raw-score={getCellValueByHeaders(event.working.headers, row, ["R1", "Round 1", "Raw", "Score"])}
->
-                            {row.map((cell, idx) => (
-                              <td
-                                data-label={event.working.headers[idx] || ""}
-                                class={idx === 0 ? "player-name-cell" : undefined}
-                              >
-                                {cell}
-                              </td>
-                            ))}
+                            data-player-name={cleanPlayerName(row?.[0])}
+                            data-raw-score={getCellValueByHeaders(
+                              event.working.headers,
+                              row,
+                              ["R1", "Round 1", "Raw", "Score"]
+                            )}
+                          >
+                            {getVisibleColumnIndexes(event.working.headers, ["Overall", "Ovr", "CTP"]).map(
+                              (idx) => (
+                                <td
+                                  data-label={event.working.headers[idx] || ""}
+                                  class={idx === 0 ? "player-name-cell" : undefined}
+                                >
+                                  {row[idx]}
+                                </td>
+                              )
+                            )}
                           </tr>
                         ))}
                       </tbody>
@@ -640,28 +759,34 @@ const defaultPlayer = "all";
           )}
 
           {event.kind === "pools" &&
-            event.pools.map((pool) => (
+            event.pools.map((pool: any) => (
               <div class="section-block">
                 <div class="subheading">{pool.title}</div>
                 <div class="table-wrap">
                   <table class="pool-table">
                     <thead>
                       <tr>
-                        {pool.headers.map((header) => <th>{header}</th>)}
+                        {getVisibleColumnIndexes(pool.headers, ["CTP"]).map((idx) => (
+                          <th>{pool.headers[idx]}</th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {pool.rows.map((row) => (
+                      {pool.rows.map((row: any[]) => (
                         <tr
-  data-player-name={cleanPlayerName(row?.[0])}
-  data-raw-score={getCellValueByHeaders(pool.headers, row, ["R1", "Round 1", "Raw", "Score"])}
->
-                          {row.slice(0, pool.headers.length).map((cell, idx) => (
+                          data-player-name={cleanPlayerName(row?.[0])}
+                          data-raw-score={getCellValueByHeaders(
+                            pool.headers,
+                            row,
+                            ["R1", "Round 1", "Raw", "Score"]
+                          )}
+                        >
+                          {getVisibleColumnIndexes(pool.headers, ["CTP"]).map((idx) => (
                             <td
                               data-label={pool.headers[idx] || ""}
                               class={idx === 0 ? "player-name-cell" : undefined}
                             >
-                              {cell}
+                              {row[idx]}
                             </td>
                           ))}
                         </tr>
@@ -676,21 +801,25 @@ const defaultPlayer = "all";
     </div>
 
     <div id="resultsEmpty" class="empty-state">No results found for the selected filters.</div>
-
-    
   </div>
 
   <script>
     const yearFilter = document.getElementById("yearFilter");
     const roundTypeFilter = document.getElementById("roundTypeFilter");
-    const playerFilter = document.getElementById("playerFilter");
+    const playerSearch = document.getElementById("playerSearch");
+    const searchWrap = document.getElementById("searchWrap");
+    const clearSearch = document.getElementById("clearSearch");
     const eventCards = Array.from(document.querySelectorAll("#resultsEvents > .card"));
     const resultsEmpty = document.getElementById("resultsEmpty");
     const resultsEvents = document.getElementById("resultsEvents");
-    const playerAverage = document.getElementById("playerAverage");
 
     function normalizeValue(value) {
       return String(value || "").toLowerCase().replace(/\s+/g, " ").trim();
+    }
+
+    function updateSearchClear() {
+      if (!searchWrap || !playerSearch) return;
+      searchWrap.classList.toggle("has-value", !!playerSearch.value.trim());
     }
 
     function sortCardsNewestFirst() {
@@ -705,15 +834,15 @@ const defaultPlayer = "all";
       resultsEvents.append(...sortedCards);
     }
 
-    function cardHasPlayer(card, selectedPlayer) {
-      if (selectedPlayer === "all") return true;
+    function cardHasPlayer(card, query) {
+      if (!query) return true;
 
-      const selectedNorm = normalizeValue(selectedPlayer);
+      const queryNorm = normalizeValue(query);
       const playerRows = Array.from(card.querySelectorAll("tr[data-player-name]"));
 
       return playerRows.some((row) => {
         const rowPlayer = normalizeValue(row.getAttribute("data-player-name") || "");
-        return rowPlayer === selectedNorm;
+        return rowPlayer.includes(queryNorm);
       });
     }
 
@@ -727,17 +856,17 @@ const defaultPlayer = "all";
       });
     }
 
-    function applyHighlights(card, selectedPlayer) {
+    function applyHighlights(card, query) {
       clearHighlights(card);
 
-      if (!selectedPlayer || selectedPlayer === "all") return;
+      if (!query) return;
 
-      const selectedNorm = normalizeValue(selectedPlayer);
+      const queryNorm = normalizeValue(query);
       const rows = Array.from(card.querySelectorAll("tr[data-player-name]"));
 
       rows.forEach((row) => {
         const rowPlayer = normalizeValue(row.getAttribute("data-player-name") || "");
-        if (rowPlayer !== selectedNorm) return;
+        if (!rowPlayer.includes(queryNorm)) return;
 
         row.classList.add("player-match-row");
 
@@ -748,56 +877,10 @@ const defaultPlayer = "all";
       });
     }
 
-     function updatePlayerAverage(selectedPlayer) {
-    if (!playerAverage) return;
-
-    if (!selectedPlayer || selectedPlayer === "all") {
-      playerAverage.style.display = "none";
-      playerAverage.textContent = "";
-      return;
-    }
-
-    const selectedNorm = normalizeValue(selectedPlayer);
-    const rawScores = [];
-
-    eventCards.forEach((card) => {
-      if (card.style.display === "none") return;
-
-      const rows = Array.from(card.querySelectorAll('tr[data-player-name][data-raw-score]'));
-
-      rows.forEach((row) => {
-        const rowPlayer = normalizeValue(row.getAttribute("data-player-name") || "");
-        if (rowPlayer !== selectedNorm) return;
-
-        const rawText = String(row.getAttribute("data-raw-score") || "").trim();
-        if (!rawText) return;
-
-        const rawValue = Number(rawText);
-        if (!Number.isNaN(rawValue)) {
-          rawScores.push(rawValue);
-        }
-      });
-    });
-
-    if (!rawScores.length) {
-      playerAverage.style.display = "block";
-      playerAverage.textContent = `${selectedPlayer} Average Score: n/a`;
-      return;
-    }
-
-    const total = rawScores.reduce((sum, value) => sum + value, 0);
-    const average = total / rawScores.length;
-    const roundsLabel = rawScores.length === 1 ? "round" : "rounds";
-
-    playerAverage.style.display = "block";
-    playerAverage.textContent = `${selectedPlayer} Average Score: ${average.toFixed(1)} (${rawScores.length} ${roundsLabel})`;
-  }
-
-
     function applyFilters() {
       const selectedYear = yearFilter?.value || "all";
       const selectedRoundType = roundTypeFilter?.value || "all";
-      const selectedPlayer = playerFilter?.value || "all";
+      const playerQuery = playerSearch?.value?.trim() || "";
 
       let visible = 0;
 
@@ -808,15 +891,15 @@ const defaultPlayer = "all";
         const matchesYear = selectedYear === "all" || selectedYear === year;
         const matchesRoundType =
           selectedRoundType === "all" || selectedRoundType === roundType;
-        const matchesPlayer = cardHasPlayer(card, selectedPlayer);
+        const matchesPlayer = cardHasPlayer(card, playerQuery);
 
         const show = matchesYear && matchesRoundType && matchesPlayer;
 
         card.style.display = show ? "" : "none";
 
         clearHighlights(card);
-        if (show && selectedPlayer !== "all") {
-          applyHighlights(card, selectedPlayer);
+        if (show && playerQuery) {
+          applyHighlights(card, playerQuery);
         }
 
         if (show) visible += 1;
@@ -826,14 +909,22 @@ const defaultPlayer = "all";
         resultsEmpty.style.display = visible ? "none" : "block";
       }
 
-      updatePlayerAverage(selectedPlayer);
+      updateSearchClear();
     }
 
     yearFilter?.addEventListener("change", applyFilters);
     roundTypeFilter?.addEventListener("change", applyFilters);
-    playerFilter?.addEventListener("change", applyFilters);
+    playerSearch?.addEventListener("input", applyFilters);
+
+    clearSearch?.addEventListener("click", () => {
+      if (!playerSearch) return;
+      playerSearch.value = "";
+      applyFilters();
+      playerSearch.focus();
+    });
 
     sortCardsNewestFirst();
     applyFilters();
+    updateSearchClear();
   </script>
 </SiteLayout>
