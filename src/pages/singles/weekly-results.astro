@@ -340,11 +340,12 @@ const defaultRoundType = "all";
     }
 
     .section-block {
-      padding: 0 12px 6px;
+      padding: 0 4px 6px;
     }
 
     .subheading {
       margin: 4px 0 10px;
+      padding-left: 5px;
       font-size: 0.96rem;
       color: var(--muted);
       font-weight: 700;
@@ -484,11 +485,6 @@ const defaultRoundType = "all";
       text-align: center !important;
     }
 
-    .weekly-results-page table.pool-table {
-      table-layout: fixed;
-      width: 100%;
-    }
-
     .weekly-results-page table.pool-table thead th {
       font-size: 0.68rem !important;
       padding: 8px 5px !important;
@@ -500,40 +496,9 @@ const defaultRoundType = "all";
       line-height: 1.1 !important;
     }
 
-    .weekly-results-page table.pool-table.cols-3 col.col-name {
-      width: 44%;
-    }
-
-    .weekly-results-page table.pool-table.cols-3 col.col-score {
-      width: 18%;
-    }
-
-    .weekly-results-page table.pool-table.cols-3 col.col-payout {
-      width: 38%;
-    }
-
-    .weekly-results-page table.pool-table.cols-4 col.col-name {
-      width: 40%;
-    }
-
-    .weekly-results-page table.pool-table.cols-4 col.col-score {
-      width: 15%;
-    }
-
-    .weekly-results-page table.pool-table.cols-4 col.col-payout {
-      width: 30%;
-    }
-
-    .weekly-results-page table.pool-table.cols-5 col.col-name {
-      width: 36%;
-    }
-
-    .weekly-results-page table.pool-table.cols-5 col.col-score {
-      width: 12%;
-    }
-
-    .weekly-results-page table.pool-table.cols-5 col.col-payout {
-      width: 28%;
+    .weekly-results-page table.pool-table thead th:first-child,
+    .weekly-results-page table.pool-table tbody td:first-child {
+      width: 32% !important;
     }
 
     .weekly-results-page tbody td:first-child {
@@ -595,7 +560,11 @@ const defaultRoundType = "all";
       }
 
       .section-block {
-        padding: 0 10px 6px !important;
+        padding: 0 2px 6px !important;
+      }
+
+      .subheading {
+        padding-left: 4px;
       }
 
       .table-wrap {
@@ -649,42 +618,6 @@ const defaultRoundType = "all";
       .weekly-results-page table.pool-table tbody td {
         font-size: 0.82rem !important;
         padding: 8px 4px !important;
-      }
-
-      .weekly-results-page table.pool-table.cols-3 col.col-name {
-        width: 42%;
-      }
-
-      .weekly-results-page table.pool-table.cols-3 col.col-score {
-        width: 18%;
-      }
-
-      .weekly-results-page table.pool-table.cols-3 col.col-payout {
-        width: 40%;
-      }
-
-      .weekly-results-page table.pool-table.cols-4 col.col-name {
-        width: 38%;
-      }
-
-      .weekly-results-page table.pool-table.cols-4 col.col-score {
-        width: 15%;
-      }
-
-      .weekly-results-page table.pool-table.cols-4 col.col-payout {
-        width: 32%;
-      }
-
-      .weekly-results-page table.pool-table.cols-5 col.col-name {
-        width: 34%;
-      }
-
-      .weekly-results-page table.pool-table.cols-5 col.col-score {
-        width: 12%;
-      }
-
-      .weekly-results-page table.pool-table.cols-5 col.col-payout {
-        width: 30%;
       }
     }
 
@@ -941,60 +874,47 @@ const defaultRoundType = "all";
           )}
 
           {event.kind === "pools" &&
-            event.pools.map((pool: any) => {
-              const visibleIndexes = getVisibleColumnIndexes(pool.headers, ["Overall", "Ovr", "CTP"]);
-
-              return (
-                <div class="section-block">
-                  <div class="subheading">{pool.title}</div>
-                  <div class="table-wrap">
-                    <table class={`pool-table cols-${visibleIndexes.length}`}>
-                      <colgroup>
-                        {visibleIndexes.map((_, i) => (
-                          <col
-                            class={
-                              i === 0
-                                ? "col-name"
-                                : i === visibleIndexes.length - 1
-                                  ? "col-payout"
-                                  : "col-score"
-                            }
-                          />
-                        ))}
-                      </colgroup>
-                      <thead>
-                        <tr>
-                          {visibleIndexes.map((idx) => (
+            event.pools.map((pool: any) => (
+              <div class="section-block">
+                <div class="subheading">{pool.title}</div>
+                <div class="table-wrap">
+                  <table class="pool-table">
+                    <thead>
+                      <tr>
+                        {getVisibleColumnIndexes(pool.headers, ["Overall", "Ovr", "CTP"]).map(
+                          (idx) => (
                             <th>{pool.headers[idx]}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {pool.rows.map((row: any[]) => (
-                          <tr
-                            data-player-name={cleanPlayerName(row?.[0])}
-                            data-raw-score={getCellValueByHeaders(
-                              pool.headers,
-                              row,
-                              ["R1", "Round 1", "Raw", "Score"]
-                            )}
-                          >
-                            {visibleIndexes.map((idx) => (
+                          )
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pool.rows.map((row: any[]) => (
+                        <tr
+                          data-player-name={cleanPlayerName(row?.[0])}
+                          data-raw-score={getCellValueByHeaders(
+                            pool.headers,
+                            row,
+                            ["R1", "Round 1", "Raw", "Score"]
+                          )}
+                        >
+                          {getVisibleColumnIndexes(pool.headers, ["Overall", "Ovr", "CTP"]).map(
+                            (idx) => (
                               <td
                                 data-label={pool.headers[idx] || ""}
                                 class={idx === 0 ? "player-name-cell" : undefined}
                               >
                                 {row[idx]}
                               </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                            )
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              );
-            })}
+              </div>
+            ))}
         </section>
       ))}
     </div>
