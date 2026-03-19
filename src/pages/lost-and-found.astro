@@ -91,6 +91,35 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       line-height: 1.2;
     }
 
+    .lost-found-page .inventory-controls {
+      margin: 0 0 12px;
+      padding: 0;
+    }
+
+    .lost-found-page .inventory-search {
+      width: 100%;
+      max-width: 360px;
+      height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--text);
+      font-size: 0.95rem;
+      padding: 0 12px;
+      outline: none;
+      box-shadow: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .lost-found-page .inventory-search::placeholder {
+      color: var(--muted);
+    }
+
+    .lost-found-page .inventory-search:focus {
+      border-color: rgba(37, 99, 235, 0.5);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
     .lost-found-page .table-wrap {
       padding: 0;
       margin: 0;
@@ -230,6 +259,17 @@ import SiteLayout from "../layouts/SiteLayout.astro";
         font-size: 0.96rem;
       }
 
+      .lost-found-page .inventory-controls {
+        margin: 0 0 10px;
+      }
+
+      .lost-found-page .inventory-search {
+        max-width: none;
+        height: 38px;
+        font-size: 0.92rem;
+        padding: 0 10px;
+      }
+
       .lost-found-page .table-wrap {
         padding: 0;
         margin: 0;
@@ -274,6 +314,11 @@ import SiteLayout from "../layouts/SiteLayout.astro";
         padding: 18px 10px 14px;
       }
 
+      .lost-found-page .inventory-search {
+        height: 36px;
+        font-size: 0.9rem;
+      }
+
       .lost-found-page table.inventory-table {
         min-width: 540px;
       }
@@ -311,6 +356,16 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       color: var(--text) !important;
     }
 
+    html[data-theme="dark"] .lost-found-page .inventory-search {
+      background: #111827 !important;
+      color: var(--text) !important;
+      border-color: var(--line) !important;
+    }
+
+    html[data-theme="dark"] .lost-found-page .inventory-search::placeholder {
+      color: var(--muted) !important;
+    }
+
     html[data-theme="dark"] .lost-found-page table.inventory-table thead th {
       background: #162033 !important;
       color: var(--muted) !important;
@@ -343,6 +398,16 @@ import SiteLayout from "../layouts/SiteLayout.astro";
 
       html[data-theme="system"] .lost-found-page .inventory-heading {
         color: var(--text) !important;
+      }
+
+      html[data-theme="system"] .lost-found-page .inventory-search {
+        background: #111827 !important;
+        color: var(--text) !important;
+        border-color: var(--line) !important;
+      }
+
+      html[data-theme="system"] .lost-found-page .inventory-search::placeholder {
+        color: var(--muted) !important;
       }
 
       html[data-theme="system"] .lost-found-page table.inventory-table thead th {
@@ -392,6 +457,18 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       <div class="inventory-section">
         <div class="inventory-heading">Current Inventory</div>
 
+        <div class="inventory-controls">
+          <input
+            id="inventorySearch"
+            class="inventory-search"
+            type="text"
+            placeholder="Search inventory..."
+            autocomplete="off"
+            spellcheck="false"
+            aria-label="Search inventory"
+          />
+        </div>
+
         <div class="table-wrap">
           <table class="inventory-table" id="inventoryTable">
             <colgroup>
@@ -417,12 +494,14 @@ import SiteLayout from "../layouts/SiteLayout.astro";
   <script define:vars={{ sheetId, sheetGid }}>
     const inventoryHead = document.getElementById("inventoryHead");
     const inventoryBody = document.getElementById("inventoryBody");
+    const inventorySearch = document.getElementById("inventorySearch");
 
     const state = {
       labels: [],
       rows: [],
       sortIndex: 0,
       sortDir: "asc",
+      searchQuery: "",
     };
 
     function escapeHtml(value) {
@@ -563,6 +642,15 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       return 0;
     }
 
+    function rowMatchesSearch(row) {
+      const query = state.searchQuery.trim().toLowerCase();
+      if (!query) return true;
+
+      return row.slice(0, 6).some((cell, index) =>
+        displayCell(cell, index).toLowerCase().includes(query)
+      );
+    }
+
     function renderHead() {
       const indicatorFor = (index) => {
         if (index !== state.sortIndex) return "";
@@ -602,7 +690,18 @@ import SiteLayout from "../layouts/SiteLayout.astro";
         return;
       }
 
-      const sortedRows = [...state.rows].sort(compareRows);
+      const filteredRows = state.rows.filter(rowMatchesSearch);
+
+      if (!filteredRows.length) {
+        inventoryBody.innerHTML = `
+          <tr>
+            <td class="inventory-empty" colspan="6">No matching inventory items found.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      const sortedRows = [...filteredRows].sort(compareRows);
 
       inventoryBody.innerHTML = sortedRows
         .map(
@@ -699,6 +798,11 @@ import SiteLayout from "../layouts/SiteLayout.astro";
 
       const index = Number(th.getAttribute("data-index"));
       handleSort(index);
+    });
+
+    inventorySearch?.addEventListener("input", (event) => {
+      state.searchQuery = event.target.value || "";
+      renderBody();
     });
 
     loadInventory();
