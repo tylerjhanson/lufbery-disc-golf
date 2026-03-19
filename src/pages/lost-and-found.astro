@@ -84,9 +84,9 @@ import SiteLayout from "../layouts/SiteLayout.astro";
 
     .lost-found-page .inventory-heading {
       margin: 4px 0 10px;
-      padding-left: 15px;
+      padding-left: 0;
       font-size: 0.96rem;
-      color: var(--muted);
+      color: var(--text);
       font-weight: 700;
       line-height: 1.2;
     }
@@ -105,6 +105,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       table-layout: fixed;
       min-width: 620px;
       background: transparent;
+      margin: 0;
     }
 
     .lost-found-page table.inventory-table col.col-date {
@@ -149,6 +150,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
 
     .lost-found-page table.inventory-table thead th:first-child {
       border-top-left-radius: 14px;
+      padding-left: 0;
     }
 
     .lost-found-page table.inventory-table thead th:last-child {
@@ -166,6 +168,10 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       overflow-wrap: anywhere;
       word-break: break-word;
       background: transparent;
+    }
+
+    .lost-found-page table.inventory-table tbody td:first-child {
+      padding-left: 0;
     }
 
     .lost-found-page table.inventory-table tbody tr:nth-child(even) td {
@@ -220,7 +226,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
 
       .lost-found-page .inventory-heading {
         margin: 4px 0 8px;
-        padding-left: 8px;
+        padding-left: 0;
         font-size: 0.96rem;
       }
 
@@ -240,10 +246,18 @@ import SiteLayout from "../layouts/SiteLayout.astro";
         line-height: 1.05 !important;
       }
 
+      .lost-found-page table.inventory-table thead th:first-child {
+        padding-left: 0 !important;
+      }
+
       .lost-found-page table.inventory-table tbody td {
         font-size: 0.76rem !important;
         padding: 6px 2px !important;
         line-height: 1.06 !important;
+      }
+
+      .lost-found-page table.inventory-table tbody td:first-child {
+        padding-left: 0 !important;
       }
 
       .lost-found-page .inventory-sort-indicator {
@@ -269,9 +283,17 @@ import SiteLayout from "../layouts/SiteLayout.astro";
         padding: 5px 2px !important;
       }
 
+      .lost-found-page table.inventory-table thead th:first-child {
+        padding-left: 0 !important;
+      }
+
       .lost-found-page table.inventory-table tbody td {
         font-size: 0.72rem !important;
         padding: 5px 2px !important;
+      }
+
+      .lost-found-page table.inventory-table tbody td:first-child {
+        padding-left: 0 !important;
       }
 
       .lost-found-page .inventory-sort-indicator {
