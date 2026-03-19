@@ -5,6 +5,7 @@ import { parse } from "csv-parse/sync";
 type CsvRow = string[];
 
 const HANDICAP_HISTORY_START_COLUMN = 56; // BE
+const SINGLES_PAR = 56;
 
 type WeeklyPrizeLine = {
   name: string;
@@ -107,6 +108,10 @@ function toFullYearUsDate(value: string) {
   return `${month}/${day}/${year}`;
 }
 
+function cleanSummaryText(value: string) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
 function normalizeDateKey(value: string) {
   const text = String(value || "").trim();
   const match = text.match(/^(\d{1,2}\/\d{1,2}\/\d{2,4})(.*)$/);
@@ -137,8 +142,40 @@ function formatWinnerScore(kind: "Net" | "Raw", score: number, par: number) {
   return `${kind}: ${score} (${formatRelativeToPar(score, par)})`;
 }
 
-function cleanSummaryText(value: string) {
-  return String(value || "").replace(/\s+/g, " ").trim();
+function formatCourseRecordScore(rawScore: number, par = SINGLES_PAR) {
+  return `${rawScore} (${formatRelativeToPar(rawScore, par)})`;
+}
+
+function parseCourseRecordRawScore(value: string, par = SINGLES_PAR) {
+  const text = cleanSummaryText(value);
+  if (!text) return null;
+
+  const displayMatch = text.match(/^(\d{1,3})\s*\(/);
+  if (displayMatch) {
+    const raw = Number(displayMatch[1]);
+    return Number.isNaN(raw) ? null : raw;
+  }
+
+  if (/^e$/i.test(text)) return par;
+
+  const first = extractFirstNumber(text);
+  if (first == null) return null;
+
+  const plainNumeric = /^[+-]?\d+(\.\d+)?$/.test(text);
+
+  if (plainNumeric && first < 0) {
+    return par + first;
+  }
+
+  if (plainNumeric && first >= 30) {
+    return first;
+  }
+
+  if (/^[+-]/.test(text)) {
+    return par + first;
+  }
+
+  return first >= 30 ? first : null;
 }
 
 function dedupeByKey<T>(rows: T[], getKey: (row: T) => string) {
@@ -376,22 +413,74 @@ function isWorkingTitle(value: string) {
   return v === "working to a handicap" || v === "working towards a handicap";
 }
 
+function isNoHandicapPoolLabel(value: string) {
+  return /\bno handicap\b/i.test(String(value || ""));
+}
+
 function buildWinnerNameCell(names: string[]) {
   if (names.length <= 1) return names[0] || "";
   return names.map((name) => `${name} (tie)`).join("\n");
 }
 
-function normalizeWinnerNameKey(value: string) {
+function extractWinnerNames(value: string) {
   return String(value || "")
     .split(/\r?\n/)
     .map((line) =>
-      cleanSummaryText(line)
-        .replace(/\s*\(tie\)\s*$/i, "")
-        .toLowerCase()
+      cleanSummaryText(line).replace(/\s*\(tie\)\s*$/i, "")
     )
-    .filter(Boolean)
+    .filter(Boolean);
+}
+
+function normalizeWinnerNameKey(value: string) {
+  return extractWinnerNames(value)
+    .map((name) => name.toLowerCase())
     .sort((a, b) => a.localeCompare(b))
     .join("|");
+}
+
+function removeStandaloneWinnersCoveredByTie(rows: WinnerRow[]) {
+  const grouped = new Map<string, WinnerRow[]>();
+
+  rows.forEach((row) => {
+    const key = `${normalizeDateKey(row.date)}|${cleanSummaryText(row.score)}`;
+    const bucket = grouped.get(key) || [];
+    bucket.push(row);
+    grouped.set(key, bucket);
+  });
+
+  const result: WinnerRow[] = [];
+
+  for (const group of grouped.values()) {
+    const tieNames = new Set<string>();
+
+    group.forEach((row) => {
+      const names = extractWinnerNames(row.name);
+      if (names.length > 1) {
+        names.forEach((name) => tieNames.add(name.toLowerCase()));
+      }
+    });
+
+    group.forEach((row) => {
+      const names = extractWinnerNames(row.name);
+
+      if (
+        tieNames.size > 0 &&
+        names.length === 1 &&
+        tieNames.has(names[0].toLowerCase())
+      ) {
+        return;
+      }
+
+      result.push(row);
+    });
+  }
+
+  return result;
+}
+
+function normalizeRecordRawKey(value: string) {
+  const raw = parseCourseRecordRawScore(value, SINGLES_PAR);
+  return raw == null ? "" : String(raw);
 }
 
 function getDerivedSinglesData() {
@@ -433,7 +522,7 @@ function getDerivedSinglesData() {
 
         winners.push({
           name: buildWinnerNameCell(tiedWinners),
-          score: formatWinnerScore("Net", bestNet, 56),
+          score: formatWinnerScore("Net", bestNet, SINGLES_PAR),
           date: fullDate,
           url,
         });
@@ -444,7 +533,7 @@ function getDerivedSinglesData() {
 
         records.push({
           name: row.name,
-          score: String(row.rawValue),
+          score: formatCourseRecordScore(row.rawValue, SINGLES_PAR),
           date: fullDate,
           url,
         });
@@ -474,7 +563,13 @@ function getDerivedSinglesData() {
 
     for (const pool of event.pools || []) {
       const poolTitle = String(pool.title || "").trim();
-      if (!poolTitle || isWorkingTitle(poolTitle)) continue;
+      if (
+        !poolTitle ||
+        isWorkingTitle(poolTitle) ||
+        isNoHandicapPoolLabel(poolTitle)
+      ) {
+        continue;
+      }
 
       const headers = (pool.headers || []).map((header: string) =>
         String(header || "").trim()
@@ -508,7 +603,7 @@ function getDerivedSinglesData() {
             ? `${fullDate} (${poolTitle} – 27 Holes)`
             : `${fullDate} (${poolTitle})`;
 
-          const winnerPar = isTwoRoundPool ? 84 : 56;
+          const winnerPar = isTwoRoundPool ? 84 : SINGLES_PAR;
 
           winners.push({
             name: buildWinnerNameCell(tiedWinners),
@@ -529,7 +624,7 @@ function getDerivedSinglesData() {
 
             records.push({
               name,
-              score: String(r1Value),
+              score: formatCourseRecordScore(r1Value, SINGLES_PAR),
               date: fullDate,
               url,
             });
@@ -544,7 +639,7 @@ function getDerivedSinglesData() {
 
           records.push({
             name,
-            score: String(rawValue),
+            score: formatCourseRecordScore(rawValue, SINGLES_PAR),
             date: fullDate,
             url,
           });
@@ -628,7 +723,8 @@ export function getWeeklyWinners() {
       score: row[1] || "",
       date: row[2] || "",
       url: row[3] || "",
-    }));
+    }))
+    .filter((row) => !isNoHandicapPoolLabel(row.date));
 
   const derived = getDerivedSinglesData().winners;
 
@@ -638,7 +734,7 @@ export function getWeeklyWinners() {
       `${normalizeDateKey(row.date)}|${cleanSummaryText(row.score)}|${normalizeWinnerNameKey(row.name)}`
   );
 
-  return sortByDateDesc(merged);
+  return sortByDateDesc(removeStandaloneWinnersCoveredByTie(merged));
 }
 
 export function getSinglesAces() {
@@ -656,7 +752,8 @@ export function getSinglesAces() {
 
   const merged = dedupeByKey(
     [...legacy, ...derived],
-    (row) => `${normalizeDateKey(row.date)}|${cleanSummaryText(row.name)}|${cleanSummaryText(row.hole)}`
+    (row) =>
+      `${normalizeDateKey(row.date)}|${cleanSummaryText(row.name)}|${cleanSummaryText(row.hole)}`
   );
 
   return sortByDateDesc(merged);
@@ -686,27 +783,35 @@ export function getSinglesRecords() {
   const legacy = readCsv("sinrec.csv")
     .slice(1)
     .filter((row) => row[0]?.trim())
-    .map((row) => ({
-      name: row[0] || "",
-      score: row[1] || "",
-      date: row[2] || "",
-      url: row[3] || "",
-    }));
+    .map((row) => {
+      const rawScore = parseCourseRecordRawScore(row[1] || "", SINGLES_PAR);
+
+      return {
+        name: row[0] || "",
+        score:
+          rawScore == null
+            ? String(row[1] || "")
+            : formatCourseRecordScore(rawScore, SINGLES_PAR),
+        date: row[2] || "",
+        url: row[3] || "",
+      };
+    });
 
   const derived = getDerivedSinglesData().records;
 
   const merged = dedupeByKey(
     [...legacy, ...derived],
-    (row) => `${normalizeDateKey(row.date)}|${cleanSummaryText(row.name)}|${cleanSummaryText(row.score)}`
+    (row) =>
+      `${normalizeDateKey(row.date)}|${cleanSummaryText(row.name)}|${normalizeRecordRawKey(row.score)}`
   );
 
-  function scoreValue(value: string) {
-    const n = Number(String(value || "").trim());
-    return Number.isNaN(n) ? 9999 : n;
+  function rawScoreValue(value: string) {
+    const raw = parseCourseRecordRawScore(value, SINGLES_PAR);
+    return raw == null ? 9999 : raw;
   }
 
   merged.sort((a, b) => {
-    const diff = scoreValue(a.score) - scoreValue(b.score);
+    const diff = rawScoreValue(a.score) - rawScoreValue(b.score);
     if (diff !== 0) return diff;
 
     return parseUsDate(b.date).getTime() - parseUsDate(a.date).getTime();
