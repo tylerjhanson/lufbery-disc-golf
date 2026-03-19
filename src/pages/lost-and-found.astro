@@ -7,7 +7,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
 ---
 
 <SiteLayout title="Lost & Found" showBrandBar={true}>
-  <style>
+  <style is:global>
     :root {
       --bg: #f5f7fb;
       --card: #ffffff;
@@ -22,25 +22,17 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       --radius: 22px;
     }
 
-    * {
+    .lost-found-page * {
       box-sizing: border-box;
     }
 
-    body {
-      margin: 0;
-      padding: 24px;
-      font-family: Inter, Arial, Helvetica, sans-serif;
-      background: linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%);
-      color: var(--text);
-    }
-
-    .wrap {
+    .lost-found-page {
       width: 100%;
       max-width: none;
       margin: 0;
     }
 
-    .card {
+    .lost-found-page .card {
       background: var(--card);
       border: 1px solid var(--line-soft);
       border-radius: 10px;
@@ -49,57 +41,57 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       padding: 28px 28px 22px;
     }
 
-    h1 {
+    .lost-found-page h1 {
       margin: 0 0 18px;
       font-size: clamp(2rem, 4vw, 3rem);
       line-height: 1.05;
       letter-spacing: -0.03em;
     }
 
-    p {
+    .lost-found-page p {
       margin: 0 0 18px;
       font-size: 1rem;
       line-height: 1.6;
     }
 
-    .link {
+    .lost-found-page .link {
       color: var(--accent);
       text-decoration: none;
       font-weight: 600;
     }
 
-    .link:hover {
+    .lost-found-page .link:hover {
       text-decoration: underline;
     }
 
-    .bullet-list {
+    .lost-found-page .bullet-list {
       margin: 0 0 18px 0;
       padding-left: 20px;
     }
 
-    .bullet-list li {
+    .lost-found-page .bullet-list li {
       margin-bottom: 8px;
       line-height: 1.5;
     }
 
-    .inventory-section {
+    .lost-found-page .inventory-section {
       padding: 0 4px 6px;
     }
 
-    .inventory-heading {
+    .lost-found-page .inventory-heading {
       margin: 4px 0 10px;
       font-size: 0.96rem;
       color: var(--text);
       font-weight: 700;
     }
 
-    .table-wrap {
+    .lost-found-page .table-wrap {
       padding: 0;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
     }
 
-    table.inventory-table {
+    .lost-found-page table.inventory-table {
       width: 100%;
       border-collapse: separate;
       border-spacing: 0;
@@ -107,31 +99,31 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       min-width: 620px;
     }
 
-    table.inventory-table col.col-date {
+    .lost-found-page table.inventory-table col.col-date {
       width: 14%;
     }
 
-    table.inventory-table col.col-name {
+    .lost-found-page table.inventory-table col.col-name {
       width: 18%;
     }
 
-    table.inventory-table col.col-brand {
-      width: 25%;
+    .lost-found-page table.inventory-table col.col-brand {
+      width: 26%;
     }
 
-    table.inventory-table col.col-color {
+    .lost-found-page table.inventory-table col.col-color {
       width: 14%;
     }
 
-    table.inventory-table col.col-last4 {
-      width: 13%;
+    .lost-found-page table.inventory-table col.col-last4 {
+      width: 12%;
     }
 
-    table.inventory-table col.col-deadline {
+    .lost-found-page table.inventory-table col.col-deadline {
       width: 16%;
     }
 
-    table.inventory-table thead th {
+    .lost-found-page table.inventory-table thead th {
       background: var(--header);
       color: var(--muted);
       font-size: 0.68rem;
@@ -147,15 +139,15 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       cursor: pointer;
     }
 
-    table.inventory-table thead th:first-child {
+    .lost-found-page table.inventory-table thead th:first-child {
       border-top-left-radius: 14px;
     }
 
-    table.inventory-table thead th:last-child {
+    .lost-found-page table.inventory-table thead th:last-child {
       border-top-right-radius: 14px;
     }
 
-    table.inventory-table tbody td {
+    .lost-found-page table.inventory-table tbody td {
       padding: 8px 5px;
       border-bottom: 1px solid var(--line-soft);
       font-size: 0.84rem;
@@ -167,20 +159,20 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       word-break: break-word;
     }
 
-    table.inventory-table tbody tr:nth-child(even) td {
+    .lost-found-page table.inventory-table tbody tr:nth-child(even) td {
       background: #fcfdff;
     }
 
-    table.inventory-table tbody tr:hover td {
+    .lost-found-page table.inventory-table tbody tr:hover td {
       background: var(--hover);
     }
 
-    table.inventory-table tbody td:first-child,
-    table.inventory-table tbody td:nth-child(6) {
+    .lost-found-page table.inventory-table tbody td:first-child,
+    .lost-found-page table.inventory-table tbody td:nth-child(6) {
       white-space: nowrap;
     }
 
-    .inventory-th-inner {
+    .lost-found-page .inventory-th-inner {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -188,7 +180,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       width: 100%;
     }
 
-    .inventory-sort-indicator {
+    .lost-found-page .inventory-sort-indicator {
       color: var(--muted);
       font-size: 0.66rem;
       line-height: 1;
@@ -197,81 +189,73 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       flex: 0 0 auto;
     }
 
-    .inventory-empty {
+    .lost-found-page .inventory-empty {
       color: var(--muted);
       text-align: center;
       padding: 18px 12px;
     }
 
     @media (max-width: 700px) {
-      body {
-        padding: 8px;
-      }
-
-      .card {
+      .lost-found-page .card {
         padding: 20px 18px 16px;
       }
 
-      p,
-      .bullet-list li {
+      .lost-found-page p,
+      .lost-found-page .bullet-list li {
         font-size: 0.96rem;
       }
 
-      .inventory-section {
+      .lost-found-page .inventory-section {
         padding: 0 2px 6px;
       }
 
-      .inventory-heading {
-        margin: 4px 0 10px;
-        padding-left: 0;
-      }
-
-      table.inventory-table {
+      .lost-found-page table.inventory-table {
         min-width: 580px;
       }
 
-      table.inventory-table thead th {
+      .lost-found-page table.inventory-table thead th {
         font-size: 0.64rem;
         padding: 8px 4px;
+        letter-spacing: 0;
       }
 
-      table.inventory-table tbody td {
+      .lost-found-page table.inventory-table tbody td {
         font-size: 0.82rem;
         padding: 8px 4px;
         line-height: 1.1;
       }
 
-      .inventory-sort-indicator {
-        font-size: 0.60rem;
+      .lost-found-page .inventory-sort-indicator {
+        font-size: 0.6rem;
       }
     }
 
     @media (max-width: 420px) {
-      h1 {
+      .lost-found-page h1 {
         font-size: 1.9rem;
       }
 
-      table.inventory-table {
+      .lost-found-page table.inventory-table {
         min-width: 560px;
       }
 
-      table.inventory-table thead th {
+      .lost-found-page table.inventory-table thead th {
         font-size: 0.58rem;
         padding: 7px 3px;
       }
 
-      table.inventory-table tbody td {
+      .lost-found-page table.inventory-table tbody td {
         font-size: 0.74rem;
         padding: 6px 3px;
       }
 
-      .inventory-sort-indicator {
+      .lost-found-page .inventory-sort-indicator {
         font-size: 0.56rem;
       }
     }
   </style>
 
-  <div class="wrap">
+  <div class="wrap lost-found-page">
     <div class="card">
       <h1>Lost &amp; Found</h1>
 
