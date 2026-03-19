@@ -113,7 +113,8 @@ function normalizeDateKey(value: string) {
 
   if (!match) return cleanSummaryText(text);
 
-  return `${toFullYearUsDate(match[1])}${match[2].replace(/\s+/g, " ").trim()}`;
+  const suffix = cleanSummaryText(match[2]);
+  return `${toFullYearUsDate(match[1])}${suffix ? ` ${suffix}` : ""}`;
 }
 
 function extractFirstNumber(value: string) {
@@ -136,6 +137,10 @@ function formatWinnerScore(kind: "Net" | "Raw", score: number, par: number) {
   return `${kind}: ${score} (${formatRelativeToPar(score, par)})`;
 }
 
+function cleanSummaryText(value: string) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
 function dedupeByKey<T>(rows: T[], getKey: (row: T) => string) {
   const map = new Map<string, T>();
 
@@ -155,104 +160,8 @@ function sortByDateDesc<T extends { date: string }>(rows: T[]) {
   return rows;
 }
 
-function getLastActiveHandicapColumn(rows: CsvRow[]) {
-  const header = rows[0] || [];
-
-  for (let i = header.length - 1; i >= HANDICAP_HISTORY_START_COLUMN; i -= 1) {
-    if (!parseMonthDay(header[i])) continue;
-
-    const hasAnyScore = rows
-      .slice(1)
-      .some((row) => String(row[i] || "").trim() !== "");
-
-    if (hasAnyScore) return i;
-  }
-
-  return HANDICAP_HISTORY_START_COLUMN - 1;
-}
-
-function buildHandicapDateMap(rows: CsvRow[]) {
-  const header = rows[0] || [];
-  const lastActiveColumn = getLastActiveHandicapColumn(rows);
-
-  if (lastActiveColumn < HANDICAP_HISTORY_START_COLUMN) {
-    return new Map<number, string>();
-  }
-
-  const dateColumns = header
-    .slice(HANDICAP_HISTORY_START_COLUMN, lastActiveColumn + 1)
-    .map((label, offset) => {
-      const parts = parseMonthDay(label);
-      if (!parts) return null;
-
-      return {
-        index: HANDICAP_HISTORY_START_COLUMN + offset,
-        month: parts.month,
-        day: parts.day,
-      };
-    })
-    .filter(
-      (
-        value
-      ): value is {
-        index: number;
-        month: number;
-        day: number;
-      } => Boolean(value)
-    );
-
-  if (!dateColumns.length) return new Map<number, string>();
-
-  const today = new Date();
-  const todayMonth = today.getMonth() + 1;
-  const todayDay = today.getDate();
-
-  const anchor = dateColumns[dateColumns.length - 1];
-  let year = today.getFullYear();
-
-  if (
-    anchor.month > todayMonth ||
-    (anchor.month === todayMonth && anchor.day > todayDay)
-  ) {
-    year -= 1;
-  }
-
-  const dateMap = new Map<number, string>();
-
-  let nextMonth = 0;
-  let nextDay = 0;
-  let hasNext = false;
-
-  for (let i = dateColumns.length - 1; i >= 0; i -= 1) {
-    const current = dateColumns[i];
-
-    if (
-      hasNext &&
-      (current.month > nextMonth ||
-        (current.month === nextMonth && current.day > nextDay))
-    ) {
-      year -= 1;
-    }
-
-    dateMap.set(
-      current.index,
-      `${current.month}/${current.day}/${String(year).slice(-2)}`
-    );
-
-    nextMonth = current.month;
-    nextDay = current.day;
-    hasNext = true;
-  }
-
-  return dateMap;
-}
-
 function normalizeSummaryValue(value: string) {
   return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
-}
-
-function cleanSummaryText(value: string) {
-  return String(value || "").replace(/\s+/g, " ").trim();
 }
 
 function splitAwardSegments(value: string) {
@@ -366,6 +275,98 @@ function sortWeeklySummary(summary: WeeklySummary) {
   sortPrizeLines(summary.aces);
 }
 
+function getLastActiveHandicapColumn(rows: CsvRow[]) {
+  const header = rows[0] || [];
+
+  for (let i = header.length - 1; i >= HANDICAP_HISTORY_START_COLUMN; i -= 1) {
+    if (!parseMonthDay(header[i])) continue;
+
+    const hasAnyScore = rows
+      .slice(1)
+      .some((row) => String(row[i] || "").trim() !== "");
+
+    if (hasAnyScore) return i;
+  }
+
+  return HANDICAP_HISTORY_START_COLUMN - 1;
+}
+
+function buildHandicapDateMap(rows: CsvRow[]) {
+  const header = rows[0] || [];
+  const lastActiveColumn = getLastActiveHandicapColumn(rows);
+
+  if (lastActiveColumn < HANDICAP_HISTORY_START_COLUMN) {
+    return new Map<number, string>();
+  }
+
+  const dateColumns = header
+    .slice(HANDICAP_HISTORY_START_COLUMN, lastActiveColumn + 1)
+    .map((label, offset) => {
+      const parts = parseMonthDay(label);
+      if (!parts) return null;
+
+      return {
+        index: HANDICAP_HISTORY_START_COLUMN + offset,
+        month: parts.month,
+        day: parts.day,
+      };
+    })
+    .filter(
+      (
+        value
+      ): value is {
+        index: number;
+        month: number;
+        day: number;
+      } => Boolean(value)
+    );
+
+  if (!dateColumns.length) return new Map<number, string>();
+
+  const today = new Date();
+  const todayMonth = today.getMonth() + 1;
+  const todayDay = today.getDate();
+
+  const anchor = dateColumns[dateColumns.length - 1];
+  let year = today.getFullYear();
+
+  if (
+    anchor.month > todayMonth ||
+    (anchor.month === todayMonth && anchor.day > todayDay)
+  ) {
+    year -= 1;
+  }
+
+  const dateMap = new Map<number, string>();
+
+  let nextMonth = 0;
+  let nextDay = 0;
+  let hasNext = false;
+
+  for (let i = dateColumns.length - 1; i >= 0; i -= 1) {
+    const current = dateColumns[i];
+
+    if (
+      hasNext &&
+      (current.month > nextMonth ||
+        (current.month === nextMonth && current.day > nextDay))
+    ) {
+      year -= 1;
+    }
+
+    dateMap.set(
+      current.index,
+      `${current.month}/${current.day}/${String(year).slice(-2)}`
+    );
+
+    nextMonth = current.month;
+    nextDay = current.day;
+    hasNext = true;
+  }
+
+  return dateMap;
+}
+
 function findHeaderIndex(headers: string[], wanted: string) {
   return headers.findIndex((header) => normalizeSummaryValue(header) === wanted);
 }
@@ -373,6 +374,24 @@ function findHeaderIndex(headers: string[], wanted: string) {
 function isWorkingTitle(value: string) {
   const v = normalizeSummaryValue(value);
   return v === "working to a handicap" || v === "working towards a handicap";
+}
+
+function buildWinnerNameCell(names: string[]) {
+  if (names.length <= 1) return names[0] || "";
+  return names.map((name) => `${name} (tie)`).join("\n");
+}
+
+function normalizeWinnerNameKey(value: string) {
+  return String(value || "")
+    .split(/\r?\n/)
+    .map((line) =>
+      cleanSummaryText(line)
+        .replace(/\s*\(tie\)\s*$/i, "")
+        .toLowerCase()
+    )
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b))
+    .join("|");
 }
 
 function getDerivedSinglesData() {
@@ -408,16 +427,16 @@ function getDerivedSinglesData() {
           ...winningCandidates.map((row: any) => row.netValue as number)
         );
 
-        winningCandidates
+        const tiedWinners = winningCandidates
           .filter((row: any) => row.netValue === bestNet)
-          .forEach((row: any) => {
-            winners.push({
-              name: row.name,
-              score: formatWinnerScore("Net", row.netValue, 56),
-              date: fullDate,
-              url,
-            });
-          });
+          .map((row: any) => row.name);
+
+        winners.push({
+          name: buildWinnerNameCell(tiedWinners),
+          score: formatWinnerScore("Net", bestNet, 56),
+          date: fullDate,
+          url,
+        });
       }
 
       handicapRows.forEach((row: any) => {
@@ -425,8 +444,8 @@ function getDerivedSinglesData() {
 
         records.push({
           name: row.name,
-          score: formatRelativeToPar(row.rawValue, 56),
-          date: shortDate,
+          score: String(row.rawValue),
+          date: fullDate,
           url,
         });
       });
@@ -448,7 +467,7 @@ function getDerivedSinglesData() {
       aces.push({
         name: ace.name,
         hole,
-        date: shortDate,
+        date: fullDate,
         url,
       });
     }
@@ -481,22 +500,22 @@ function getDerivedSinglesData() {
             ...poolRows.map((row: any) => row.value as number)
           );
 
+          const tiedWinners = poolRows
+            .filter((row: any) => row.value === bestValue)
+            .map((row: any) => row.name);
+
           const winnerDate = isTwoRoundPool
             ? `${fullDate} (${poolTitle} – 27 Holes)`
             : `${fullDate} (${poolTitle})`;
 
           const winnerPar = isTwoRoundPool ? 84 : 56;
 
-          poolRows
-            .filter((row: any) => row.value === bestValue)
-            .forEach((row: any) => {
-              winners.push({
-                name: row.name,
-                score: formatWinnerScore("Raw", row.value, winnerPar),
-                date: winnerDate,
-                url,
-              });
-            });
+          winners.push({
+            name: buildWinnerNameCell(tiedWinners),
+            score: formatWinnerScore("Raw", bestValue, winnerPar),
+            date: winnerDate,
+            url,
+          });
         }
       }
 
@@ -510,8 +529,8 @@ function getDerivedSinglesData() {
 
             records.push({
               name,
-              score: formatRelativeToPar(r1Value, 56),
-              date: shortDate,
+              score: String(r1Value),
+              date: fullDate,
               url,
             });
           });
@@ -525,8 +544,8 @@ function getDerivedSinglesData() {
 
           records.push({
             name,
-            score: formatRelativeToPar(rawValue, 56),
-            date: shortDate,
+            score: String(rawValue),
+            date: fullDate,
             url,
           });
         });
@@ -615,7 +634,8 @@ export function getWeeklyWinners() {
 
   const merged = dedupeByKey(
     [...legacy, ...derived],
-    (row) => `${normalizeDateKey(row.date)}|${row.name}|${row.score}`
+    (row) =>
+      `${normalizeDateKey(row.date)}|${cleanSummaryText(row.score)}|${normalizeWinnerNameKey(row.name)}`
   );
 
   return sortByDateDesc(merged);
@@ -636,7 +656,7 @@ export function getSinglesAces() {
 
   const merged = dedupeByKey(
     [...legacy, ...derived],
-    (row) => `${normalizeDateKey(row.date)}|${row.name}|${row.hole}`
+    (row) => `${normalizeDateKey(row.date)}|${cleanSummaryText(row.name)}|${cleanSummaryText(row.hole)}`
   );
 
   return sortByDateDesc(merged);
@@ -677,14 +697,11 @@ export function getSinglesRecords() {
 
   const merged = dedupeByKey(
     [...legacy, ...derived],
-    (row) => `${normalizeDateKey(row.date)}|${row.name}|${row.score}`
+    (row) => `${normalizeDateKey(row.date)}|${cleanSummaryText(row.name)}|${cleanSummaryText(row.score)}`
   );
 
   function scoreValue(value: string) {
-    const v = String(value || "").trim().toUpperCase();
-    if (v === "E") return 0;
-
-    const n = Number(v);
+    const n = Number(String(value || "").trim());
     return Number.isNaN(n) ? 9999 : n;
   }
 
