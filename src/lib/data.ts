@@ -842,7 +842,7 @@ export function getSinglesRecords() {
           rawScore == null
             ? String(row[1] || "")
             : formatCourseRecordScore(rawScore, SINGLES_PAR),
-        date: row[2] || "",
+        date: toFullYearUsDate(row[2] || ""),
         url: row[3] || "",
       };
     });
