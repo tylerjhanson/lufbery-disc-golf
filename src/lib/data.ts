@@ -1157,13 +1157,7 @@ export function getWeeklyResults() {
 
         if (nextIsPoolSection) break;
 
-        const rowValues = [
-          sub[0] || "",
-          sub[1] || "",
-          sub[2] || "",
-          sub[3] || "",
-          sub[4] || "",
-        ];
+        const rowValues = sectionHeaders.map((_, idx) => sub[idx] || "");
 
         const playerName = rowValues[0] || "";
         if (playerName) {
