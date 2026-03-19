@@ -671,7 +671,7 @@ const hasLatestResultTable =
       }
     }
 
-    @media (max-width: 560px) {
+        @media (max-width: 560px) {
       .card {
         padding: 18px 14px 14px;
       }
@@ -736,6 +736,9 @@ const hasLatestResultTable =
       }
 
       .result-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
         align-items: stretch;
       }
 
@@ -743,6 +746,16 @@ const hasLatestResultTable =
       .result-view-full {
         width: 100%;
         margin-left: 0;
+        min-width: 0;
+        padding: 10px 10px;
+      }
+
+      .result-view-full {
+        justify-content: center;
+      }
+
+      .result-toggle[hidden] + .result-view-full {
+        grid-column: 1 / -1;
       }
     }
   </style>
