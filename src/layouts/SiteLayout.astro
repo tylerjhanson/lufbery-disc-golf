@@ -45,49 +45,49 @@ const doublesLinks = [
 </script>
 
     <style is:global>
-      :root {
-        --bg: #f5f7fb;
-        --bg-strong: #eef3f8;
-        --card: #ffffff;
-        --text: #111827;
-        --muted: #6b7280;
-        --line-soft: #e6edf5;
-        --line: #d8e0ea;
-        --accent: #2563eb;
-        --button-bg: #f3f5f8;
-        --button-bg-hover: #eceff4;
-        --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-      }
+     :root {
+  --bg: #f4fbfb;
+  --bg-strong: #e8f5f5;
+  --card: #ffffff;
+  --text: #102124;
+  --muted: #61767c;
+  --line-soft: #dcedee;
+  --line: #c6dadd;
+  --accent: #0f8b8d;
+  --button-bg: #eef6f6;
+  --button-bg-hover: #e3efef;
+  --shadow: 0 10px 30px rgba(16, 33, 36, 0.08);
+}
 
-      html[data-theme="dark"] {
-        --bg: #0b1220;
-        --bg-strong: #0f172a;
-        --card: #0f172a;
-        --text: #f8fafc;
-        --muted: #94a3b8;
-        --line-soft: #1f2937;
-        --line: #334155;
-        --accent: #60a5fa;
-        --button-bg: #172235;
-        --button-bg-hover: #1d2c44;
-        --shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
-      }
+html[data-theme="dark"] {
+  --bg: #0b1719;
+  --bg-strong: #102024;
+  --card: #12292d;
+  --text: #f3fbfc;
+  --muted: #94aeb3;
+  --line-soft: #20383d;
+  --line: #315159;
+  --accent: #4dd3d6;
+  --button-bg: #173136;
+  --button-bg-hover: #1c3b41;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
 
-      @media (prefers-color-scheme: dark) {
-        html[data-theme="system"] {
-          --bg: #0b1220;
-          --bg-strong: #0f172a;
-          --card: #0f172a;
-          --text: #f8fafc;
-          --muted: #94a3b8;
-          --line-soft: #1f2937;
-          --line: #334155;
-          --accent: #60a5fa;
-          --button-bg: #172235;
-          --button-bg-hover: #1d2c44;
-          --shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
-        }
-      }
+@media (prefers-color-scheme: dark) {
+  html[data-theme="system"] {
+    --bg: #0b1719;
+    --bg-strong: #102024;
+    --card: #12292d;
+    --text: #f3fbfc;
+    --muted: #94aeb3;
+    --line-soft: #20383d;
+    --line: #315159;
+    --accent: #4dd3d6;
+    --button-bg: #173136;
+    --button-bg-hover: #1c3b41;
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  }
+}
 
       *, *::before, *::after { box-sizing: border-box; }
       html, body { margin: 0; padding: 0; }
