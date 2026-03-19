@@ -17,6 +17,7 @@ const doublesLinks = [
 
 const lostFoundUrl = "/lost-and-found";
 const handicapTagsUrl = "/singles/handicaps-tags";
+const weeklyResultsPageUrl = "/singles/weekly-results";
 const udiscLeagueUrl = "https://udisc.com/leagues/lufbery-league";
 
 type LooseRow = Record<string, unknown>;
@@ -74,7 +75,7 @@ const latestResult =
     .sort((a, b) => getEventTimestamp(String(b.title || "")) - getEventTimestamp(String(a.title || "")))[0] ||
   null;
 
-const latestResultHref = String(latestResult?.url || "/singles/weekly-results");
+const latestResultHref = String(latestResult?.url || weeklyResultsPageUrl);
 
 const latestResultMainRows = getFirstObjectArray(latestResult, [
   "rows",
@@ -371,14 +372,14 @@ const hasLatestResultTable =
     }
 
     .result-udisc-icon {
-  height: 0.82em;
-  width: auto;
-  display: inline-block;
-  vertical-align: middle;
-  flex: 0 0 auto;
-  opacity: 0.98;
-  transform: translateY(-0.11em);
-}
+      height: 0.82em;
+      width: auto;
+      display: inline-block;
+      vertical-align: middle;
+      flex: 0 0 auto;
+      opacity: 0.98;
+      transform: translateY(-0.11em);
+    }
 
     .result-udisc-icon--dark {
       display: none;
@@ -555,7 +556,8 @@ const hasLatestResultTable =
       margin-top: 12px;
     }
 
-    .result-toggle {
+    .result-toggle,
+    .result-view-full {
       appearance: none;
       border: 1px solid var(--line-soft);
       border-radius: 8px;
@@ -565,13 +567,39 @@ const hasLatestResultTable =
       font-weight: 600;
       line-height: 1.2;
       padding: 10px 12px;
-      cursor: pointer;
       transition: background 0.12s ease, transform 0.12s ease;
+      min-height: 42px;
     }
 
-    .result-toggle:hover {
+    .result-toggle {
+      cursor: pointer;
+    }
+
+    .result-view-full {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      margin-left: auto;
+    }
+
+    .result-toggle:hover,
+    .result-view-full:hover {
       background: var(--button-bg-hover, #eceff4);
       transform: translateY(-1px);
+    }
+
+    .result-view-full-arrow {
+      color: var(--muted);
+      font-size: 0.98rem;
+      line-height: 1;
+      transition: transform 0.12s ease, color 0.12s ease;
+    }
+
+    .result-view-full:hover .result-view-full-arrow {
+      transform: translateX(2px);
+      color: var(--text);
     }
 
     :global(.event-item) {
@@ -711,8 +739,10 @@ const hasLatestResultTable =
         align-items: stretch;
       }
 
-      .result-toggle {
+      .result-toggle,
+      .result-view-full {
         width: 100%;
+        margin-left: 0;
       }
     }
   </style>
@@ -834,6 +864,11 @@ const hasLatestResultTable =
               >
                 Show more
               </button>
+
+              <a class="result-view-full" href={weeklyResultsPageUrl}>
+                <span>View full result</span>
+                <span class="result-view-full-arrow" aria-hidden="true">→</span>
+              </a>
             </div>
           </>
         ) : (
