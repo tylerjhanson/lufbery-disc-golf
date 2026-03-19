@@ -1,6 +1,9 @@
 ---
 const inventoryUrl =
-  "https://docs.google.com/spreadsheets/d/1cqzS2KMiIjmDRGe3kG1kPlG8yqgegC2rsp7i0HcS420/edit?usp=sharing";
+  "https://docs.google.com/spreadsheets/d/1FlsTEEik9UUMZQmjTOVkP7dOqGho9_GRFDC5PIVgXPo/edit?gid=0#gid=0";
+
+const sheetId = "1FlsTEEik9UUMZQmjTOVkP7dOqGho9_GRFDC5PIVgXPo";
+const sheetGid = "0";
 
 const udiscUrl = "https://udisc.com/leagues/lufbery-league";
 const facebookUrl = "https://www.facebook.com/groups/1155484787825669";
@@ -8,151 +11,515 @@ import SiteLayout from "../layouts/SiteLayout.astro";
 ---
 
 <SiteLayout title="Lost & Found" showBrandBar={true}>
-<style>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --line-soft: #eef2f7;
+      --accent: #2563eb;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --radius: 22px;
+    }
 
-      :root {
-        --bg: #f5f7fb;
-        --card: #ffffff;
-        --text: #111827;
-        --muted: #6b7280;
-        --line-soft: #eef2f7;
-        --accent: #2563eb;
-        --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-        --radius: 22px;
-      }
+    * {
+      box-sizing: border-box;
+    }
 
-      * {
-        box-sizing: border-box;
-      }
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%);
+      color: var(--text);
+    }
 
+    .wrap {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px 28px 24px;
+    }
+
+    h1 {
+      margin: 0 0 18px;
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1.2rem;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+    }
+
+    p {
+      margin: 0 0 18px;
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+
+    .button {
+      display: inline-block;
+      margin-bottom: 24px;
+      padding: 13px 18px;
+      border-radius: 12px;
+      background: var(--accent);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    .button:hover {
+      text-decoration: none;
+      filter: brightness(0.96);
+    }
+
+    .link {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .link:hover {
+      text-decoration: underline;
+    }
+
+    .bullet-list {
+      margin: 0 0 18px 0;
+      padding-left: 20px;
+    }
+
+    .bullet-list li {
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+
+    .footer-link {
+      margin-top: 22px;
+    }
+
+    .footer-link a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .footer-link a:hover {
+      text-decoration: underline;
+    }
+
+    .inventory-section {
+      margin-top: 26px;
+    }
+
+    .inventory-frame {
+      border: 1px solid var(--line-soft);
+      border-radius: 18px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    }
+
+    .inventory-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line-soft);
+      background: linear-gradient(180deg, #f8fafc 0%, #f3f6fb 100%);
+    }
+
+    .inventory-subtext {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+
+    .inventory-status {
+      flex: 0 0 auto;
+      color: var(--muted);
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+
+    .inventory-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .inventory-table {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    .inventory-table th,
+    .inventory-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line-soft);
+      text-align: left;
+      vertical-align: top;
+      font-size: 0.95rem;
+      line-height: 1.45;
+      word-wrap: break-word;
+    }
+
+    .inventory-table th {
+      background: #f8fafc;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      padding: 0;
+    }
+
+    .inventory-sort {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 14px;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      font-weight: 700;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .inventory-sort:hover {
+      background: rgba(37, 99, 235, 0.04);
+    }
+
+    .inventory-sort:focus-visible {
+      outline: 2px solid rgba(37, 99, 235, 0.35);
+      outline-offset: -2px;
+    }
+
+    .inventory-sort-indicator {
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1;
+      min-width: 1.1em;
+      text-align: right;
+    }
+
+    .inventory-empty {
+      color: var(--muted);
+      text-align: center;
+      padding: 20px 14px;
+    }
+
+    .inventory-table tbody tr:hover td {
+      background: #fafcff;
+    }
+
+    @media (max-width: 700px) {
       body {
-        margin: 0;
-        padding: 24px;
-        font-family: Inter, Arial, Helvetica, sans-serif;
-        background: linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%);
-        color: var(--text);
-      }
-
-      .wrap {
-        width: 100%;
-        max-width: none;
-        margin: 0;
+        padding: 10px;
       }
 
       .card {
-        background: var(--card);
-        border: 1px solid var(--line-soft);
-        border-radius: var(--radius);
-        box-shadow: var(--shadow);
-        padding: 28px 28px 24px;
+        padding: 20px 18px 18px;
       }
 
-      h1 {
-        margin: 0 0 18px;
-        font-size: clamp(2rem, 4vw, 3rem);
-        line-height: 1.05;
-        letter-spacing: -0.03em;
-      }
-
-      p {
-        margin: 0 0 18px;
-        font-size: 1rem;
-        line-height: 1.6;
-      }
-
-      .button {
-        display: inline-block;
-        margin-bottom: 24px;
-        padding: 13px 18px;
-        border-radius: 12px;
-        background: var(--accent);
-        color: #fff;
-        text-decoration: none;
-        font-weight: 700;
-      }
-
-      .button:hover {
-        text-decoration: none;
-        filter: brightness(0.96);
-      }
-
-      .link {
-        color: var(--accent);
-        text-decoration: none;
-        font-weight: 600;
-      }
-
-      .link:hover {
-        text-decoration: underline;
-      }
-
-      .bullet-list {
-        margin: 0 0 18px 0;
-        padding-left: 20px;
-      }
-
+      p,
       .bullet-list li {
-        margin-bottom: 8px;
-        line-height: 1.5;
+        font-size: 0.96rem;
       }
 
-      .footer-link {
-        margin-top: 22px;
+      .inventory-topbar {
+        flex-direction: column;
+        align-items: flex-start;
       }
 
-      .footer-link a {
-        color: var(--accent);
-        text-decoration: none;
-        font-weight: 600;
+      .inventory-status {
+        white-space: normal;
       }
 
-      .footer-link a:hover {
-        text-decoration: underline;
+      .inventory-table th,
+      .inventory-table td,
+      .inventory-sort {
+        font-size: 0.92rem;
       }
+    }
+  </style>
 
-      @media (max-width: 700px) {
-        body {
-          padding: 10px;
-        }
+  <div class="wrap">
+    <div class="card">
+      <h1>Lost &amp; Found</h1>
 
-        .card {
-          padding: 20px 18px 18px;
-        }
+      <p>
+        <a class="button" href={inventoryUrl} target="_blank" rel="noopener">
+          Current Lost and Found Inventory
+        </a>
+      </p>
 
-        p,
-        .bullet-list li {
-          font-size: 0.96rem;
-        }
-      }
-    
-</style>
+      <p>
+        Lost discs are available for pick up before and after our weekly league rounds.
+        Please check
+        <a class="link" href={udiscUrl} target="_blank" rel="noopener">UDisc</a>
+        for dates and times:
+      </p>
 
-<div class="wrap">
-      <div class="card">
-        <h1>Lost &amp; Found</h1>
+      <ul class="bullet-list">
+        <li>Sundays, 9 a.m., year round</li>
+        <li>Thursday evenings April-September</li>
+      </ul>
 
-        <p>
-          <a class="button" href={inventoryUrl} target="_blank" rel="noopener">
-            Current Lost and Found Inventory
-          </a>
-        </p>
+      <p>Discs not picked up within 60 days will be donated.</p>
 
-        <p>
-          Lost discs are available for pick up before and after our weekly league rounds.
-          Please check
-          <a class="link" href={udiscUrl} target="_blank" rel="noopener">UDisc</a>
-          for dates and times:
-        </p>
+      <div class="inventory-section">
+        <div class="inventory-frame">
+          <div class="inventory-topbar">
+            <div>
+              <h2>Current Inventory</h2>
+              <p class="inventory-subtext">
+                Click any column header to sort. Default sort is by the first column,
+                oldest to newest.
+              </p>
+            </div>
+            <div class="inventory-status" id="inventoryStatus">Loading inventory…</div>
+          </div>
 
-        <ul class="bullet-list">
-          <li>Sundays, 9 a.m., year round</li>
-          <li>Thursday evenings April-September</li>
-        </ul>
-
-        <p>Discs not picked up within 60 days will be donated.</p>
-
-        </p>
-
+          <div class="inventory-table-wrap">
+            <table class="inventory-table" id="inventoryTable">
+              <thead id="inventoryHead"></thead>
+              <tbody id="inventoryBody">
+                <tr>
+                  <td class="inventory-empty" colspan="6">Loading inventory…</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
+  </div>
+
+  <script define:vars={{ sheetId, sheetGid }}>
+    const inventoryHead = document.getElementById("inventoryHead");
+    const inventoryBody = document.getElementById("inventoryBody");
+    const inventoryStatus = document.getElementById("inventoryStatus");
+
+    const state = {
+      labels: [],
+      rows: [],
+      sortIndex: 0,
+      sortDir: "asc",
+    };
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function formatDateValue(date) {
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      const year = date.getFullYear();
+      return `${month}/${day}/${year}`;
+    }
+
+    function displayCell(cell) {
+      if (!cell) return "";
+      if (cell.f !== null && cell.f !== undefined && cell.f !== "") return String(cell.f);
+      if (cell.v instanceof Date) return formatDateValue(cell.v);
+      if (cell.v === null || cell.v === undefined) return "";
+      return String(cell.v);
+    }
+
+    function tryParseDate(value) {
+      if (!value) return null;
+      if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+
+      const text = String(value).trim();
+      if (!text) return null;
+
+      const direct = new Date(text);
+      if (!Number.isNaN(direct.getTime())) return direct;
+
+      const mmddyyyy = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+      if (mmddyyyy) {
+        let [, m, d, y] = mmddyyyy;
+        let year = Number(y);
+        if (year < 100) year += 2000;
+        const parsed = new Date(year, Number(m) - 1, Number(d));
+        if (!Number.isNaN(parsed.getTime())) return parsed;
+      }
+
+      return null;
+    }
+
+    function comparableValue(cell, colIndex) {
+      if (!cell) return "";
+
+      const raw = cell.v;
+
+      if (raw instanceof Date) return raw.getTime();
+      if (typeof raw === "number") return raw;
+      if (typeof raw === "boolean") return raw ? 1 : 0;
+
+      const text = displayCell(cell).trim();
+
+      if (colIndex === 0) {
+        const parsedDate = tryParseDate(raw) || tryParseDate(text);
+        if (parsedDate) return parsedDate.getTime();
+      }
+
+      const numeric = Number(
+        text.replaceAll(",", "").replaceAll("$", "").replaceAll("%", "")
+      );
+      if (text !== "" && !Number.isNaN(numeric)) return numeric;
+
+      return text.toLowerCase();
+    }
+
+    function compareRows(a, b) {
+      const left = comparableValue(a[state.sortIndex], state.sortIndex);
+      const right = comparableValue(b[state.sortIndex], state.sortIndex);
+
+      if (left < right) return state.sortDir === "asc" ? -1 : 1;
+      if (left > right) return state.sortDir === "asc" ? 1 : -1;
+      return 0;
+    }
+
+    function renderHead() {
+      const indicatorFor = (index) => {
+        if (index !== state.sortIndex) return "↕";
+        return state.sortDir === "asc" ? "▲" : "▼";
+      };
+
+      inventoryHead.innerHTML = `
+        <tr>
+          ${state.labels
+            .map(
+              (label, index) => `
+                <th scope="col">
+                  <button
+                    type="button"
+                    class="inventory-sort"
+                    data-index="${index}"
+                    aria-label="Sort by ${escapeHtml(label)}"
+                  >
+                    <span>${escapeHtml(label)}</span>
+                    <span class="inventory-sort-indicator">${indicatorFor(index)}</span>
+                  </button>
+                </th>
+              `
+            )
+            .join("")}
+        </tr>
+      `;
+    }
+
+    function renderBody() {
+      if (!state.rows.length) {
+        inventoryBody.innerHTML = `
+          <tr>
+            <td class="inventory-empty" colspan="6">No inventory rows found.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      const sortedRows = [...state.rows].sort(compareRows);
+
+      inventoryBody.innerHTML = sortedRows
+        .map(
+          (row) => `
+            <tr>
+              ${row
+                .map((cell) => `<td>${escapeHtml(displayCell(cell)) || "&nbsp;"}</td>`)
+                .join("")}
+            </tr>
+          `
+        )
+        .join("");
+    }
+
+    function renderTable() {
+      renderHead();
+      renderBody();
+      inventoryStatus.textContent = `${state.rows.length} item${state.rows.length === 1 ? "" : "s"}`;
+    }
+
+    async function loadInventory() {
+      try {
+        const tq = encodeURIComponent("select A,B,C,D,E,F");
+        const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?gid=${sheetGid}&tq=${tq}`;
+
+        const response = await fetch(url);
+        const text = await response.text();
+
+        const match = text.match(/google\\.visualization\\.Query\\.setResponse\\((.*)\\);?$/s);
+        if (!match) {
+          throw new Error("Unable to read sheet response.");
+        }
+
+        const parsed = Function(`"use strict"; return (${match[1]});`)();
+
+        const cols = (parsed?.table?.cols || []).slice(0, 6);
+        const rows = (parsed?.table?.rows || []).map((row) => {
+          const cells = Array.isArray(row?.c) ? row.c.slice(0, 6) : [];
+          while (cells.length < 6) cells.push(null);
+          return cells;
+        });
+
+        state.labels = cols.map((col, i) => col?.label || `Column ${String.fromCharCode(65 + i)}`);
+        state.rows = rows;
+
+        renderTable();
+      } catch (error) {
+        console.error(error);
+        inventoryStatus.textContent = "Unable to load inventory.";
+        inventoryBody.innerHTML = `
+          <tr>
+            <td class="inventory-empty" colspan="6">
+              Unable to load inventory right now.
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    inventoryHead?.addEventListener("click", (event) => {
+      const button = event.target.closest(".inventory-sort");
+      if (!button) return;
+
+      const index = Number(button.getAttribute("data-index"));
+      if (Number.isNaN(index)) return;
+
+      if (state.sortIndex === index) {
+        state.sortDir = state.sortDir === "asc" ? "desc" : "asc";
+      } else {
+        state.sortIndex = index;
+        state.sortDir = index === 0 ? "asc" : "asc";
+      }
+
+      renderTable();
+    });
+
+    loadInventory();
+  </script>
 </SiteLayout>
