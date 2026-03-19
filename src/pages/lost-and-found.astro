@@ -3,7 +3,6 @@ const sheetId = "1FlsTEEik9UUMZQmjTOVkP7dOqGho9_GRFDC5PIVgXPo";
 const sheetGid = "0";
 
 const udiscUrl = "https://udisc.com/leagues/lufbery-league";
-const facebookUrl = "https://www.facebook.com/groups/1155484787825669";
 import SiteLayout from "../layouts/SiteLayout.astro";
 ---
 
@@ -14,7 +13,10 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       --card: #ffffff;
       --text: #111827;
       --muted: #6b7280;
+      --line: #e5e7eb;
       --line-soft: #eef2f7;
+      --header: #f8fafc;
+      --hover: #f9fbff;
       --accent: #2563eb;
       --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
       --radius: 22px;
@@ -55,9 +57,8 @@ import SiteLayout from "../layouts/SiteLayout.astro";
 
     h2 {
       margin: 0;
-      font-size: 1.2rem;
+      font-size: 1rem;
       line-height: 1.2;
-      letter-spacing: -0.02em;
     }
 
     p {
@@ -86,30 +87,15 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       line-height: 1.5;
     }
 
-    .footer-link {
-      margin-top: 22px;
-    }
-
-    .footer-link a {
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .footer-link a:hover {
-      text-decoration: underline;
-    }
-
     .inventory-section {
       margin-top: 26px;
     }
 
     .inventory-frame {
       border: 1px solid var(--line-soft);
-      border-radius: 18px;
+      border-radius: 10px;
       overflow: hidden;
-      background: #fff;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      background: var(--card);
     }
 
     .inventory-topbar {
@@ -117,62 +103,82 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       align-items: center;
       justify-content: space-between;
       gap: 14px;
-      padding: 16px 18px;
+      padding: 12px 12px 10px;
       border-bottom: 1px solid var(--line-soft);
-      background: linear-gradient(180deg, #f8fafc 0%, #f3f6fb 100%);
+      background: var(--card);
     }
 
     .inventory-status {
       flex: 0 0 auto;
       color: var(--muted);
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       white-space: nowrap;
     }
 
-    .inventory-table-wrap {
-      width: 100%;
+    .table-wrap {
+      padding: 0;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
     }
 
-    .inventory-table {
+    table.inventory-table {
       width: 100%;
       min-width: 760px;
-      border-collapse: collapse;
-      table-layout: fixed;
+      border-collapse: separate;
+      border-spacing: 0;
+      table-layout: auto;
     }
 
-    .inventory-table th,
-    .inventory-table td {
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--line-soft);
-      text-align: left;
-      vertical-align: top;
-      font-size: 0.95rem;
-      line-height: 1.45;
-      word-wrap: break-word;
-    }
-
-    .inventory-table th {
-      background: #f8fafc;
-      position: sticky;
-      top: 0;
-      z-index: 1;
+    table.inventory-table thead th {
+      background: var(--header);
+      color: var(--muted);
+      font-size: 0.76rem;
       font-weight: 700;
-      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      padding: 10px 6px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      white-space: normal;
+      line-height: 1.1;
       user-select: none;
       cursor: pointer;
-      transition: background 0.15s ease;
-      white-space: nowrap;
     }
 
-    .inventory-table th:hover {
-      background: #f1f5f9;
+    table.inventory-table thead th:first-child {
+      border-top-left-radius: 14px;
     }
 
-    .inventory-table th:focus-visible {
-      outline: 2px solid rgba(37, 99, 235, 0.35);
-      outline-offset: -2px;
+    table.inventory-table thead th:last-child {
+      border-top-right-radius: 14px;
+    }
+
+    table.inventory-table thead th:hover {
+      background: #f3f7fc;
+    }
+
+    table.inventory-table tbody td {
+      padding: 9px 6px;
+      border-bottom: 1px solid var(--line-soft);
+      font-size: 0.9rem;
+      text-align: left;
+      vertical-align: middle;
+      line-height: 1.15;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    table.inventory-table tbody tr:nth-child(even) td {
+      background: #fcfdff;
+    }
+
+    table.inventory-table tbody tr:hover td {
+      background: var(--hover);
+    }
+
+    table.inventory-table tbody td:first-child {
+      font-weight: 600;
     }
 
     .inventory-th-inner {
@@ -185,7 +191,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
 
     .inventory-sort-indicator {
       color: var(--muted);
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       line-height: 1;
       min-width: 1.1em;
       text-align: right;
@@ -196,10 +202,6 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       color: var(--muted);
       text-align: center;
       padding: 20px 14px;
-    }
-
-    .inventory-table tbody tr:hover td {
-      background: #fafcff;
     }
 
     @media (max-width: 700px) {
@@ -217,6 +219,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       }
 
       .inventory-topbar {
+        padding: 10px 10px 8px;
         flex-direction: column;
         align-items: flex-start;
       }
@@ -225,9 +228,30 @@ import SiteLayout from "../layouts/SiteLayout.astro";
         white-space: normal;
       }
 
-      .inventory-table th,
-      .inventory-table td {
-        font-size: 0.92rem;
+      table.inventory-table thead th {
+        font-size: 0.64rem;
+        padding: 8px 4px;
+      }
+
+      table.inventory-table tbody td {
+        font-size: 0.82rem;
+        padding: 8px 4px;
+      }
+    }
+
+    @media (max-width: 420px) {
+      h1 {
+        font-size: 1.9rem;
+      }
+
+      table.inventory-table thead th {
+        font-size: 0.58rem;
+        padding: 7px 3px;
+      }
+
+      table.inventory-table tbody td {
+        font-size: 0.74rem;
+        padding: 6px 3px;
       }
     }
   </style>
@@ -257,7 +281,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
             <div class="inventory-status" id="inventoryStatus">Loading inventory…</div>
           </div>
 
-          <div class="inventory-table-wrap">
+          <div class="table-wrap">
             <table class="inventory-table" id="inventoryTable">
               <thead id="inventoryHead"></thead>
               <tbody id="inventoryBody">
@@ -394,7 +418,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
 
     function renderHead() {
       const indicatorFor = (index) => {
-        if (index !== state.sortIndex) return "↕";
+        if (index !== state.sortIndex) return "";
         return state.sortDir === "asc" ? "▲" : "▼";
       };
 
