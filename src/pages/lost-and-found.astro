@@ -43,9 +43,9 @@ import SiteLayout from "../layouts/SiteLayout.astro";
     .card {
       background: var(--card);
       border: 1px solid var(--line-soft);
-      border-radius: var(--radius);
+      border-radius: 12px;
       box-shadow: var(--shadow);
-      padding: 28px 28px 24px;
+      padding: 28px 28px 22px;
     }
 
     h1 {
@@ -88,42 +88,27 @@ import SiteLayout from "../layouts/SiteLayout.astro";
     }
 
     .inventory-section {
-      margin-top: 26px;
+      margin-top: 22px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line-soft);
     }
 
-    .inventory-frame {
-      border: 1px solid var(--line-soft);
-      border-radius: 10px;
-      overflow: hidden;
-      background: var(--card);
-    }
-
-    .inventory-topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      padding: 12px 12px 10px;
-      border-bottom: 1px solid var(--line-soft);
-      background: var(--card);
-    }
-
-    .inventory-status {
-      flex: 0 0 auto;
-      color: var(--muted);
-      font-size: 0.88rem;
-      white-space: nowrap;
+    .inventory-header {
+      padding: 0 0 10px;
     }
 
     .table-wrap {
       padding: 0;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+      border: 1px solid var(--line-soft);
+      border-radius: 10px;
+      background: var(--card);
     }
 
     table.inventory-table {
       width: 100%;
-      min-width: 760px;
+      min-width: 620px;
       border-collapse: separate;
       border-spacing: 0;
       table-layout: auto;
@@ -132,25 +117,25 @@ import SiteLayout from "../layouts/SiteLayout.astro";
     table.inventory-table thead th {
       background: var(--header);
       color: var(--muted);
-      font-size: 0.76rem;
+      font-size: 0.68rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.03em;
-      padding: 10px 6px;
+      padding: 8px 5px;
       border-bottom: 1px solid var(--line);
       text-align: left;
       white-space: normal;
-      line-height: 1.1;
+      line-height: 1.08;
       user-select: none;
       cursor: pointer;
     }
 
     table.inventory-table thead th:first-child {
-      border-top-left-radius: 14px;
+      border-top-left-radius: 10px;
     }
 
     table.inventory-table thead th:last-child {
-      border-top-right-radius: 14px;
+      border-top-right-radius: 10px;
     }
 
     table.inventory-table thead th:hover {
@@ -158,12 +143,12 @@ import SiteLayout from "../layouts/SiteLayout.astro";
     }
 
     table.inventory-table tbody td {
-      padding: 9px 6px;
+      padding: 8px 5px;
       border-bottom: 1px solid var(--line-soft);
-      font-size: 0.9rem;
+      font-size: 0.84rem;
       text-align: left;
-      vertical-align: middle;
-      line-height: 1.15;
+      vertical-align: top;
+      line-height: 1.08;
       white-space: normal;
       overflow-wrap: anywhere;
       word-break: break-word;
@@ -178,22 +163,23 @@ import SiteLayout from "../layouts/SiteLayout.astro";
     }
 
     table.inventory-table tbody td:first-child {
-      font-weight: 600;
+      font-weight: 400;
+      white-space: nowrap;
     }
 
     .inventory-th-inner {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
+      gap: 6px;
       width: 100%;
     }
 
     .inventory-sort-indicator {
       color: var(--muted);
-      font-size: 0.78rem;
+      font-size: 0.7rem;
       line-height: 1;
-      min-width: 1.1em;
+      min-width: 0.9em;
       text-align: right;
       flex: 0 0 auto;
     }
@@ -201,7 +187,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
     .inventory-empty {
       color: var(--muted);
       text-align: center;
-      padding: 20px 14px;
+      padding: 18px 12px;
     }
 
     @media (max-width: 700px) {
@@ -210,7 +196,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       }
 
       .card {
-        padding: 20px 18px 18px;
+        padding: 20px 18px 16px;
       }
 
       p,
@@ -218,24 +204,25 @@ import SiteLayout from "../layouts/SiteLayout.astro";
         font-size: 0.96rem;
       }
 
-      .inventory-topbar {
-        padding: 10px 10px 8px;
-        flex-direction: column;
-        align-items: flex-start;
+      .inventory-section {
+        margin-top: 18px;
+        padding-top: 12px;
       }
 
-      .inventory-status {
-        white-space: normal;
+      table.inventory-table {
+        min-width: 560px;
       }
 
       table.inventory-table thead th {
-        font-size: 0.64rem;
-        padding: 8px 4px;
+        font-size: 0.58rem;
+        padding: 7px 4px;
+        letter-spacing: 0;
       }
 
       table.inventory-table tbody td {
-        font-size: 0.82rem;
-        padding: 8px 4px;
+        font-size: 0.76rem;
+        padding: 7px 4px;
+        line-height: 1.05;
       }
     }
 
@@ -244,13 +231,17 @@ import SiteLayout from "../layouts/SiteLayout.astro";
         font-size: 1.9rem;
       }
 
+      table.inventory-table {
+        min-width: 540px;
+      }
+
       table.inventory-table thead th {
-        font-size: 0.58rem;
-        padding: 7px 3px;
+        font-size: 0.54rem;
+        padding: 6px 3px;
       }
 
       table.inventory-table tbody td {
-        font-size: 0.74rem;
+        font-size: 0.72rem;
         padding: 6px 3px;
       }
     }
@@ -275,22 +266,19 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       <p>Discs not picked up within 60 days will be donated.</p>
 
       <div class="inventory-section">
-        <div class="inventory-frame">
-          <div class="inventory-topbar">
-            <h2>Current Inventory</h2>
-            <div class="inventory-status" id="inventoryStatus">Loading inventory…</div>
-          </div>
+        <div class="inventory-header">
+          <h2>Current Inventory</h2>
+        </div>
 
-          <div class="table-wrap">
-            <table class="inventory-table" id="inventoryTable">
-              <thead id="inventoryHead"></thead>
-              <tbody id="inventoryBody">
-                <tr>
-                  <td class="inventory-empty" colspan="6">Loading inventory…</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+        <div class="table-wrap">
+          <table class="inventory-table" id="inventoryTable">
+            <thead id="inventoryHead"></thead>
+            <tbody id="inventoryBody">
+              <tr>
+                <td class="inventory-empty" colspan="6">Loading inventory…</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -299,7 +287,6 @@ import SiteLayout from "../layouts/SiteLayout.astro";
   <script define:vars={{ sheetId, sheetGid }}>
     const inventoryHead = document.getElementById("inventoryHead");
     const inventoryBody = document.getElementById("inventoryBody");
-    const inventoryStatus = document.getElementById("inventoryStatus");
 
     const state = {
       labels: [],
@@ -320,16 +307,22 @@ import SiteLayout from "../layouts/SiteLayout.astro";
     function formatDateValue(date) {
       const month = String(date.getMonth() + 1).padStart(2, "0");
       const day = String(date.getDate()).padStart(2, "0");
-      const year = date.getFullYear();
+      const year = String(date.getFullYear()).slice(-2);
       return `${month}/${day}/${year}`;
     }
 
     function displayCell(cell) {
       if (!cell) return "";
-      if (cell.f !== null && cell.f !== undefined && cell.f !== "") return String(cell.f);
+      if (cell.f !== null && cell.f !== undefined && cell.f !== "") {
+        const formatted = String(cell.f).trim();
+        const parsed = tryParseDate(formatted);
+        return parsed ? formatDateValue(parsed) : formatted;
+      }
       if (cell.v instanceof Date) return formatDateValue(cell.v);
       if (cell.v === null || cell.v === undefined) return "";
-      return String(cell.v);
+      const raw = String(cell.v).trim();
+      const parsed = tryParseDate(raw);
+      return parsed ? formatDateValue(parsed) : raw;
     }
 
     function tryParseDate(value) {
@@ -340,7 +333,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       if (!text) return null;
 
       const direct = new Date(text);
-      if (!Number.isNaN(direct.getTime())) return direct;
+      if (!Number.isNaN(direct.getTime()) && /[\/\-]/.test(text)) return direct;
 
       const mmddyyyy = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
       if (mmddyyyy) {
@@ -474,7 +467,6 @@ import SiteLayout from "../layouts/SiteLayout.astro";
     function renderTable() {
       renderHead();
       renderBody();
-      inventoryStatus.textContent = `${state.rows.length} item${state.rows.length === 1 ? "" : "s"}`;
     }
 
     async function loadInventory() {
@@ -511,7 +503,6 @@ import SiteLayout from "../layouts/SiteLayout.astro";
         renderTable();
       } catch (error) {
         console.error(error);
-        inventoryStatus.textContent = "Unable to load inventory.";
         inventoryBody.innerHTML = `
           <tr>
             <td class="inventory-empty" colspan="6">
