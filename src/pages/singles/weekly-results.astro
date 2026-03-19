@@ -4,7 +4,9 @@ const sheetGid = "0";
 
 const udiscUrl = "https://udisc.com/leagues/lufbery-league";
 const facebookUrl = "https://www.facebook.com/groups/1155484787825669";
-import SiteLayout from "../layouts/SiteLayout.astro";
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import { getWeeklyResults } from "../../lib/data";
 ---
 
 <SiteLayout title="Lost & Found" showBrandBar={true}>
