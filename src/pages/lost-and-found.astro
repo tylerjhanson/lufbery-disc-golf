@@ -32,11 +32,11 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       margin: 0;
     }
 
-    .lost-found-page .card {
-      background: var(--card);
-      border: 1px solid var(--line-soft);
-      border-radius: 10px;
-      box-shadow: var(--shadow);
+    .lost-found-page .lf-card {
+      background: var(--card) !important;
+      border: 1px solid var(--line-soft) !important;
+      border-radius: 10px !important;
+      box-shadow: var(--shadow) !important;
       overflow: hidden;
       padding: 28px 28px 22px;
     }
@@ -46,12 +46,14 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       font-size: clamp(2rem, 4vw, 3rem);
       line-height: 1.05;
       letter-spacing: -0.03em;
+      color: var(--text);
     }
 
     .lost-found-page p {
       margin: 0 0 18px;
       font-size: 1rem;
       line-height: 1.6;
+      color: var(--text);
     }
 
     .lost-found-page .link {
@@ -72,6 +74,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
     .lost-found-page .bullet-list li {
       margin-bottom: 8px;
       line-height: 1.5;
+      color: var(--text);
     }
 
     .lost-found-page .inventory-section {
@@ -81,10 +84,11 @@ import SiteLayout from "../layouts/SiteLayout.astro";
 
     .lost-found-page .inventory-heading {
       margin: 4px 0 10px;
-      padding: 0;
+      padding-left: 15px;
       font-size: 0.96rem;
-      color: var(--text);
+      color: var(--muted);
       font-weight: 700;
+      line-height: 1.2;
     }
 
     .lost-found-page .table-wrap {
@@ -100,6 +104,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       border-spacing: 0;
       table-layout: fixed;
       min-width: 620px;
+      background: transparent;
     }
 
     .lost-found-page table.inventory-table col.col-date {
@@ -160,14 +165,19 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       white-space: normal;
       overflow-wrap: anywhere;
       word-break: break-word;
+      background: transparent;
     }
 
     .lost-found-page table.inventory-table tbody tr:nth-child(even) td {
-      background: #fcfdff;
+      background: #fcfdff !important;
+    }
+
+    .lost-found-page table.inventory-table tbody tr:nth-child(odd) td {
+      background: transparent !important;
     }
 
     .lost-found-page table.inventory-table tbody tr:hover td {
-      background: var(--hover);
+      background: var(--hover) !important;
     }
 
     .lost-found-page table.inventory-table tbody td:first-child,
@@ -199,7 +209,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
     }
 
     @media (max-width: 700px) {
-      .lost-found-page .card {
+      .lost-found-page .lf-card {
         padding: 20px 14px 16px;
       }
 
@@ -208,19 +218,15 @@ import SiteLayout from "../layouts/SiteLayout.astro";
         font-size: 0.96rem;
       }
 
-      .lost-found-page .inventory-section {
-        padding: 0 !important;
-        margin: 0 !important;
-      }
-
       .lost-found-page .inventory-heading {
         margin: 4px 0 8px;
-        padding: 0 !important;
+        padding-left: 8px;
+        font-size: 0.96rem;
       }
 
       .lost-found-page .table-wrap {
-        padding: 0 !important;
-        margin: 0 !important;
+        padding: 0;
+        margin: 0;
       }
 
       .lost-found-page table.inventory-table {
@@ -250,7 +256,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
         font-size: 1.9rem;
       }
 
-      .lost-found-page .card {
+      .lost-found-page .lf-card {
         padding: 18px 10px 14px;
       }
 
@@ -275,7 +281,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
   </style>
 
   <div class="wrap lost-found-page">
-    <div class="card">
+    <div class="lf-card">
       <h1>Lost &amp; Found</h1>
 
       <p>
