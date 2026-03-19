@@ -300,75 +300,75 @@ import SiteLayout from "../layouts/SiteLayout.astro";
         font-size: 0.52rem !important;
       }
     }
-/* Dark mode fix for Lost & Found table */
-html[data-theme="dark"] .lost-found-page .lf-card {
-  background: var(--card) !important;
-  border-color: var(--line-soft) !important;
-}
 
-html[data-theme="dark"] .lost-found-page .inventory-heading {
-  color: var(--text) !important;
-}
+    /* Dark mode fix */
+    html[data-theme="dark"] .lost-found-page .lf-card {
+      background: var(--card) !important;
+      border-color: var(--line-soft) !important;
+    }
 
-html[data-theme="dark"] .lost-found-page table.inventory-table thead th {
-  background: #162033 !important;
-  color: var(--muted) !important;
-  border-bottom-color: var(--line) !important;
-}
+    html[data-theme="dark"] .lost-found-page .inventory-heading {
+      color: var(--text) !important;
+    }
 
-html[data-theme="dark"] .lost-found-page table.inventory-table tbody td {
-  color: var(--text) !important;
-  border-bottom-color: var(--line-soft) !important;
-  background: transparent !important;
-}
+    html[data-theme="dark"] .lost-found-page table.inventory-table thead th {
+      background: #162033 !important;
+      color: var(--muted) !important;
+      border-bottom-color: var(--line) !important;
+    }
 
-html[data-theme="dark"] .lost-found-page table.inventory-table tbody tr:nth-child(odd) td {
-  background: transparent !important;
-}
+    html[data-theme="dark"] .lost-found-page table.inventory-table tbody td {
+      color: var(--text) !important;
+      border-bottom-color: var(--line-soft) !important;
+      background: transparent !important;
+    }
 
-html[data-theme="dark"] .lost-found-page table.inventory-table tbody tr:nth-child(even) td {
-  background: rgba(255, 255, 255, 0.03) !important;
-}
+    html[data-theme="dark"] .lost-found-page table.inventory-table tbody tr:nth-child(odd) td {
+      background: transparent !important;
+    }
 
-html[data-theme="dark"] .lost-found-page table.inventory-table tbody tr:hover td {
-  background: rgba(255, 255, 255, 0.06) !important;
-}
+    html[data-theme="dark"] .lost-found-page table.inventory-table tbody tr:nth-child(even) td {
+      background: rgba(255, 255, 255, 0.03) !important;
+    }
 
-/* System theme -> dark OS mode */
-@media (prefers-color-scheme: dark) {
-  html[data-theme="system"] .lost-found-page .lf-card {
-    background: var(--card) !important;
-    border-color: var(--line-soft) !important;
-  }
+    html[data-theme="dark"] .lost-found-page table.inventory-table tbody tr:hover td {
+      background: rgba(255, 255, 255, 0.06) !important;
+    }
 
-  html[data-theme="system"] .lost-found-page .inventory-heading {
-    color: var(--text) !important;
-  }
+    @media (prefers-color-scheme: dark) {
+      html[data-theme="system"] .lost-found-page .lf-card {
+        background: var(--card) !important;
+        border-color: var(--line-soft) !important;
+      }
 
-  html[data-theme="system"] .lost-found-page table.inventory-table thead th {
-    background: #162033 !important;
-    color: var(--muted) !important;
-    border-bottom-color: var(--line) !important;
-  }
+      html[data-theme="system"] .lost-found-page .inventory-heading {
+        color: var(--text) !important;
+      }
 
-  html[data-theme="system"] .lost-found-page table.inventory-table tbody td {
-    color: var(--text) !important;
-    border-bottom-color: var(--line-soft) !important;
-    background: transparent !important;
-  }
+      html[data-theme="system"] .lost-found-page table.inventory-table thead th {
+        background: #162033 !important;
+        color: var(--muted) !important;
+        border-bottom-color: var(--line) !important;
+      }
 
-  html[data-theme="system"] .lost-found-page table.inventory-table tbody tr:nth-child(odd) td {
-    background: transparent !important;
-  }
+      html[data-theme="system"] .lost-found-page table.inventory-table tbody td {
+        color: var(--text) !important;
+        border-bottom-color: var(--line-soft) !important;
+        background: transparent !important;
+      }
 
-  html[data-theme="system"] .lost-found-page table.inventory-table tbody tr:nth-child(even) td {
-    background: rgba(255, 255, 255, 0.03) !important;
-  }
+      html[data-theme="system"] .lost-found-page table.inventory-table tbody tr:nth-child(odd) td {
+        background: transparent !important;
+      }
 
-  html[data-theme="system"] .lost-found-page table.inventory-table tbody tr:hover td {
-    background: rgba(255, 255, 255, 0.06) !important;
-  }
-}
+      html[data-theme="system"] .lost-found-page table.inventory-table tbody tr:nth-child(even) td {
+        background: rgba(255, 255, 255, 0.03) !important;
+      }
+
+      html[data-theme="system"] .lost-found-page table.inventory-table tbody tr:hover td {
+        background: rgba(255, 255, 255, 0.06) !important;
+      }
+    }
   </style>
 
   <div class="wrap lost-found-page">
