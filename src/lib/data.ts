@@ -197,7 +197,7 @@ function formatAceHoleDisplay(value: string) {
 
   if (numberMatch) return numberMatch[1];
 
-  return text;
+  return "";
 }
 
 function normalizeAceHoleKey(value: string) {
@@ -207,11 +207,12 @@ function normalizeAceHoleKey(value: string) {
 function extractAceHoleFromPrizeLine(line: WeeklyPrizeLine) {
   const text = cleanSummaryText(line.text);
   const parenMatch = text.match(/\(([^)]+)\)/);
-  const rawLabel = parenMatch ? parenMatch[1] : text;
+  const rawLabel = parenMatch ? parenMatch[1] : "";
   const display = formatAceHoleDisplay(rawLabel);
 
   if (display) return display;
   if (line.sortHole != null) return String(line.sortHole);
+
   return "";
 }
 
@@ -781,11 +782,15 @@ export function getSinglesAces() {
     .map((row) => ({
       name: row[0] || "",
       hole: formatAceHoleDisplay(row[1] || ""),
-      date: row[2] || "",
+      date: toFullYearUsDate(row[2] || ""),
       url: row[3] || "",
-    }));
+    }))
+    .filter((row) => !!row.name && !!row.hole && !!row.date);
 
-  const derived = getDerivedSinglesData().aces;
+  const derived = getDerivedSinglesData().aces.map((row) => ({
+    ...row,
+    date: toFullYearUsDate(row.date || ""),
+  }));
 
   const merged = dedupeByKey(
     [...legacy, ...derived],
