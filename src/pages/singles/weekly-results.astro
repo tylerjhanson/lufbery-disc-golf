@@ -1,114 +1,13 @@
 ---
-import SiteLayout from "../../layouts/SiteLayout.astro";
-import { getWeeklyResults } from "../../lib/data";
+const sheetId = "1FlsTEEik9UUMZQmjTOVkP7dOqGho9_GRFDC5PIVgXPo";
+const sheetGid = "0";
 
-const events = getWeeklyResults();
-
-function getEventDateParts(title: string) {
-  const match = String(title || "").match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
-  if (!match) return null;
-
-  const month = Number(match[1]);
-  const day = Number(match[2]);
-  let year = Number(match[3]);
-
-  if (year < 100) year += 2000;
-
-  return { month, day, year };
-}
-
-function getEventTimestamp(title: string) {
-  const parts = getEventDateParts(title);
-  if (!parts) return 0;
-  return new Date(parts.year, parts.month - 1, parts.day).getTime();
-}
-
-function getEventYear(title: string) {
-  const parts = getEventDateParts(title);
-  return parts ? String(parts.year) : "";
-}
-
-function getRoundType(event: { title?: string; kind?: string }) {
-  const title = String(event?.title || "").toLowerCase();
-
-  if (
-    title.includes("2 rounds") ||
-    title.includes("2 round") ||
-    title.includes("2-round") ||
-    title.includes("27 hole") ||
-    title.includes("27-hole") ||
-    title.includes("27 holes") ||
-    title.includes("27-holes")
-  ) {
-    return "2-rounds";
-  }
-
-  if (event?.kind === "handicap" || title.includes("handicap")) {
-    return "handicap";
-  }
-
-  return "monthly";
-}
-
-function cleanPlayerName(value: unknown) {
-  return String(value || "").replace(/\s+/g, " ").trim();
-}
-
-function normalizeHeaderValue(value: unknown) {
-  return cleanPlayerName(value).toLowerCase();
-}
-
-function getCellValueByHeaders(headers: unknown[], row: unknown[], headerNames: string[]) {
-  const normalizedHeaders = (headers || []).map((header) =>
-    cleanPlayerName(header).toLowerCase()
-  );
-
-  for (const headerName of headerNames) {
-    const index = normalizedHeaders.indexOf(headerName.toLowerCase());
-    if (index !== -1) {
-      return String((row || [])[index] ?? "").trim();
-    }
-  }
-
-  return "";
-}
-
-function getHeaderLabelByHeaders(headers: unknown[], headerNames: string[], fallback = "") {
-  const normalizedHeaders = (headers || []).map((header) =>
-    cleanPlayerName(header).toLowerCase()
-  );
-
-  for (const headerName of headerNames) {
-    const index = normalizedHeaders.indexOf(headerName.toLowerCase());
-    if (index !== -1) {
-      return cleanPlayerName(headers[index]);
-    }
-  }
-
-  return fallback;
-}
-
-function getVisibleColumnIndexes(headers: unknown[], hiddenHeaders: string[]) {
-  const hidden = hiddenHeaders.map((header) => normalizeHeaderValue(header));
-
-  return (headers || [])
-    .map((_, index) => index)
-    .filter((index) => !hidden.includes(normalizeHeaderValue(headers[index])));
-}
-
-const sortedEvents = [...events].sort(
-  (a, b) => getEventTimestamp(b.title) - getEventTimestamp(a.title)
-);
-
-const eventYears = [
-  ...new Set(sortedEvents.map((event) => getEventYear(event.title)).filter(Boolean)),
-].sort((a, b) => Number(b) - Number(a));
-
-const defaultYear = "all";
-const defaultRoundType = "all";
+const udiscUrl = "https://udisc.com/leagues/lufbery-league";
+const facebookUrl = "https://www.facebook.com/groups/1155484787825669";
+import SiteLayout from "../layouts/SiteLayout.astro";
 ---
 
-<SiteLayout title="Weekly Results" showBrandBar={true}>
+<SiteLayout title="Lost & Found" showBrandBar={true}>
   <style>
     :root {
       --bg: #f5f7fb;
@@ -142,482 +41,202 @@ const defaultRoundType = "all";
       margin: 0;
     }
 
-    .page-header {
-      margin-bottom: 18px;
-    }
-
-    .weekly-results-page {
-      overflow-x: hidden;
-    }
-
-    .results-toolbar {
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-bottom: 10px;
-    }
-
-    .results-toolbar label {
-      min-width: 150px;
-    }
-
-    .search-wrap {
-      position: relative;
-      width: min(360px, 100%);
-      flex: 1 1 280px;
-    }
-
-    .search-input {
-      width: 100%;
-      padding: 11px 42px 11px 13px;
-      border: 1px solid var(--line-soft);
-      border-radius: 9px;
+    .card {
       background: var(--card);
-      color: var(--text);
-      font: inherit;
-    }
-
-    .search-clear {
-      position: absolute;
-      top: 50%;
-      right: 9px;
-      transform: translateY(-50%);
-      width: 26px;
-      height: 26px;
       border: 1px solid var(--line-soft);
-      border-radius: 999px;
-      background: #fff;
-      color: #94a3b8;
-      font-size: 0.95rem;
-      line-height: 1;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
-    }
-
-    .search-wrap.has-value .search-clear {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .search-clear:hover {
-      color: var(--text);
-      background: #f8fafc;
-    }
-
-    .filter-select {
-      min-width: 170px;
-      padding: 10px 12px;
-      border: 1px solid var(--line-soft);
-      border-radius: 9px;
-      background: var(--card);
-      color: var(--text);
-      font: inherit;
-    }
-
-    .empty-state {
-      display: none;
-      padding: 14px 4px 0;
-      color: var(--muted);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px 28px 24px;
     }
 
     h1 {
-      margin: 0;
+      margin: 0 0 18px;
       font-size: clamp(2rem, 4vw, 3rem);
       line-height: 1.05;
       letter-spacing: -0.03em;
     }
 
-    .events {
-      display: grid;
-      gap: 14px;
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--line-soft);
-      border-radius: 10px;
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-
-    .card-header {
-      padding: 12px 12px 10px;
-    }
-
-    .card-title {
+    h2 {
       margin: 0;
       font-size: 1rem;
       line-height: 1.2;
     }
 
-    .event-link,
-    .event-link:visited {
-      color: #2563eb;
+    p {
+      margin: 0 0 18px;
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+
+    .link {
+      color: var(--accent);
       text-decoration: none;
       font-weight: 600;
     }
 
-    .event-link:hover,
-    .event-link:focus-visible {
-      color: #1d4ed8;
+    .link:hover {
       text-decoration: underline;
     }
 
-    .event-link-inline {
-      display: inline-flex;
+    .bullet-list {
+      margin: 0 0 18px 0;
+      padding-left: 20px;
+    }
+
+    .bullet-list li {
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+
+    .inventory-section {
+      margin-top: 26px;
+    }
+
+    .inventory-frame {
+      border: 1px solid var(--line-soft);
+      border-radius: 14px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .inventory-topbar {
+      display: flex;
       align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 12px 12px 10px;
+      border-bottom: 1px solid var(--line-soft);
+      background: #fff;
     }
 
-    .udisc-icon {
-      height: 0.82em;
-      width: auto;
-      display: inline-block;
-      vertical-align: middle;
+    .inventory-status {
       flex: 0 0 auto;
-      opacity: 0.98;
-      transform: translateY(-0.11em);
-    }
-
-    .udisc-icon--dark {
-      display: none;
-    }
-
-    :global(html.dark) .udisc-icon--light,
-    :global(html[data-theme="dark"]) .udisc-icon--light,
-    :global(body.dark) .udisc-icon--light,
-    :global(body[data-theme="dark"]) .udisc-icon--light {
-      display: none;
-    }
-
-    :global(html.dark) .udisc-icon--dark,
-    :global(html[data-theme="dark"]) .udisc-icon--dark,
-    :global(body.dark) .udisc-icon--dark,
-    :global(body[data-theme="dark"]) .udisc-icon--dark {
-      display: inline-block;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      .udisc-icon--light {
-        display: none;
-      }
-
-      .udisc-icon--dark {
-        display: inline-block;
-      }
-    }
-
-    .event-summary {
-      margin-top: 10px;
-      display: grid;
-      gap: 10px;
-    }
-
-    .summary-group {
-      display: grid;
-      gap: 4px;
-    }
-
-    .summary-label {
-      color: var(--text);
+      color: var(--muted);
       font-size: 0.88rem;
-      font-weight: 800;
-      line-height: 1.2;
+      white-space: nowrap;
     }
 
-    .summary-item {
-      color: var(--text);
-      font-size: 0.9rem;
-      line-height: 1.3;
-    }
-
-    .section-block {
-      padding: 0 4px 6px;
-    }
-
-    .subheading {
-  margin: 4px 0 10px;
-  padding-left: 15px;
-  font-size: 0.96rem;
-  color: var(--muted);
-  font-weight: 700;
-}
-
-    .table-wrap {
+    .inventory-table-wrap {
       padding: 0;
-      overflow-x: visible;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
-    table {
+    .inventory-table {
       width: 100%;
+      min-width: 760px;
       border-collapse: separate;
       border-spacing: 0;
       table-layout: auto;
-      min-width: 0;
     }
 
-    .weekly-results-page table.handicap-table,
-    .weekly-results-page table.working-table {
-      table-layout: fixed;
-    }
-
-    .weekly-results-page table.handicap-table col.col-name,
-    .weekly-results-page table.working-table col.col-name {
-      width: 42%;
-    }
-
-    .weekly-results-page table.handicap-table col.col-raw,
-    .weekly-results-page table.working-table col.col-raw {
-      width: 11%;
-    }
-
-    .weekly-results-page table.handicap-table col.col-hcp,
-    .weekly-results-page table.working-table col.col-hcp {
-      width: 10%;
-    }
-
-    .weekly-results-page table.handicap-table col.col-net,
-    .weekly-results-page table.working-table col.col-net {
-      width: 10%;
-    }
-
-    .weekly-results-page table.handicap-table col.col-payout,
-    .weekly-results-page table.working-table col.col-payout {
-      width: 27%;
-    }
-
-    thead th {
+    .inventory-table thead th {
       background: var(--header);
       color: var(--muted);
       font-size: 0.76rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.03em;
-      padding: 10px 6px;
+      padding: 10px 8px;
       border-bottom: 1px solid var(--line);
-      text-align: center;
+      text-align: left;
       white-space: normal;
       line-height: 1.1;
+      user-select: none;
+      cursor: pointer;
     }
 
-    thead th:first-child {
-      text-align: left;
+    .inventory-table thead th:first-child {
       border-top-left-radius: 14px;
     }
 
-    thead th:last-child {
+    .inventory-table thead th:last-child {
       border-top-right-radius: 14px;
     }
 
-    tbody td {
-      padding: 9px 6px;
+    .inventory-table thead th:hover {
+      background: #f3f7fc;
+    }
+
+    .inventory-table tbody td {
+      padding: 9px 8px;
       border-bottom: 1px solid var(--line-soft);
       font-size: 0.9rem;
-      text-align: center;
+      text-align: left;
       vertical-align: middle;
       line-height: 1.15;
       white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
 
-    tbody tr:nth-child(even) td {
+    .inventory-table tbody tr:nth-child(even) td {
       background: #fcfdff;
     }
 
-    tbody tr:hover td {
+    .inventory-table tbody tr:hover td {
       background: var(--hover);
     }
 
-    tbody td:first-child {
-      text-align: left;
+    .inventory-table tbody td:first-child {
       font-weight: 600;
-      overflow-wrap: anywhere;
-      word-break: break-word;
     }
 
-    thead th:first-child,
-    tbody td:first-child {
-      width: 34%;
+    .inventory-th-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      width: 100%;
     }
 
-    tbody td:not(:first-child) {
-      overflow-wrap: anywhere;
-      word-break: break-word;
+    .inventory-sort-indicator {
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1;
+      min-width: 1.1em;
+      text-align: right;
+      flex: 0 0 auto;
     }
 
-    .player-match-row td {
-      background: #eff6ff !important;
-    }
-
-    td.player-name-cell.player-match-name {
-      background: #dbeafe !important;
-      color: #1d4ed8 !important;
-      font-weight: 700 !important;
-      box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.18);
-    }
-
-    .weekly-results-page table.handicap-table thead th,
-    .weekly-results-page table.working-table thead th {
-      font-size: 0.66rem !important;
-      padding: 8px 4px !important;
-      line-height: 1.05 !important;
-    }
-
-    .weekly-results-page table.handicap-table tbody td,
-    .weekly-results-page table.working-table tbody td {
-      font-size: 0.82rem !important;
-      padding: 7px 4px !important;
-      line-height: 1.08 !important;
-      vertical-align: top !important;
-    }
-
-    .weekly-results-page table.handicap-table th:nth-child(n + 2),
-    .weekly-results-page table.handicap-table td:nth-child(n + 2),
-    .weekly-results-page table.working-table th:nth-child(n + 2),
-    .weekly-results-page table.working-table td:nth-child(n + 2) {
-      text-align: center !important;
-    }
-
-    .weekly-results-page table.pool-table thead th {
-      font-size: 0.68rem !important;
-      padding: 8px 5px !important;
-    }
-
-    .weekly-results-page table.pool-table tbody td {
-      font-size: 0.84rem !important;
-      padding: 8px 5px !important;
-      line-height: 1.1 !important;
-    }
-
-    .weekly-results-page table.pool-table thead th:first-child,
-    .weekly-results-page table.pool-table tbody td:first-child {
-      width: 32% !important;
-    }
-
-    .weekly-results-page tbody td:first-child {
-      font-weight: 400 !important;
+    .inventory-empty {
+      color: var(--muted);
+      text-align: center;
+      padding: 20px 14px;
     }
 
     @media (max-width: 700px) {
       body {
-        padding: 8px;
+        padding: 10px;
       }
 
-      .results-toolbar {
-        display: grid;
-        grid-template-columns: 1.35fr 0.9fr 1.05fr;
-        gap: 8px;
-        align-items: stretch;
+      .card {
+        padding: 20px 18px 18px;
       }
 
-      .results-toolbar label {
-        min-width: 0;
-        width: 100%;
+      p,
+      .bullet-list li {
+        font-size: 0.96rem;
       }
 
-      .search-wrap {
-        width: 100%;
+      .inventory-topbar {
+        padding: 10px 10px 8px;
+        flex-direction: column;
+        align-items: flex-start;
       }
 
-      .search-input {
-        width: 100%;
-        padding: 10px 40px 10px 12px;
-        font-size: 0.92rem;
+      .inventory-status {
+        white-space: normal;
       }
 
-      .filter-select {
-        min-width: 0;
-        width: 100%;
-        padding: 9px 10px;
-        font-size: 0.92rem;
+      .inventory-table thead th {
+        font-size: 0.64rem;
+        padding: 8px 4px;
       }
 
-      .card-header {
-        padding: 10px 10px 8px !important;
-      }
-
-      .card-title {
-        font-size: 0.95rem !important;
-      }
-
-      .udisc-icon {
-        height: 0.78em;
-      }
-
-      .summary-label {
-        font-size: 0.83rem;
-      }
-
-      .summary-item {
-        font-size: 0.84rem;
-      }
-
-      .section-block {
-        padding: 0 2px 6px !important;
-      }
-
-      .subheading {
-  padding-left: 8px;
-}
-
-      .table-wrap {
-        overflow-x: visible;
-      }
-
-      .weekly-results-page table.handicap-table thead th,
-      .weekly-results-page table.working-table thead th {
-        font-size: 0.58rem !important;
-        padding: 6px 2px !important;
-        letter-spacing: 0 !important;
-      }
-
-      .weekly-results-page table.handicap-table tbody td,
-      .weekly-results-page table.working-table tbody td {
-        font-size: 0.76rem !important;
-        padding: 6px 2px !important;
-        line-height: 1.06 !important;
-      }
-
-      .weekly-results-page table.handicap-table col.col-name,
-      .weekly-results-page table.working-table col.col-name {
-        width: 44%;
-      }
-
-      .weekly-results-page table.handicap-table col.col-raw,
-      .weekly-results-page table.working-table col.col-raw {
-        width: 10%;
-      }
-
-      .weekly-results-page table.handicap-table col.col-hcp,
-      .weekly-results-page table.working-table col.col-hcp {
-        width: 9%;
-      }
-
-      .weekly-results-page table.handicap-table col.col-net,
-      .weekly-results-page table.working-table col.col-net {
-        width: 9%;
-      }
-
-      .weekly-results-page table.handicap-table col.col-payout,
-      .weekly-results-page table.working-table col.col-payout {
-        width: 28%;
-      }
-
-      .weekly-results-page table.pool-table thead th {
-        font-size: 0.64rem !important;
-        padding: 8px 4px !important;
-      }
-
-      .weekly-results-page table.pool-table tbody td {
-        font-size: 0.82rem !important;
-        padding: 8px 4px !important;
+      .inventory-table tbody td {
+        font-size: 0.82rem;
+        padding: 8px 4px;
       }
     }
 
@@ -626,424 +245,316 @@ const defaultRoundType = "all";
         font-size: 1.9rem;
       }
 
-      .card-title {
-        font-size: 0.92rem;
-      }
-
-      thead th {
+      .inventory-table thead th {
         font-size: 0.58rem;
         padding: 7px 3px;
       }
 
-      tbody td {
+      .inventory-table tbody td {
         font-size: 0.74rem;
         padding: 6px 3px;
       }
     }
   </style>
 
-  <div class="wrap weekly-results-page">
-    <div class="page-header">
-      <h1>Weekly Results</h1>
-    </div>
+  <div class="wrap">
+    <div class="card">
+      <h1>Lost &amp; Found</h1>
 
-    <div class="results-toolbar">
-      <div id="searchWrap" class="search-wrap">
-        <input
-          id="playerSearch"
-          class="search-input"
-          type="text"
-          placeholder="Search player"
-          aria-label="Search player"
-          autocomplete="off"
-          autocapitalize="off"
-          spellcheck="false"
-        />
-        <button
-          id="clearSearch"
-          class="search-clear"
-          type="button"
-          aria-label="Clear search"
-          title="Clear search"
-        >
-          ×
-        </button>
-      </div>
+      <p>
+        Lost discs are available for pick up before and after our weekly league rounds.
+        Please check
+        <a class="link" href={udiscUrl} target="_blank" rel="noopener">UDisc</a>
+        for dates and times:
+      </p>
 
-      <label>
-        <select id="yearFilter" class="filter-select" aria-label="Filter results by year">
-          <option value="all" selected={defaultYear === "all"}>All Years</option>
-          {eventYears.map((year) => (
-            <option value={year}>{year}</option>
-          ))}
-        </select>
-      </label>
+      <ul class="bullet-list">
+        <li>Sundays, 9 a.m., year round</li>
+        <li>Thursday evenings April-September</li>
+      </ul>
 
-      <label>
-        <select
-          id="roundTypeFilter"
-          class="filter-select"
-          aria-label="Filter results by round type"
-        >
-          <option value="all" selected={defaultRoundType === "all"}>All Rounds</option>
-          <option value="handicap">Handicap</option>
-          <option value="monthly">Monthly</option>
-          <option value="2-rounds">2 Rounds</option>
-        </select>
-      </label>
-    </div>
+      <p>Discs not picked up within 60 days will be donated.</p>
 
-    <div id="resultsEvents" class="events">
-      {sortedEvents.map((event) => (
-        <section
-          class="card"
-          data-year={getEventYear(event.title) || ""}
-          data-round-type={getRoundType(event)}
-          data-timestamp={String(getEventTimestamp(event.title))}
-        >
-          <div class="card-header">
-            <h2 class="card-title">
-              {event.url ? (
-                <a class="event-link event-link-inline" href={event.url} target="_blank" rel="noopener">
-                  <span>{event.title}</span>
-                  <img
-                    class="udisc-icon udisc-icon--light"
-                    src="https://lufberydiscgolf.com/udisc-icon.png"
-                    alt="UDisc"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                  <img
-                    class="udisc-icon udisc-icon--dark"
-                    src="https://lufberydiscgolf.com/udisc-icon-white.png"
-                    alt="UDisc"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </a>
-              ) : (
-                event.title
-              )}
-            </h2>
-
-            {(event.summary?.overall?.length ||
-              event.summary?.ctps?.length ||
-              event.summary?.aces?.length) > 0 && (
-              <div class="event-summary">
-                {event.summary?.overall?.length > 0 && (
-                  <div class="summary-group">
-                    <div class="summary-label">Best Overall</div>
-                    {event.summary.overall.map((item: any) => (
-                      <div class="summary-item">{item.text}</div>
-                    ))}
-                  </div>
-                )}
-
-                {event.summary?.ctps?.length > 0 && (
-                  <div class="summary-group">
-                    <div class="summary-label">CTP&apos;s</div>
-                    {event.summary.ctps.map((item: any) => (
-                      <div class="summary-item">{item.text}</div>
-                    ))}
-                  </div>
-                )}
-
-                {event.summary?.aces?.length > 0 && (
-                  <div class="summary-group">
-                    <div class="summary-label">
-                      {event.summary.aces.length === 1 ? "Ace" : "Aces"}
-                    </div>
-                    {event.summary.aces.map((item: any) => (
-                      <div class="summary-item">{item.text}</div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+      <div class="inventory-section">
+        <div class="inventory-frame">
+          <div class="inventory-topbar">
+            <h2>Current Inventory</h2>
+            <div class="inventory-status" id="inventoryStatus">Loading inventory…</div>
           </div>
 
-          {event.kind === "handicap" && (
-            <>
-              <div class="section-block">
-                <div class="table-wrap">
-                  <table class="handicap-table">
-                    <colgroup>
-                      <col class="col-name" />
-                      <col class="col-raw" />
-                      <col class="col-hcp" />
-                      <col class="col-net" />
-                      <col class="col-payout" />
-                    </colgroup>
-                    <thead>
-                      <tr>
-                        {["Name", "Raw", "Hcp.", "Net", "Payout"].map((header) => (
-                          <th>{header}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {event.rows.map((row: any) => (
-                        <tr
-                          data-player-name={cleanPlayerName(row.name)}
-                          data-raw-score={String(row.raw ?? "")}
-                        >
-                          <td data-label="Name" class="player-name-cell">{row.name}</td>
-                          <td data-label="Raw">{row.raw}</td>
-                          <td data-label="Hcp.">{row.hcp}</td>
-                          <td data-label="Net">{row.net}</td>
-                          <td data-label="Payout">{row.payout}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {event.working && event.working.rows.length > 0 && (
-                <div class="section-block">
-                  <div class="table-wrap">
-                    <table class="working-table">
-                      <colgroup>
-                        <col class="col-name" />
-                        <col class="col-raw" />
-                        <col class="col-hcp" />
-                        <col class="col-net" />
-                        <col class="col-payout" />
-                      </colgroup>
-                      <thead>
-                        <tr>
-                          <th>{cleanPlayerName(event.working.headers?.[0] || "Working to a handicap")}</th>
-                          <th>
-                            {getHeaderLabelByHeaders(
-                              event.working.headers,
-                              ["Raw", "R1", "Round 1", "Score"],
-                              "Raw"
-                            )}
-                          </th>
-                          <th aria-hidden="true"></th>
-                          <th aria-hidden="true"></th>
-                          <th aria-hidden="true"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {event.working.rows.map((row: any[]) => (
-                          <tr
-                            data-player-name={cleanPlayerName(row?.[0])}
-                            data-raw-score={getCellValueByHeaders(
-                              event.working.headers,
-                              row,
-                              ["R1", "Round 1", "Raw", "Score"]
-                            )}
-                          >
-                            <td
-                              data-label={cleanPlayerName(
-                                event.working.headers?.[0] || "Working to a handicap"
-                              )}
-                              class="player-name-cell"
-                            >
-                              {row?.[0] || ""}
-                            </td>
-                            <td data-label="Raw">
-                              {getCellValueByHeaders(
-                                event.working.headers,
-                                row,
-                                ["R1", "Round 1", "Raw", "Score"]
-                              )}
-                            </td>
-                            <td data-label="Hcp.">
-                              {getCellValueByHeaders(
-                                event.working.headers,
-                                row,
-                                ["Hcp.", "Hcp", "Handicap"]
-                              )}
-                            </td>
-                            <td data-label="Net">
-                              {getCellValueByHeaders(event.working.headers, row, ["Net"])}
-                            </td>
-                            <td data-label="Payout">
-                              {getCellValueByHeaders(event.working.headers, row, ["Payout"])}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-
-          {event.kind === "pools" &&
-            event.pools.map((pool: any) => (
-              <div class="section-block">
-                <div class="subheading">{pool.title}</div>
-                <div class="table-wrap">
-                  <table class="pool-table">
-                    <thead>
-                      <tr>
-                        {getVisibleColumnIndexes(pool.headers, ["Overall", "Ovr", "CTP"]).map(
-                          (idx) => (
-                            <th>{pool.headers[idx]}</th>
-                          )
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {pool.rows.map((row: any[]) => (
-                        <tr
-                          data-player-name={cleanPlayerName(row?.[0])}
-                          data-raw-score={getCellValueByHeaders(
-                            pool.headers,
-                            row,
-                            ["R1", "Round 1", "Raw", "Score"]
-                          )}
-                        >
-                          {getVisibleColumnIndexes(pool.headers, ["Overall", "Ovr", "CTP"]).map(
-                            (idx) => (
-                              <td
-                                data-label={pool.headers[idx] || ""}
-                                class={idx === 0 ? "player-name-cell" : undefined}
-                              >
-                                {row[idx]}
-                              </td>
-                            )
-                          )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ))}
-        </section>
-      ))}
+          <div class="inventory-table-wrap">
+            <table class="inventory-table" id="inventoryTable">
+              <thead id="inventoryHead"></thead>
+              <tbody id="inventoryBody">
+                <tr>
+                  <td class="inventory-empty" colspan="6">Loading inventory…</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
-
-    <div id="resultsEmpty" class="empty-state">No results found for the selected filters.</div>
   </div>
 
-  <script>
-    const yearFilter = document.getElementById("yearFilter");
-    const roundTypeFilter = document.getElementById("roundTypeFilter");
-    const playerSearch = document.getElementById("playerSearch");
-    const searchWrap = document.getElementById("searchWrap");
-    const clearSearch = document.getElementById("clearSearch");
-    const eventCards = Array.from(document.querySelectorAll("#resultsEvents > .card"));
-    const resultsEmpty = document.getElementById("resultsEmpty");
-    const resultsEvents = document.getElementById("resultsEvents");
+  <script define:vars={{ sheetId, sheetGid }}>
+    const inventoryHead = document.getElementById("inventoryHead");
+    const inventoryBody = document.getElementById("inventoryBody");
+    const inventoryStatus = document.getElementById("inventoryStatus");
 
-    function normalizeValue(value) {
-      return String(value || "").toLowerCase().replace(/\s+/g, " ").trim();
+    const state = {
+      labels: [],
+      rows: [],
+      sortIndex: 0,
+      sortDir: "asc",
+    };
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
     }
 
-    function updateSearchClear() {
-      if (!searchWrap || !playerSearch) return;
-      searchWrap.classList.toggle("has-value", !!playerSearch.value.trim());
+    function formatDateValue(date) {
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      const year = date.getFullYear();
+      return `${month}/${day}/${year}`;
     }
 
-    function sortCardsNewestFirst() {
-      if (!resultsEvents) return;
-
-      const sortedCards = [...eventCards].sort((a, b) => {
-        const aTime = Number(a.getAttribute("data-timestamp") || "0");
-        const bTime = Number(b.getAttribute("data-timestamp") || "0");
-        return bTime - aTime;
-      });
-
-      resultsEvents.append(...sortedCards);
+    function displayCell(cell) {
+      if (!cell) return "";
+      if (cell.f !== null && cell.f !== undefined && cell.f !== "") return String(cell.f);
+      if (cell.v instanceof Date) return formatDateValue(cell.v);
+      if (cell.v === null || cell.v === undefined) return "";
+      return String(cell.v);
     }
 
-    function cardHasPlayer(card, query) {
-      if (!query) return true;
+    function tryParseDate(value) {
+      if (!value) return null;
+      if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
 
-      const queryNorm = normalizeValue(query);
-      const playerRows = Array.from(card.querySelectorAll("tr[data-player-name]"));
+      const text = String(value).trim();
+      if (!text) return null;
 
-      return playerRows.some((row) => {
-        const rowPlayer = normalizeValue(row.getAttribute("data-player-name") || "");
-        return rowPlayer.includes(queryNorm);
-      });
-    }
+      const direct = new Date(text);
+      if (!Number.isNaN(direct.getTime())) return direct;
 
-    function clearHighlights(card) {
-      card.querySelectorAll(".player-match-row").forEach((row) => {
-        row.classList.remove("player-match-row");
-      });
-
-      card.querySelectorAll(".player-name-cell").forEach((cell) => {
-        cell.classList.remove("player-match-name");
-      });
-    }
-
-    function applyHighlights(card, query) {
-      clearHighlights(card);
-
-      if (!query) return;
-
-      const queryNorm = normalizeValue(query);
-      const rows = Array.from(card.querySelectorAll("tr[data-player-name]"));
-
-      rows.forEach((row) => {
-        const rowPlayer = normalizeValue(row.getAttribute("data-player-name") || "");
-        if (!rowPlayer.includes(queryNorm)) return;
-
-        row.classList.add("player-match-row");
-
-        const nameCell = row.querySelector(".player-name-cell");
-        if (nameCell) {
-          nameCell.classList.add("player-match-name");
-        }
-      });
-    }
-
-    function applyFilters() {
-      const selectedYear = yearFilter?.value || "all";
-      const selectedRoundType = roundTypeFilter?.value || "all";
-      const playerQuery = playerSearch?.value?.trim() || "";
-
-      let visible = 0;
-
-      eventCards.forEach((card) => {
-        const year = card.getAttribute("data-year") || "";
-        const roundType = card.getAttribute("data-round-type") || "";
-
-        const matchesYear = selectedYear === "all" || selectedYear === year;
-        const matchesRoundType =
-          selectedRoundType === "all" || selectedRoundType === roundType;
-        const matchesPlayer = cardHasPlayer(card, playerQuery);
-
-        const show = matchesYear && matchesRoundType && matchesPlayer;
-
-        card.style.display = show ? "" : "none";
-
-        clearHighlights(card);
-        if (show && playerQuery) {
-          applyHighlights(card, playerQuery);
-        }
-
-        if (show) visible += 1;
-      });
-
-      if (resultsEmpty) {
-        resultsEmpty.style.display = visible ? "none" : "block";
+      const mmddyyyy = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+      if (mmddyyyy) {
+        let [, m, d, y] = mmddyyyy;
+        let year = Number(y);
+        if (year < 100) year += 2000;
+        const parsed = new Date(year, Number(m) - 1, Number(d));
+        if (!Number.isNaN(parsed.getTime())) return parsed;
       }
 
-      updateSearchClear();
+      return null;
     }
 
-    yearFilter?.addEventListener("change", applyFilters);
-    roundTypeFilter?.addEventListener("change", applyFilters);
-    playerSearch?.addEventListener("input", applyFilters);
+    function isReturnedTrue(cell) {
+      if (!cell) return false;
 
-    clearSearch?.addEventListener("click", () => {
-      if (!playerSearch) return;
-      playerSearch.value = "";
-      applyFilters();
-      playerSearch.focus();
+      const raw = cell.v;
+      if (raw === true) return true;
+
+      const text = String(
+        raw !== null && raw !== undefined ? raw : displayCell(cell)
+      ).trim().toLowerCase();
+
+      return text === "true";
+    }
+
+    function isBlankDisplayValue(value) {
+      return String(value ?? "").trim() === "";
+    }
+
+    function isDisplayableRow(row) {
+      const visibleCells = row.slice(0, 6);
+      const returnedCell = row[6];
+
+      const allBlank = visibleCells.every((cell) => isBlankDisplayValue(displayCell(cell)));
+      if (allBlank) return false;
+
+      if (isReturnedTrue(returnedCell)) return false;
+
+      return true;
+    }
+
+    function comparableValue(cell, colIndex) {
+      if (!cell) return "";
+
+      const raw = cell.v;
+
+      if (raw instanceof Date) return raw.getTime();
+      if (typeof raw === "number") return raw;
+      if (typeof raw === "boolean") return raw ? 1 : 0;
+
+      const text = displayCell(cell).trim();
+
+      if (colIndex === 0) {
+        const parsedDate = tryParseDate(raw) || tryParseDate(text);
+        if (parsedDate) return parsedDate.getTime();
+      }
+
+      const numeric = Number(
+        text.replaceAll(",", "").replaceAll("$", "").replaceAll("%", "")
+      );
+      if (text !== "" && !Number.isNaN(numeric)) return numeric;
+
+      return text.toLowerCase();
+    }
+
+    function compareRows(a, b) {
+      const left = comparableValue(a[state.sortIndex], state.sortIndex);
+      const right = comparableValue(b[state.sortIndex], state.sortIndex);
+
+      if (left < right) return state.sortDir === "asc" ? -1 : 1;
+      if (left > right) return state.sortDir === "asc" ? 1 : -1;
+      return 0;
+    }
+
+    function renderHead() {
+      const indicatorFor = (index) => {
+        if (index !== state.sortIndex) return "";
+        return state.sortDir === "asc" ? "▲" : "▼";
+      };
+
+      inventoryHead.innerHTML = `
+        <tr>
+          ${state.labels
+            .map(
+              (label, index) => `
+                <th
+                  scope="col"
+                  data-index="${index}"
+                  tabindex="0"
+                  aria-label="Sort by ${escapeHtml(label)}"
+                >
+                  <div class="inventory-th-inner">
+                    <span>${escapeHtml(label)}</span>
+                    <span class="inventory-sort-indicator">${indicatorFor(index)}</span>
+                  </div>
+                </th>
+              `
+            )
+            .join("")}
+        </tr>
+      `;
+    }
+
+    function renderBody() {
+      if (!state.rows.length) {
+        inventoryBody.innerHTML = `
+          <tr>
+            <td class="inventory-empty" colspan="6">No inventory rows found.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      const sortedRows = [...state.rows].sort(compareRows);
+
+      inventoryBody.innerHTML = sortedRows
+        .map(
+          (row) => `
+            <tr>
+              ${row
+                .slice(0, 6)
+                .map((cell) => `<td>${escapeHtml(displayCell(cell)) || "&nbsp;"}</td>`)
+                .join("")}
+            </tr>
+          `
+        )
+        .join("");
+    }
+
+    function renderTable() {
+      renderHead();
+      renderBody();
+      inventoryStatus.textContent = `${state.rows.length} item${state.rows.length === 1 ? "" : "s"}`;
+    }
+
+    async function loadInventory() {
+      try {
+        const tq = encodeURIComponent("select A,B,C,D,E,F,G");
+        const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?gid=${sheetGid}&tq=${tq}`;
+
+        const response = await fetch(url);
+        const text = await response.text();
+
+        const prefix = "google.visualization.Query.setResponse(";
+        const start = text.indexOf(prefix);
+        const end = text.lastIndexOf(");");
+
+        if (start === -1 || end === -1) {
+          throw new Error("Unable to read sheet response.");
+        }
+
+        const payload = text.slice(start + prefix.length, end).trim();
+        const parsed = Function(`"use strict"; return (${payload});`)();
+
+        const cols = (parsed?.table?.cols || []).slice(0, 6);
+        const rows = (parsed?.table?.rows || [])
+          .map((row) => {
+            const cells = Array.isArray(row?.c) ? row.c.slice(0, 7) : [];
+            while (cells.length < 7) cells.push(null);
+            return cells;
+          })
+          .filter(isDisplayableRow);
+
+        state.labels = cols.map((col, i) => col?.label || `Column ${String.fromCharCode(65 + i)}`);
+        state.rows = rows;
+
+        renderTable();
+      } catch (error) {
+        console.error(error);
+        inventoryStatus.textContent = "Unable to load inventory.";
+        inventoryBody.innerHTML = `
+          <tr>
+            <td class="inventory-empty" colspan="6">
+              Unable to load inventory right now.
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    function handleSort(index) {
+      if (Number.isNaN(index)) return;
+
+      if (state.sortIndex === index) {
+        state.sortDir = state.sortDir === "asc" ? "desc" : "asc";
+      } else {
+        state.sortIndex = index;
+        state.sortDir = "asc";
+      }
+
+      renderTable();
+    }
+
+    inventoryHead?.addEventListener("click", (event) => {
+      const th = event.target.closest("th[data-index]");
+      if (!th) return;
+
+      const index = Number(th.getAttribute("data-index"));
+      handleSort(index);
     });
 
-    sortCardsNewestFirst();
-    applyFilters();
-    updateSearchClear();
+    inventoryHead?.addEventListener("keydown", (event) => {
+      const th = event.target.closest("th[data-index]");
+      if (!th) return;
+
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+
+      const index = Number(th.getAttribute("data-index"));
+      handleSort(index);
+    });
+
+    loadInventory();
   </script>
 </SiteLayout>
