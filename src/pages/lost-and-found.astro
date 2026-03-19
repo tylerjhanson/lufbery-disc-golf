@@ -89,7 +89,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
 
     .inventory-section {
       margin-top: 22px;
-      padding-top: 14px;
+      padding-top: 12px;
       border-top: 1px solid var(--line-soft);
     }
 
@@ -102,36 +102,36 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       border: 1px solid var(--line-soft);
-      border-radius: 10px;
+      border-radius: 14px;
       background: var(--card);
     }
 
     table.inventory-table {
       width: 100%;
-      min-width: 520px;
+      min-width: 560px;
       border-collapse: separate;
       border-spacing: 0;
       table-layout: fixed;
     }
 
     table.inventory-table col.col-date {
-      width: 15%;
-    }
-
-    table.inventory-table col.col-name {
       width: 17%;
     }
 
+    table.inventory-table col.col-name {
+      width: 19%;
+    }
+
     table.inventory-table col.col-brand {
-      width: 21%;
+      width: 24%;
     }
 
     table.inventory-table col.col-color {
-      width: 13%;
+      width: 14%;
     }
 
     table.inventory-table col.col-last4 {
-      width: 14%;
+      width: 12%;
     }
 
     table.inventory-table col.col-deadline {
@@ -141,25 +141,25 @@ import SiteLayout from "../layouts/SiteLayout.astro";
     table.inventory-table thead th {
       background: var(--header);
       color: var(--muted);
-      font-size: 0.66rem;
+      font-size: 0.68rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.02em;
-      padding: 8px 4px;
+      letter-spacing: 0.03em;
+      padding: 8px 5px;
       border-bottom: 1px solid var(--line);
       text-align: left;
       white-space: normal;
-      line-height: 1.05;
+      line-height: 1.08;
       user-select: none;
       cursor: pointer;
     }
 
     table.inventory-table thead th:first-child {
-      border-top-left-radius: 10px;
+      border-top-left-radius: 14px;
     }
 
     table.inventory-table thead th:last-child {
-      border-top-right-radius: 10px;
+      border-top-right-radius: 14px;
     }
 
     table.inventory-table thead th:hover {
@@ -167,12 +167,12 @@ import SiteLayout from "../layouts/SiteLayout.astro";
     }
 
     table.inventory-table tbody td {
-      padding: 7px 4px;
+      padding: 8px 5px;
       border-bottom: 1px solid var(--line-soft);
-      font-size: 0.82rem;
+      font-size: 0.84rem;
       text-align: left;
-      vertical-align: top;
-      line-height: 1.08;
+      vertical-align: middle;
+      line-height: 1.1;
       white-space: normal;
       overflow-wrap: anywhere;
       word-break: break-word;
@@ -203,7 +203,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       color: var(--muted);
       font-size: 0.66rem;
       line-height: 1;
-      min-width: 0.75em;
+      min-width: 0.8em;
       text-align: right;
       flex: 0 0 auto;
     }
@@ -216,7 +216,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
 
     @media (max-width: 700px) {
       body {
-        padding: 10px;
+        padding: 8px;
       }
 
       .card {
@@ -234,19 +234,19 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       }
 
       table.inventory-table {
-        min-width: 500px;
+        min-width: 540px;
       }
 
       table.inventory-table thead th {
-        font-size: 0.58rem;
-        padding: 6px 3px;
+        font-size: 0.60rem;
+        padding: 7px 4px;
         letter-spacing: 0;
       }
 
       table.inventory-table tbody td {
-        font-size: 0.76rem;
-        padding: 6px 3px;
-        line-height: 1.05;
+        font-size: 0.78rem;
+        padding: 7px 4px;
+        line-height: 1.06;
       }
 
       .inventory-sort-indicator {
@@ -260,17 +260,17 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       }
 
       table.inventory-table {
-        min-width: 480px;
+        min-width: 520px;
       }
 
       table.inventory-table thead th {
-        font-size: 0.54rem;
-        padding: 6px 2px;
+        font-size: 0.56rem;
+        padding: 6px 3px;
       }
 
       table.inventory-table tbody td {
-        font-size: 0.72rem;
-        padding: 5px 2px;
+        font-size: 0.74rem;
+        padding: 6px 3px;
       }
 
       .inventory-sort-indicator {
@@ -347,7 +347,8 @@ import SiteLayout from "../layouts/SiteLayout.astro";
     function formatDateValue(date) {
       const month = String(date.getMonth() + 1).padStart(2, "0");
       const day = String(date.getDate()).padStart(2, "0");
-      return `${month}/${day}`;
+      const year = String(date.getFullYear()).slice(-2);
+      return `${month}/${day}/${year}`;
     }
 
     function tryParseDate(value) {
@@ -380,9 +381,10 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       if (isDateColumn) {
         if (cell.v instanceof Date) return formatDateValue(cell.v);
 
-        const formatted = cell.f !== null && cell.f !== undefined && cell.f !== ""
-          ? String(cell.f).trim()
-          : String(cell.v ?? "").trim();
+        const formatted =
+          cell.f !== null && cell.f !== undefined && cell.f !== ""
+            ? String(cell.f).trim()
+            : String(cell.v ?? "").trim();
 
         const parsed = tryParseDate(formatted);
         return parsed ? formatDateValue(parsed) : formatted;
@@ -399,10 +401,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       const raw = cell.v;
       if (raw === true) return true;
 
-      const text = String(
-        raw !== null && raw !== undefined ? raw : ""
-      ).trim().toLowerCase();
-
+      const text = String(raw ?? "").trim().toLowerCase();
       return text === "true";
     }
 
@@ -447,8 +446,9 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       if (typeof raw === "number") return { type: "number", value: raw };
       if (typeof raw === "boolean") return { type: "number", value: raw ? 1 : 0 };
 
-      const numeric = Number(text.replaceAll(",", "").replaceAll("$", "").replaceAll("%", ""));
-      if (text !== "" && !Number.isNaN(numeric) && /^-?\d+(\.\d+)?$/.test(text.replaceAll(",", "").replaceAll("$", "").replaceAll("%", ""))) {
+      const stripped = text.replaceAll(",", "").replaceAll("$", "").replaceAll("%", "");
+      const numeric = Number(stripped);
+      if (text !== "" && !Number.isNaN(numeric) && /^-?\d+(\.\d+)?$/.test(stripped)) {
         return { type: "number", value: numeric };
       }
 
@@ -561,7 +561,9 @@ import SiteLayout from "../layouts/SiteLayout.astro";
           })
           .filter(isDisplayableRow);
 
-        state.labels = cols.map((col, i) => col?.label || `Column ${String.fromCharCode(65 + i)}`);
+        state.labels = cols.map(
+          (col, i) => col?.label || `Column ${String.fromCharCode(65 + i)}`
+        );
         state.rows = rows;
 
         renderTable();
