@@ -169,29 +169,29 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       border-collapse: separate;
       border-spacing: 0;
       table-layout: fixed;
-      min-width: 620px;
+      min-width: 520px;
       background: transparent;
       margin: 0;
     }
 
-    .lost-found-page table.inventory-table col.col-name {
+    .lost-found-page table.inventory-table col.col-deadline {
       width: 18%;
     }
 
+    .lost-found-page table.inventory-table col.col-name {
+      width: 19%;
+    }
+
     .lost-found-page table.inventory-table col.col-brand {
-      width: 24%;
+      width: 29%;
     }
 
     .lost-found-page table.inventory-table col.col-color {
-      width: 14%;
+      width: 12%;
     }
 
     .lost-found-page table.inventory-table col.col-last4 {
-      width: 16%;
-    }
-
-    .lost-found-page table.inventory-table col.col-deadline {
-      width: 28%;
+      width: 12%;
     }
 
     .lost-found-page table.inventory-table thead th {
@@ -234,6 +234,12 @@ import SiteLayout from "../layouts/SiteLayout.astro";
 
     .lost-found-page table.inventory-table tbody td:first-child {
       padding-left: 0;
+      white-space: nowrap;
+    }
+
+    .lost-found-page table.inventory-table tbody td:nth-child(4),
+    .lost-found-page table.inventory-table tbody td:nth-child(5) {
+      white-space: nowrap;
     }
 
     .lost-found-page table.inventory-table tbody tr:nth-child(even) td {
@@ -246,11 +252,6 @@ import SiteLayout from "../layouts/SiteLayout.astro";
 
     .lost-found-page table.inventory-table tbody tr:hover td {
       background: var(--hover) !important;
-    }
-
-    .lost-found-page table.inventory-table tbody td:nth-child(4),
-    .lost-found-page table.inventory-table tbody td:nth-child(5) {
-      white-space: nowrap;
     }
 
     .lost-found-page .inventory-th-inner {
@@ -313,7 +314,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       }
 
       .lost-found-page table.inventory-table {
-        min-width: 560px;
+        min-width: 500px;
       }
 
       .lost-found-page table.inventory-table thead th {
@@ -357,7 +358,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       }
 
       .lost-found-page table.inventory-table {
-        min-width: 540px;
+        min-width: 480px;
       }
 
       .lost-found-page table.inventory-table thead th {
@@ -539,11 +540,11 @@ import SiteLayout from "../layouts/SiteLayout.astro";
         <div class="table-wrap">
           <table class="inventory-table" id="inventoryTable">
             <colgroup>
+              <col class="col-deadline" />
               <col class="col-name" />
               <col class="col-brand" />
               <col class="col-color" />
               <col class="col-last4" />
-              <col class="col-deadline" />
             </colgroup>
             <thead id="inventoryHead"></thead>
             <tbody id="inventoryBody">
@@ -564,15 +565,13 @@ import SiteLayout from "../layouts/SiteLayout.astro";
     const inventorySearchWrap = document.getElementById("inventorySearchWrap");
     const inventoryClearSearch = document.getElementById("inventoryClearSearch");
 
-    const VISIBLE_START_INDEX = 1;
-    const VISIBLE_COUNT = 5;
     const RETURNED_INDEX = 6;
-    const DEADLINE_VISIBLE_INDEX = 4;
+    const VISIBLE_SOURCE_INDICES = [5, 1, 2, 3, 4];
 
     const state = {
       labels: [],
       rows: [],
-      sortIndex: DEADLINE_VISIBLE_INDEX,
+      sortIndex: 0,
       sortDir: "asc",
       searchQuery: "",
     };
@@ -615,10 +614,14 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       return null;
     }
 
+    function getVisibleCells(row) {
+      return VISIBLE_SOURCE_INDICES.map((sourceIndex) => row[sourceIndex] ?? null);
+    }
+
     function displayCell(cell, visibleColIndex = -1) {
       if (!cell) return "";
 
-      const isDateColumn = visibleColIndex === DEADLINE_VISIBLE_INDEX;
+      const isDateColumn = visibleColIndex === 0;
 
       if (isDateColumn) {
         if (cell.v instanceof Date) return formatDateValue(cell.v);
@@ -651,10 +654,6 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       return String(value ?? "").trim() === "";
     }
 
-    function getVisibleCells(row) {
-      return row.slice(VISIBLE_START_INDEX, VISIBLE_START_INDEX + VISIBLE_COUNT);
-    }
-
     function isDisplayableRow(row) {
       const visibleCells = getVisibleCells(row);
       const returnedCell = row[RETURNED_INDEX];
@@ -675,13 +674,13 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       const raw = cell.v;
       const text = displayCell(cell, visibleColIndex).trim();
 
-      if (visibleColIndex === DEADLINE_VISIBLE_INDEX) {
+      if (visibleColIndex === 0) {
         const parsedDate = tryParseDate(raw) || tryParseDate(text);
         if (parsedDate) return { type: "number", value: parsedDate.getTime() };
         return { type: "text", value: text.toLowerCase() };
       }
 
-      if (visibleColIndex === 3) {
+      if (visibleColIndex === 4) {
         const digits = text.replace(/\s+/g, "");
         if (/^\d{1,4}$/.test(digits)) {
           return { type: "number", value: Number(digits) };
@@ -835,9 +834,10 @@ import SiteLayout from "../layouts/SiteLayout.astro";
           })
           .filter(isDisplayableRow);
 
-        state.labels = cols
-          .slice(VISIBLE_START_INDEX, VISIBLE_START_INDEX + VISIBLE_COUNT)
-          .map((col, i) => col?.label || `Column ${String.fromCharCode(66 + i)}`);
+        state.labels = VISIBLE_SOURCE_INDICES.map((sourceIndex, i) => {
+          const col = cols[sourceIndex];
+          return col?.label || `Column ${i + 1}`;
+        });
 
         state.rows = rows;
 
