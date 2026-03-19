@@ -178,6 +178,43 @@ function parseCourseRecordRawScore(value: string, par = SINGLES_PAR) {
   return first >= 30 ? first : null;
 }
 
+function formatAceHoleDisplay(value: string) {
+  const text = cleanSummaryText(value)
+    .replace(/^holes?\s+/i, "")
+    .replace(/\.$/, "");
+
+  if (!text) return "";
+
+  const layoutMatch = text.match(/\b(sticks|stones)\b/i);
+  const numberMatch = text.match(/\b(\d{1,2})\b/);
+
+  if (layoutMatch && numberMatch) {
+    const layout =
+      layoutMatch[1].charAt(0).toUpperCase() +
+      layoutMatch[1].slice(1).toLowerCase();
+    return `${layout} ${numberMatch[1]}`;
+  }
+
+  if (numberMatch) return numberMatch[1];
+
+  return text;
+}
+
+function normalizeAceHoleKey(value: string) {
+  return formatAceHoleDisplay(value).toLowerCase();
+}
+
+function extractAceHoleFromPrizeLine(line: WeeklyPrizeLine) {
+  const text = cleanSummaryText(line.text);
+  const parenMatch = text.match(/\(([^)]+)\)/);
+  const rawLabel = parenMatch ? parenMatch[1] : text;
+  const display = formatAceHoleDisplay(rawLabel);
+
+  if (display) return display;
+  if (line.sortHole != null) return String(line.sortHole);
+  return "";
+}
+
 function dedupeByKey<T>(rows: T[], getKey: (row: T) => string) {
   const map = new Map<string, T>();
 
@@ -425,9 +462,7 @@ function buildWinnerNameCell(names: string[]) {
 function extractWinnerNames(value: string) {
   return String(value || "")
     .split(/\r?\n/)
-    .map((line) =>
-      cleanSummaryText(line).replace(/\s*\(tie\)\s*$/i, "")
-    )
+    .map((line) => cleanSummaryText(line).replace(/\s*\(tie\)\s*$/i, ""))
     .filter(Boolean);
 }
 
@@ -436,6 +471,10 @@ function normalizeWinnerNameKey(value: string) {
     .map((name) => name.toLowerCase())
     .sort((a, b) => a.localeCompare(b))
     .join("|");
+}
+
+function winnerEventKey(row: WinnerRow) {
+  return `${normalizeDateKey(row.date)}|${normalizeWinnerNameKey(row.name)}`;
 }
 
 function removeStandaloneWinnersCoveredByTie(rows: WinnerRow[]) {
@@ -541,15 +580,7 @@ function getDerivedSinglesData() {
     }
 
     for (const ace of event.summary?.aces || []) {
-      const hole =
-        ace.sortHole != null
-          ? String(ace.sortHole)
-          : (() => {
-              const match = String(ace.text || "").match(
-                /\b(?:hole|holes)\s+(\d{1,2})\b/i
-              );
-              return match ? match[1] : "";
-            })();
+      const hole = extractAceHoleFromPrizeLine(ace);
 
       if (!ace.name || !hole) continue;
 
@@ -715,7 +746,7 @@ export function getHandicaps() {
 }
 
 export function getWeeklyWinners() {
-  const legacy = readCsv("wkwin.csv")
+  const legacyRaw = readCsv("wkwin.csv")
     .slice(1)
     .filter((row) => row[0]?.trim())
     .map((row) => ({
@@ -727,6 +758,12 @@ export function getWeeklyWinners() {
     .filter((row) => !isNoHandicapPoolLabel(row.date));
 
   const derived = getDerivedSinglesData().winners;
+
+  const derivedEventKeys = new Set(derived.map((row) => winnerEventKey(row)));
+
+  const legacy = legacyRaw.filter(
+    (row) => !derivedEventKeys.has(winnerEventKey(row))
+  );
 
   const merged = dedupeByKey(
     [...legacy, ...derived],
@@ -743,7 +780,7 @@ export function getSinglesAces() {
     .filter((row) => row[0]?.trim())
     .map((row) => ({
       name: row[0] || "",
-      hole: row[1] || "",
+      hole: formatAceHoleDisplay(row[1] || ""),
       date: row[2] || "",
       url: row[3] || "",
     }));
@@ -753,7 +790,7 @@ export function getSinglesAces() {
   const merged = dedupeByKey(
     [...legacy, ...derived],
     (row) =>
-      `${normalizeDateKey(row.date)}|${cleanSummaryText(row.name)}|${cleanSummaryText(row.hole)}`
+      `${normalizeDateKey(row.date)}|${cleanSummaryText(row.name)}|${normalizeAceHoleKey(row.hole)}`
   );
 
   return sortByDateDesc(merged);
