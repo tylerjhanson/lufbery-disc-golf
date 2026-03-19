@@ -174,29 +174,25 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       margin: 0;
     }
 
-    .lost-found-page table.inventory-table col.col-date {
-  width: 14%;
-}
+    .lost-found-page table.inventory-table col.col-name {
+      width: 18%;
+    }
 
-.lost-found-page table.inventory-table col.col-name {
-  width: 16%;
-}
+    .lost-found-page table.inventory-table col.col-brand {
+      width: 24%;
+    }
 
-.lost-found-page table.inventory-table col.col-brand {
-  width: 20%;
-}
+    .lost-found-page table.inventory-table col.col-color {
+      width: 14%;
+    }
 
-.lost-found-page table.inventory-table col.col-color {
-  width: 12%;
-}
+    .lost-found-page table.inventory-table col.col-last4 {
+      width: 16%;
+    }
 
-.lost-found-page table.inventory-table col.col-last4 {
-  width: 14%;
-}
-
-.lost-found-page table.inventory-table col.col-deadline {
-  width: 24%;
-}
+    .lost-found-page table.inventory-table col.col-deadline {
+      width: 28%;
+    }
 
     .lost-found-page table.inventory-table thead th {
       background: var(--header);
@@ -252,8 +248,8 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       background: var(--hover) !important;
     }
 
-    .lost-found-page table.inventory-table tbody td:first-child,
-    .lost-found-page table.inventory-table tbody td:nth-child(6) {
+    .lost-found-page table.inventory-table tbody td:nth-child(4),
+    .lost-found-page table.inventory-table tbody td:nth-child(5) {
       white-space: nowrap;
     }
 
@@ -387,7 +383,6 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       }
     }
 
-    /* Dark mode fix */
     html[data-theme="dark"] .lost-found-page .lf-card {
       background: var(--card) !important;
       border-color: var(--line-soft) !important;
@@ -544,7 +539,6 @@ import SiteLayout from "../layouts/SiteLayout.astro";
         <div class="table-wrap">
           <table class="inventory-table" id="inventoryTable">
             <colgroup>
-              <col class="col-date" />
               <col class="col-name" />
               <col class="col-brand" />
               <col class="col-color" />
@@ -554,7 +548,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
             <thead id="inventoryHead"></thead>
             <tbody id="inventoryBody">
               <tr>
-                <td class="inventory-empty" colspan="6">Loading inventory…</td>
+                <td class="inventory-empty" colspan="5">Loading inventory…</td>
               </tr>
             </tbody>
           </table>
@@ -570,10 +564,15 @@ import SiteLayout from "../layouts/SiteLayout.astro";
     const inventorySearchWrap = document.getElementById("inventorySearchWrap");
     const inventoryClearSearch = document.getElementById("inventoryClearSearch");
 
+    const VISIBLE_START_INDEX = 1;
+    const VISIBLE_COUNT = 5;
+    const RETURNED_INDEX = 6;
+    const DEADLINE_VISIBLE_INDEX = 4;
+
     const state = {
       labels: [],
       rows: [],
-      sortIndex: 0,
+      sortIndex: DEADLINE_VISIBLE_INDEX,
       sortDir: "asc",
       searchQuery: "",
     };
@@ -616,10 +615,10 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       return null;
     }
 
-    function displayCell(cell, colIndex = -1) {
+    function displayCell(cell, visibleColIndex = -1) {
       if (!cell) return "";
 
-      const isDateColumn = colIndex === 0 || colIndex === 5;
+      const isDateColumn = visibleColIndex === DEADLINE_VISIBLE_INDEX;
 
       if (isDateColumn) {
         if (cell.v instanceof Date) return formatDateValue(cell.v);
@@ -652,9 +651,13 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       return String(value ?? "").trim() === "";
     }
 
+    function getVisibleCells(row) {
+      return row.slice(VISIBLE_START_INDEX, VISIBLE_START_INDEX + VISIBLE_COUNT);
+    }
+
     function isDisplayableRow(row) {
-      const visibleCells = row.slice(0, 6);
-      const returnedCell = row[6];
+      const visibleCells = getVisibleCells(row);
+      const returnedCell = row[RETURNED_INDEX];
 
       const allBlank = visibleCells.every((cell, index) =>
         isBlankDisplayValue(displayCell(cell, index))
@@ -666,19 +669,19 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       return true;
     }
 
-    function getCellSortValue(cell, colIndex) {
+    function getCellSortValue(cell, visibleColIndex) {
       if (!cell) return { type: "empty", value: "" };
 
       const raw = cell.v;
-      const text = displayCell(cell, colIndex).trim();
+      const text = displayCell(cell, visibleColIndex).trim();
 
-      if (colIndex === 0 || colIndex === 5) {
+      if (visibleColIndex === DEADLINE_VISIBLE_INDEX) {
         const parsedDate = tryParseDate(raw) || tryParseDate(text);
         if (parsedDate) return { type: "number", value: parsedDate.getTime() };
         return { type: "text", value: text.toLowerCase() };
       }
 
-      if (colIndex === 4) {
+      if (visibleColIndex === 3) {
         const digits = text.replace(/\s+/g, "");
         if (/^\d{1,4}$/.test(digits)) {
           return { type: "number", value: Number(digits) };
@@ -699,8 +702,11 @@ import SiteLayout from "../layouts/SiteLayout.astro";
     }
 
     function compareRows(a, b) {
-      const left = getCellSortValue(a[state.sortIndex], state.sortIndex);
-      const right = getCellSortValue(b[state.sortIndex], state.sortIndex);
+      const leftCell = getVisibleCells(a)[state.sortIndex];
+      const rightCell = getVisibleCells(b)[state.sortIndex];
+
+      const left = getCellSortValue(leftCell, state.sortIndex);
+      const right = getCellSortValue(rightCell, state.sortIndex);
 
       if (left.type !== right.type) {
         if (left.type === "number" && right.type !== "number") {
@@ -720,7 +726,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       const query = state.searchQuery.trim().toLowerCase();
       if (!query) return true;
 
-      return row.slice(0, 6).some((cell, index) =>
+      return getVisibleCells(row).some((cell, index) =>
         displayCell(cell, index).toLowerCase().includes(query)
       );
     }
@@ -763,7 +769,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       if (!state.rows.length) {
         inventoryBody.innerHTML = `
           <tr>
-            <td class="inventory-empty" colspan="6">No inventory rows found.</td>
+            <td class="inventory-empty" colspan="5">No inventory rows found.</td>
           </tr>
         `;
         return;
@@ -774,7 +780,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       if (!filteredRows.length) {
         inventoryBody.innerHTML = `
           <tr>
-            <td class="inventory-empty" colspan="6">No matching inventory items found.</td>
+            <td class="inventory-empty" colspan="5">No matching inventory items found.</td>
           </tr>
         `;
         return;
@@ -783,16 +789,16 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       const sortedRows = [...filteredRows].sort(compareRows);
 
       inventoryBody.innerHTML = sortedRows
-        .map(
-          (row) => `
+        .map((row) => {
+          const visibleCells = getVisibleCells(row);
+          return `
             <tr>
-              ${row
-                .slice(0, 6)
+              ${visibleCells
                 .map((cell, index) => `<td>${escapeHtml(displayCell(cell, index)) || "&nbsp;"}</td>`)
                 .join("")}
             </tr>
-          `
-        )
+          `;
+        })
         .join("");
     }
 
@@ -820,7 +826,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
         const payload = text.slice(start + prefix.length, end).trim();
         const parsed = Function(`"use strict"; return (${payload});`)();
 
-        const cols = (parsed?.table?.cols || []).slice(0, 6);
+        const cols = parsed?.table?.cols || [];
         const rows = (parsed?.table?.rows || [])
           .map((row) => {
             const cells = Array.isArray(row?.c) ? row.c.slice(0, 7) : [];
@@ -829,9 +835,10 @@ import SiteLayout from "../layouts/SiteLayout.astro";
           })
           .filter(isDisplayableRow);
 
-        state.labels = cols.map(
-          (col, i) => col?.label || `Column ${String.fromCharCode(65 + i)}`
-        );
+        state.labels = cols
+          .slice(VISIBLE_START_INDEX, VISIBLE_START_INDEX + VISIBLE_COUNT)
+          .map((col, i) => col?.label || `Column ${String.fromCharCode(66 + i)}`);
+
         state.rows = rows;
 
         renderTable();
@@ -839,7 +846,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
         console.error(error);
         inventoryBody.innerHTML = `
           <tr>
-            <td class="inventory-empty" colspan="6">
+            <td class="inventory-empty" colspan="5">
               Unable to load inventory right now.
             </td>
           </tr>
