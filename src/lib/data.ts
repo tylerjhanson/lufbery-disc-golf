@@ -243,6 +243,14 @@ function splitAwardSegments(value: string) {
   const text = cleanSummaryText(value);
   if (!text) return [];
 
+  const matches = Array.from(
+    text.matchAll(/\b(?:ace\s+)?[^:;$]+:\s*\$\s*\d+(?:\.\d{1,2})?/gi)
+  )
+    .map((match) => cleanSummaryText(match[0]))
+    .filter(Boolean);
+
+  if (matches.length) return matches;
+
   return text
     .split(/\s*;\s*/)
     .map((part) => cleanSummaryText(part))
