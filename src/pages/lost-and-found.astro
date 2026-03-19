@@ -75,11 +75,13 @@ import SiteLayout from "../layouts/SiteLayout.astro";
     }
 
     .lost-found-page .inventory-section {
-      padding: 0 4px 6px;
+      padding: 0;
+      margin: 0;
     }
 
     .lost-found-page .inventory-heading {
       margin: 4px 0 10px;
+      padding: 0;
       font-size: 0.96rem;
       color: var(--text);
       font-weight: 700;
@@ -87,6 +89,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
 
     .lost-found-page .table-wrap {
       padding: 0;
+      margin: 0;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
     }
@@ -197,7 +200,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
 
     @media (max-width: 700px) {
       .lost-found-page .card {
-        padding: 20px 18px 16px;
+        padding: 20px 14px 16px;
       }
 
       .lost-found-page p,
@@ -206,27 +209,39 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       }
 
       .lost-found-page .inventory-section {
-        padding: 0 2px 6px;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+
+      .lost-found-page .inventory-heading {
+        margin: 4px 0 8px;
+        padding: 0 !important;
+      }
+
+      .lost-found-page .table-wrap {
+        padding: 0 !important;
+        margin: 0 !important;
       }
 
       .lost-found-page table.inventory-table {
-        min-width: 580px;
+        min-width: 560px;
       }
 
       .lost-found-page table.inventory-table thead th {
-        font-size: 0.64rem;
-        padding: 8px 4px;
-        letter-spacing: 0;
+        font-size: 0.58rem !important;
+        padding: 6px 2px !important;
+        letter-spacing: 0 !important;
+        line-height: 1.05 !important;
       }
 
       .lost-found-page table.inventory-table tbody td {
-        font-size: 0.82rem;
-        padding: 8px 4px;
-        line-height: 1.1;
+        font-size: 0.76rem !important;
+        padding: 6px 2px !important;
+        line-height: 1.06 !important;
       }
 
       .lost-found-page .inventory-sort-indicator {
-        font-size: 0.6rem;
+        font-size: 0.56rem !important;
       }
     }
 
@@ -235,22 +250,26 @@ import SiteLayout from "../layouts/SiteLayout.astro";
         font-size: 1.9rem;
       }
 
+      .lost-found-page .card {
+        padding: 18px 10px 14px;
+      }
+
       .lost-found-page table.inventory-table {
-        min-width: 560px;
+        min-width: 540px;
       }
 
       .lost-found-page table.inventory-table thead th {
-        font-size: 0.58rem;
-        padding: 7px 3px;
+        font-size: 0.54rem !important;
+        padding: 5px 2px !important;
       }
 
       .lost-found-page table.inventory-table tbody td {
-        font-size: 0.74rem;
-        padding: 6px 3px;
+        font-size: 0.72rem !important;
+        padding: 5px 2px !important;
       }
 
       .lost-found-page .inventory-sort-indicator {
-        font-size: 0.56rem;
+        font-size: 0.52rem !important;
       }
     }
   </style>
