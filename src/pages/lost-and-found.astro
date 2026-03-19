@@ -1,7 +1,4 @@
 ---
-const inventoryUrl =
-  "https://docs.google.com/spreadsheets/d/1FlsTEEik9UUMZQmjTOVkP7dOqGho9_GRFDC5PIVgXPo/edit?gid=0#gid=0";
-
 const sheetId = "1FlsTEEik9UUMZQmjTOVkP7dOqGho9_GRFDC5PIVgXPo";
 const sheetGid = "0";
 
@@ -161,32 +158,29 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       position: sticky;
       top: 0;
       z-index: 1;
-      padding: 0;
+      font-weight: 700;
+      color: var(--text);
+      user-select: none;
+      cursor: pointer;
+      transition: background 0.15s ease;
+      white-space: nowrap;
     }
 
-    .inventory-sort {
-      width: 100%;
+    .inventory-table th:hover {
+      background: #f1f5f9;
+    }
+
+    .inventory-table th:focus-visible {
+      outline: 2px solid rgba(37, 99, 235, 0.35);
+      outline-offset: -2px;
+    }
+
+    .inventory-th-inner {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      padding: 12px 14px;
-      border: 0;
-      background: transparent;
-      color: var(--text);
-      font: inherit;
-      font-weight: 700;
-      text-align: left;
-      cursor: pointer;
-    }
-
-    .inventory-sort:hover {
-      background: rgba(37, 99, 235, 0.04);
-    }
-
-    .inventory-sort:focus-visible {
-      outline: 2px solid rgba(37, 99, 235, 0.35);
-      outline-offset: -2px;
+      width: 100%;
     }
 
     .inventory-sort-indicator {
@@ -195,6 +189,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       line-height: 1;
       min-width: 1.1em;
       text-align: right;
+      flex: 0 0 auto;
     }
 
     .inventory-empty {
@@ -231,8 +226,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       }
 
       .inventory-table th,
-      .inventory-table td,
-      .inventory-sort {
+      .inventory-table td {
         font-size: 0.92rem;
       }
     }
@@ -336,6 +330,35 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       return null;
     }
 
+    function isReturnedTrue(cell) {
+      if (!cell) return false;
+
+      const raw = cell.v;
+      if (raw === true) return true;
+
+      const text = String(
+        raw !== null && raw !== undefined ? raw : displayCell(cell)
+      ).trim().toLowerCase();
+
+      return text === "true";
+    }
+
+    function isBlankDisplayValue(value) {
+      return String(value ?? "").trim() === "";
+    }
+
+    function isDisplayableRow(row) {
+      const visibleCells = row.slice(0, 6);
+      const returnedCell = row[6];
+
+      const allBlank = visibleCells.every((cell) => isBlankDisplayValue(displayCell(cell)));
+      if (allBlank) return false;
+
+      if (isReturnedTrue(returnedCell)) return false;
+
+      return true;
+    }
+
     function comparableValue(cell, colIndex) {
       if (!cell) return "";
 
@@ -380,16 +403,16 @@ import SiteLayout from "../layouts/SiteLayout.astro";
           ${state.labels
             .map(
               (label, index) => `
-                <th scope="col">
-                  <button
-                    type="button"
-                    class="inventory-sort"
-                    data-index="${index}"
-                    aria-label="Sort by ${escapeHtml(label)}"
-                  >
+                <th
+                  scope="col"
+                  data-index="${index}"
+                  tabindex="0"
+                  aria-label="Sort by ${escapeHtml(label)}"
+                >
+                  <div class="inventory-th-inner">
                     <span>${escapeHtml(label)}</span>
                     <span class="inventory-sort-indicator">${indicatorFor(index)}</span>
-                  </button>
+                  </div>
                 </th>
               `
             )
@@ -415,6 +438,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
           (row) => `
             <tr>
               ${row
+                .slice(0, 6)
                 .map((cell) => `<td>${escapeHtml(displayCell(cell)) || "&nbsp;"}</td>`)
                 .join("")}
             </tr>
@@ -431,7 +455,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
 
     async function loadInventory() {
       try {
-        const tq = encodeURIComponent("select A,B,C,D,E,F");
+        const tq = encodeURIComponent("select A,B,C,D,E,F,G");
         const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?gid=${sheetGid}&tq=${tq}`;
 
         const response = await fetch(url);
@@ -449,11 +473,13 @@ import SiteLayout from "../layouts/SiteLayout.astro";
         const parsed = Function(`"use strict"; return (${payload});`)();
 
         const cols = (parsed?.table?.cols || []).slice(0, 6);
-        const rows = (parsed?.table?.rows || []).map((row) => {
-          const cells = Array.isArray(row?.c) ? row.c.slice(0, 6) : [];
-          while (cells.length < 6) cells.push(null);
-          return cells;
-        });
+        const rows = (parsed?.table?.rows || [])
+          .map((row) => {
+            const cells = Array.isArray(row?.c) ? row.c.slice(0, 7) : [];
+            while (cells.length < 7) cells.push(null);
+            return cells;
+          })
+          .filter(isDisplayableRow);
 
         state.labels = cols.map((col, i) => col?.label || `Column ${String.fromCharCode(65 + i)}`);
         state.rows = rows;
@@ -472,11 +498,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       }
     }
 
-    inventoryHead?.addEventListener("click", (event) => {
-      const button = event.target.closest(".inventory-sort");
-      if (!button) return;
-
-      const index = Number(button.getAttribute("data-index"));
+    function handleSort(index) {
       if (Number.isNaN(index)) return;
 
       if (state.sortIndex === index) {
@@ -487,6 +509,25 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       }
 
       renderTable();
+    }
+
+    inventoryHead?.addEventListener("click", (event) => {
+      const th = event.target.closest("th[data-index]");
+      if (!th) return;
+
+      const index = Number(th.getAttribute("data-index"));
+      handleSort(index);
+    });
+
+    inventoryHead?.addEventListener("keydown", (event) => {
+      const th = event.target.closest("th[data-index]");
+      if (!th) return;
+
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+
+      const index = Number(th.getAttribute("data-index"));
+      handleSort(index);
     });
 
     loadInventory();
