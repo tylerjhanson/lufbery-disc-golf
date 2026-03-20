@@ -531,6 +531,10 @@ function normalizeRecordRawKey(value: string) {
   return raw == null ? "" : String(raw);
 }
 
+function isExcludedSinglesRecordLayout(value: string) {
+  return /\b(sticks|stones)\b/i.test(String(value || ""));
+}
+
 function getDerivedSinglesData() {
   if (derivedSinglesCache) return derivedSinglesCache;
 
@@ -543,6 +547,7 @@ function getDerivedSinglesData() {
     const shortDate = extractEventDate(event.title);
     const fullDate = toFullYearUsDate(shortDate);
     const url = event.url || "";
+    const excludeFromSinglesRecords = isExcludedSinglesRecordLayout(event.title);
 
     if (!shortDate) continue;
 
@@ -576,16 +581,18 @@ function getDerivedSinglesData() {
         });
       }
 
-      handicapRows.forEach((row: any) => {
-        if (row.rawValue == null || row.rawValue >= 50) return;
+      if (!excludeFromSinglesRecords) {
+        handicapRows.forEach((row: any) => {
+          if (row.rawValue == null || row.rawValue >= 50) return;
 
-        records.push({
-          name: row.name,
-          score: formatCourseRecordScore(row.rawValue, SINGLES_PAR),
-          date: fullDate,
-          url,
+          records.push({
+            name: row.name,
+            score: formatCourseRecordScore(row.rawValue, SINGLES_PAR),
+            date: fullDate,
+            url,
+          });
         });
-      });
+      }
     }
 
     for (const ace of event.summary?.aces || []) {
@@ -654,7 +661,7 @@ function getDerivedSinglesData() {
         }
       }
 
-      if (isTwoRoundPool) {
+      if (!excludeFromSinglesRecords && isTwoRoundPool) {
         if (r1Index !== -1) {
           (pool.rows || []).forEach((cells: string[]) => {
             const name = String(cells[0] || "").trim();
@@ -670,7 +677,7 @@ function getDerivedSinglesData() {
             });
           });
         }
-      } else if (rawIndex !== -1) {
+      } else if (!excludeFromSinglesRecords && rawIndex !== -1) {
         (pool.rows || []).forEach((cells: string[]) => {
           const name = String(cells[0] || "").trim();
           const rawValue = extractFirstNumber(cells[rawIndex] || "");
@@ -830,6 +837,13 @@ export function getDoublesAces() {
 }
 
 export function getSinglesRecords() {
+  const excludedDates = new Set(
+    getWeeklyResults()
+      .filter((event) => isExcludedSinglesRecordLayout(event.title))
+      .map((event) => toFullYearUsDate(extractEventDate(event.title)))
+      .filter(Boolean)
+  );
+
   const legacy = readCsv("sinrec.csv")
     .slice(1)
     .filter((row) => row[0]?.trim())
@@ -845,9 +859,12 @@ export function getSinglesRecords() {
         date: toFullYearUsDate(row[2] || ""),
         url: row[3] || "",
       };
-    });
+    })
+    .filter((row) => !excludedDates.has(row.date));
 
-  const derived = getDerivedSinglesData().records;
+  const derived = getDerivedSinglesData().records.filter(
+    (row) => !excludedDates.has(row.date)
+  );
 
   const merged = dedupeByKey(
     [...legacy, ...derived],
