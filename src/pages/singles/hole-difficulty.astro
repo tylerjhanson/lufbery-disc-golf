@@ -1,13 +1,8 @@
 ---
-import SiteLayout from "../../layouts/SiteLayout.astro";
-import HoleDifficultyChart from "../../components/HoleDifficultyChart.astro";
-import holeData from "../../data/hole-data-detailed.json";
+import SiteLayout from "../layouts/SiteLayout.astro";
+import HoleDifficultyChart from "../components/HoleDifficultyChart.astro";
 ---
 
-<SiteLayout
-  title="Hole Difficulty"
-  description="Hole-by-hole scoring distribution and difficulty rankings for Lufbery Disc Golf."
-  showBrandBar={true}
->
-  <HoleDifficultyChart holes={holeData} />
+<SiteLayout title="Hole Difficulty">
+  <HoleDifficultyChart />
 </SiteLayout>
