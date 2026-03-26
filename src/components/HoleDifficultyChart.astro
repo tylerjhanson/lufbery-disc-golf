@@ -1,0 +1,1012 @@
+---
+// src/components/HoleDifficultyChart.astro
+const holes = [
+  {
+    "hole": 1,
+    "par": 3,
+    "average": 3.08,
+    "plusMinus": 0.08,
+    "difficultyRank": 12,
+    "rounds": 586,
+    "segments": [
+      {
+        "key": "birdie",
+        "label": "Birdie",
+        "count": 113,
+        "pct": 19.283,
+        "kind": "birdie"
+      },
+      {
+        "key": "par",
+        "label": "Par",
+        "count": 339,
+        "pct": 57.85,
+        "kind": "par"
+      },
+      {
+        "key": "bogey",
+        "label": "Bogey",
+        "count": 112,
+        "pct": 19.113,
+        "kind": "bogey"
+      },
+      {
+        "key": "doubleBogey",
+        "label": "Double Bogey",
+        "count": 17,
+        "pct": 2.901,
+        "kind": "double"
+      },
+      {
+        "key": "triplePlus",
+        "label": "Triple Bogey+",
+        "count": 5,
+        "pct": 0.853,
+        "kind": "triple"
+      }
+    ]
+  },
+  {
+    "hole": 2,
+    "par": 3,
+    "average": 2.77,
+    "plusMinus": -0.23,
+    "difficultyRank": 15,
+    "rounds": 586,
+    "segments": [
+      {
+        "key": "birdie",
+        "label": "Birdie",
+        "count": 200,
+        "pct": 34.13,
+        "kind": "birdie"
+      },
+      {
+        "key": "par",
+        "label": "Par",
+        "count": 329,
+        "pct": 56.143,
+        "kind": "par"
+      },
+      {
+        "key": "bogey",
+        "label": "Bogey",
+        "count": 48,
+        "pct": 8.191,
+        "kind": "bogey"
+      },
+      {
+        "key": "doubleBogey",
+        "label": "Double Bogey",
+        "count": 7,
+        "pct": 1.195,
+        "kind": "double"
+      },
+      {
+        "key": "triplePlus",
+        "label": "Triple Bogey+",
+        "count": 2,
+        "pct": 0.341,
+        "kind": "triple"
+      }
+    ]
+  },
+  {
+    "hole": 3,
+    "par": 4,
+    "average": 4.12,
+    "plusMinus": 0.12,
+    "difficultyRank": 11,
+    "rounds": 586,
+    "segments": [
+      {
+        "key": "aceEagle",
+        "label": "Ace/Eagle",
+        "count": 2,
+        "pct": 0.341,
+        "kind": "ace"
+      },
+      {
+        "key": "birdie",
+        "label": "Birdie",
+        "count": 133,
+        "pct": 22.696,
+        "kind": "birdie"
+      },
+      {
+        "key": "par",
+        "label": "Par",
+        "count": 283,
+        "pct": 48.294,
+        "kind": "par"
+      },
+      {
+        "key": "bogey",
+        "label": "Bogey",
+        "count": 132,
+        "pct": 22.526,
+        "kind": "bogey"
+      },
+      {
+        "key": "doubleBogey",
+        "label": "Double Bogey",
+        "count": 31,
+        "pct": 5.29,
+        "kind": "double"
+      },
+      {
+        "key": "triplePlus",
+        "label": "Triple Bogey+",
+        "count": 5,
+        "pct": 0.853,
+        "kind": "triple"
+      }
+    ]
+  },
+  {
+    "hole": 4,
+    "par": 3,
+    "average": 3.2,
+    "plusMinus": 0.2,
+    "difficultyRank": 9,
+    "rounds": 586,
+    "segments": [
+      {
+        "key": "birdie",
+        "label": "Birdie",
+        "count": 81,
+        "pct": 13.823,
+        "kind": "birdie"
+      },
+      {
+        "key": "par",
+        "label": "Par",
+        "count": 328,
+        "pct": 55.973,
+        "kind": "par"
+      },
+      {
+        "key": "bogey",
+        "label": "Bogey",
+        "count": 157,
+        "pct": 26.792,
+        "kind": "bogey"
+      },
+      {
+        "key": "doubleBogey",
+        "label": "Double Bogey",
+        "count": 19,
+        "pct": 3.242,
+        "kind": "double"
+      },
+      {
+        "key": "triplePlus",
+        "label": "Triple Bogey+",
+        "count": 1,
+        "pct": 0.171,
+        "kind": "triple"
+      }
+    ]
+  },
+  {
+    "hole": 5,
+    "par": 3,
+    "average": 3.37,
+    "plusMinus": 0.37,
+    "difficultyRank": 7,
+    "rounds": 586,
+    "segments": [
+      {
+        "key": "birdie",
+        "label": "Birdie",
+        "count": 51,
+        "pct": 8.703,
+        "kind": "birdie"
+      },
+      {
+        "key": "par",
+        "label": "Par",
+        "count": 314,
+        "pct": 53.584,
+        "kind": "par"
+      },
+      {
+        "key": "bogey",
+        "label": "Bogey",
+        "count": 180,
+        "pct": 30.717,
+        "kind": "bogey"
+      },
+      {
+        "key": "doubleBogey",
+        "label": "Double Bogey",
+        "count": 36,
+        "pct": 6.143,
+        "kind": "double"
+      },
+      {
+        "key": "triplePlus",
+        "label": "Triple Bogey+",
+        "count": 5,
+        "pct": 0.853,
+        "kind": "triple"
+      }
+    ]
+  },
+  {
+    "hole": 6,
+    "par": 3,
+    "average": 2.98,
+    "plusMinus": -0.02,
+    "difficultyRank": 14,
+    "rounds": 586,
+    "segments": [
+      {
+        "key": "birdie",
+        "label": "Birdie",
+        "count": 142,
+        "pct": 24.232,
+        "kind": "birdie"
+      },
+      {
+        "key": "par",
+        "label": "Par",
+        "count": 334,
+        "pct": 56.997,
+        "kind": "par"
+      },
+      {
+        "key": "bogey",
+        "label": "Bogey",
+        "count": 92,
+        "pct": 15.7,
+        "kind": "bogey"
+      },
+      {
+        "key": "doubleBogey",
+        "label": "Double Bogey",
+        "count": 17,
+        "pct": 2.901,
+        "kind": "double"
+      },
+      {
+        "key": "triplePlus",
+        "label": "Triple Bogey+",
+        "count": 1,
+        "pct": 0.171,
+        "kind": "triple"
+      }
+    ]
+  },
+  {
+    "hole": 7,
+    "par": 3,
+    "average": 3.05,
+    "plusMinus": 0.05,
+    "difficultyRank": 13,
+    "rounds": 586,
+    "segments": [
+      {
+        "key": "birdie",
+        "label": "Birdie",
+        "count": 140,
+        "pct": 23.891,
+        "kind": "birdie"
+      },
+      {
+        "key": "par",
+        "label": "Par",
+        "count": 306,
+        "pct": 52.218,
+        "kind": "par"
+      },
+      {
+        "key": "bogey",
+        "label": "Bogey",
+        "count": 113,
+        "pct": 19.283,
+        "kind": "bogey"
+      },
+      {
+        "key": "doubleBogey",
+        "label": "Double Bogey",
+        "count": 26,
+        "pct": 4.437,
+        "kind": "double"
+      },
+      {
+        "key": "triplePlus",
+        "label": "Triple Bogey+",
+        "count": 1,
+        "pct": 0.171,
+        "kind": "triple"
+      }
+    ]
+  },
+  {
+    "hole": 8,
+    "par": 3,
+    "average": 2.7,
+    "plusMinus": -0.3,
+    "difficultyRank": 17,
+    "rounds": 586,
+    "segments": [
+      {
+        "key": "aceEagle",
+        "label": "Ace/Eagle",
+        "count": 1,
+        "pct": 0.171,
+        "kind": "ace"
+      },
+      {
+        "key": "birdie",
+        "label": "Birdie",
+        "count": 245,
+        "pct": 41.809,
+        "kind": "birdie"
+      },
+      {
+        "key": "par",
+        "label": "Par",
+        "count": 275,
+        "pct": 46.928,
+        "kind": "par"
+      },
+      {
+        "key": "bogey",
+        "label": "Bogey",
+        "count": 60,
+        "pct": 10.239,
+        "kind": "bogey"
+      },
+      {
+        "key": "doubleBogey",
+        "label": "Double Bogey",
+        "count": 4,
+        "pct": 0.683,
+        "kind": "double"
+      },
+      {
+        "key": "triplePlus",
+        "label": "Triple Bogey+",
+        "count": 1,
+        "pct": 0.171,
+        "kind": "triple"
+      }
+    ]
+  },
+  {
+    "hole": 9,
+    "par": 3,
+    "average": 3.5,
+    "plusMinus": 0.5,
+    "difficultyRank": 6,
+    "rounds": 586,
+    "segments": [
+      {
+        "key": "birdie",
+        "label": "Birdie",
+        "count": 42,
+        "pct": 7.167,
+        "kind": "birdie"
+      },
+      {
+        "key": "par",
+        "label": "Par",
+        "count": 276,
+        "pct": 47.099,
+        "kind": "par"
+      },
+      {
+        "key": "bogey",
+        "label": "Bogey",
+        "count": 211,
+        "pct": 36.007,
+        "kind": "bogey"
+      },
+      {
+        "key": "doubleBogey",
+        "label": "Double Bogey",
+        "count": 49,
+        "pct": 8.362,
+        "kind": "double"
+      },
+      {
+        "key": "triplePlus",
+        "label": "Triple Bogey+",
+        "count": 8,
+        "pct": 1.365,
+        "kind": "triple"
+      }
+    ]
+  },
+  {
+    "hole": 10,
+    "par": 3,
+    "average": 3.73,
+    "plusMinus": 0.73,
+    "difficultyRank": 4,
+    "rounds": 586,
+    "segments": [
+      {
+        "key": "birdie",
+        "label": "Birdie",
+        "count": 13,
+        "pct": 2.218,
+        "kind": "birdie"
+      },
+      {
+        "key": "par",
+        "label": "Par",
+        "count": 247,
+        "pct": 42.15,
+        "kind": "par"
+      },
+      {
+        "key": "bogey",
+        "label": "Bogey",
+        "count": 228,
+        "pct": 38.908,
+        "kind": "bogey"
+      },
+      {
+        "key": "doubleBogey",
+        "label": "Double Bogey",
+        "count": 79,
+        "pct": 13.481,
+        "kind": "double"
+      },
+      {
+        "key": "triplePlus",
+        "label": "Triple Bogey+",
+        "count": 19,
+        "pct": 3.242,
+        "kind": "triple"
+      }
+    ]
+  },
+  {
+    "hole": 11,
+    "par": 3,
+    "average": 3.25,
+    "plusMinus": 0.25,
+    "difficultyRank": 8,
+    "rounds": 586,
+    "segments": [
+      {
+        "key": "birdie",
+        "label": "Birdie",
+        "count": 72,
+        "pct": 12.287,
+        "kind": "birdie"
+      },
+      {
+        "key": "par",
+        "label": "Par",
+        "count": 334,
+        "pct": 56.997,
+        "kind": "par"
+      },
+      {
+        "key": "bogey",
+        "label": "Bogey",
+        "count": 142,
+        "pct": 24.232,
+        "kind": "bogey"
+      },
+      {
+        "key": "doubleBogey",
+        "label": "Double Bogey",
+        "count": 36,
+        "pct": 6.143,
+        "kind": "double"
+      },
+      {
+        "key": "triplePlus",
+        "label": "Triple Bogey+",
+        "count": 2,
+        "pct": 0.341,
+        "kind": "triple"
+      }
+    ]
+  },
+  {
+    "hole": 12,
+    "par": 3,
+    "average": 3.79,
+    "plusMinus": 0.79,
+    "difficultyRank": 2,
+    "rounds": 586,
+    "segments": [
+      {
+        "key": "birdie",
+        "label": "Birdie",
+        "count": 11,
+        "pct": 1.877,
+        "kind": "birdie"
+      },
+      {
+        "key": "par",
+        "label": "Par",
+        "count": 237,
+        "pct": 40.444,
+        "kind": "par"
+      },
+      {
+        "key": "bogey",
+        "label": "Bogey",
+        "count": 237,
+        "pct": 40.444,
+        "kind": "bogey"
+      },
+      {
+        "key": "doubleBogey",
+        "label": "Double Bogey",
+        "count": 79,
+        "pct": 13.481,
+        "kind": "double"
+      },
+      {
+        "key": "triplePlus",
+        "label": "Triple Bogey+",
+        "count": 22,
+        "pct": 3.754,
+        "kind": "triple"
+      }
+    ]
+  },
+  {
+    "hole": 13,
+    "par": 3,
+    "average": 2.76,
+    "plusMinus": -0.24,
+    "difficultyRank": 16,
+    "rounds": 586,
+    "segments": [
+      {
+        "key": "aceEagle",
+        "label": "Ace/Eagle",
+        "count": 3,
+        "pct": 0.512,
+        "kind": "ace"
+      },
+      {
+        "key": "birdie",
+        "label": "Birdie",
+        "count": 231,
+        "pct": 39.42,
+        "kind": "birdie"
+      },
+      {
+        "key": "par",
+        "label": "Par",
+        "count": 270,
+        "pct": 46.075,
+        "kind": "par"
+      },
+      {
+        "key": "bogey",
+        "label": "Bogey",
+        "count": 68,
+        "pct": 11.604,
+        "kind": "bogey"
+      },
+      {
+        "key": "doubleBogey",
+        "label": "Double Bogey",
+        "count": 12,
+        "pct": 2.048,
+        "kind": "double"
+      },
+      {
+        "key": "triplePlus",
+        "label": "Triple Bogey+",
+        "count": 2,
+        "pct": 0.341,
+        "kind": "triple"
+      }
+    ]
+  },
+  {
+    "hole": 14,
+    "par": 4,
+    "average": 4.75,
+    "plusMinus": 0.75,
+    "difficultyRank": 3,
+    "rounds": 586,
+    "segments": [
+      {
+        "key": "birdie",
+        "label": "Birdie",
+        "count": 39,
+        "pct": 6.655,
+        "kind": "birdie"
+      },
+      {
+        "key": "par",
+        "label": "Par",
+        "count": 233,
+        "pct": 39.761,
+        "kind": "par"
+      },
+      {
+        "key": "bogey",
+        "label": "Bogey",
+        "count": 192,
+        "pct": 32.765,
+        "kind": "bogey"
+      },
+      {
+        "key": "doubleBogey",
+        "label": "Double Bogey",
+        "count": 87,
+        "pct": 14.846,
+        "kind": "double"
+      },
+      {
+        "key": "triplePlus",
+        "label": "Triple Bogey+",
+        "count": 35,
+        "pct": 5.973,
+        "kind": "triple"
+      }
+    ]
+  },
+  {
+    "hole": 15,
+    "par": 3,
+    "average": 2.62,
+    "plusMinus": -0.38,
+    "difficultyRank": 18,
+    "rounds": 586,
+    "segments": [
+      {
+        "key": "birdie",
+        "label": "Birdie",
+        "count": 266,
+        "pct": 45.392,
+        "kind": "birdie"
+      },
+      {
+        "key": "par",
+        "label": "Par",
+        "count": 279,
+        "pct": 47.611,
+        "kind": "par"
+      },
+      {
+        "key": "bogey",
+        "label": "Bogey",
+        "count": 40,
+        "pct": 6.826,
+        "kind": "bogey"
+      },
+      {
+        "key": "doubleBogey",
+        "label": "Double Bogey",
+        "count": 1,
+        "pct": 0.171,
+        "kind": "double"
+      }
+    ]
+  },
+  {
+    "hole": 16,
+    "par": 3,
+    "average": 3.13,
+    "plusMinus": 0.13,
+    "difficultyRank": 10,
+    "rounds": 586,
+    "segments": [
+      {
+        "key": "birdie",
+        "label": "Birdie",
+        "count": 88,
+        "pct": 15.017,
+        "kind": "birdie"
+      },
+      {
+        "key": "par",
+        "label": "Par",
+        "count": 351,
+        "pct": 59.898,
+        "kind": "par"
+      },
+      {
+        "key": "bogey",
+        "label": "Bogey",
+        "count": 128,
+        "pct": 21.843,
+        "kind": "bogey"
+      },
+      {
+        "key": "doubleBogey",
+        "label": "Double Bogey",
+        "count": 19,
+        "pct": 3.242,
+        "kind": "double"
+      }
+    ]
+  },
+  {
+    "hole": 17,
+    "par": 3,
+    "average": 3.56,
+    "plusMinus": 0.56,
+    "difficultyRank": 5,
+    "rounds": 586,
+    "segments": [
+      {
+        "key": "birdie",
+        "label": "Birdie",
+        "count": 4,
+        "pct": 0.683,
+        "kind": "birdie"
+      },
+      {
+        "key": "par",
+        "label": "Par",
+        "count": 308,
+        "pct": 52.56,
+        "kind": "par"
+      },
+      {
+        "key": "bogey",
+        "label": "Bogey",
+        "count": 221,
+        "pct": 37.713,
+        "kind": "bogey"
+      },
+      {
+        "key": "doubleBogey",
+        "label": "Double Bogey",
+        "count": 45,
+        "pct": 7.679,
+        "kind": "double"
+      },
+      {
+        "key": "triplePlus",
+        "label": "Triple Bogey+",
+        "count": 8,
+        "pct": 1.365,
+        "kind": "triple"
+      }
+    ]
+  },
+  {
+    "hole": 18,
+    "par": 3,
+    "average": 3.99,
+    "plusMinus": 0.99,
+    "difficultyRank": 1,
+    "rounds": 581,
+    "segments": [
+      {
+        "key": "birdie",
+        "label": "Birdie",
+        "count": 2,
+        "pct": 0.344,
+        "kind": "birdie"
+      },
+      {
+        "key": "par",
+        "label": "Par",
+        "count": 197,
+        "pct": 33.907,
+        "kind": "par"
+      },
+      {
+        "key": "bogey",
+        "label": "Bogey",
+        "count": 238,
+        "pct": 40.964,
+        "kind": "bogey"
+      },
+      {
+        "key": "doubleBogey",
+        "label": "Double Bogey",
+        "count": 110,
+        "pct": 18.933,
+        "kind": "double"
+      },
+      {
+        "key": "triplePlus",
+        "label": "Triple Bogey+",
+        "count": 34,
+        "pct": 5.852,
+        "kind": "triple"
+      }
+    ]
+  }
+];
+---
+
+<section class="hole-chart">
+  {holes.map((hole) => (
+    <article class="hole-card">
+      <div class="hole-card__header">
+        <h3>Hole {hole.hole}</h3>
+        <div class="hole-card__stats">
+          <span>Difficulty <strong>{hole.difficultyRank}</strong></span>
+          <span>Avg <strong>{hole.average.toFixed(2)}</strong></span>
+        </div>
+      </div>
+
+      <div
+        class="score-bar"
+        style={`grid-template-columns:${hole.segments.map((segment) => `${segment.count}fr`).join(" ")};`}
+        aria-label={`Hole ${hole.hole} scoring distribution`}
+      >
+        {hole.segments.map((segment) => {
+          const showLabel = segment.pct >= 7;
+
+          return (
+            <div
+              class={`score-bar__segment score-bar__segment--${segment.kind}`}
+              title={`${segment.label}: ${segment.count}`}
+              aria-label={`${segment.label}: ${segment.count}`}
+            >
+              {showLabel && <span class="score-bar__label">{segment.count}</span>}
+            </div>
+          );
+        })}
+      </div>
+    </article>
+  ))}
+</section>
+
+<style>
+  .hole-chart {
+    display: grid;
+    gap: 8px;
+  }
+
+  .hole-card {
+    border: 2px solid #d7e6f3;
+    border-radius: 16px;
+    background: #f7f9fc;
+    padding: 10px 14px;
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+  }
+
+  .hole-card__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+
+  .hole-card__header h3 {
+    margin: 0;
+    font-size: clamp(1rem, 1.4vw, 1.25rem);
+    line-height: 1;
+    color: #2b3038;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .hole-card__stats {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    color: #6b7280;
+    font-size: clamp(0.92rem, 1vw, 1rem);
+    white-space: nowrap;
+  }
+
+  .hole-card__stats strong {
+    color: #2b3038;
+    font-size: 1.9em;
+    line-height: 0.9;
+    font-weight: 800;
+    letter-spacing: -0.05em;
+  }
+
+  .score-bar {
+    display: grid;
+    overflow: hidden;
+    min-height: 34px;
+    border-radius: 12px;
+    border: 2px solid #cfe0ef;
+    background: #ffffff;
+  }
+
+  .score-bar__segment {
+    position: relative;
+    min-width: 0;
+  }
+
+  .score-bar__segment + .score-bar__segment {
+    box-shadow: inset 1px 0 0 rgba(22, 34, 51, 0.08);
+  }
+
+  .score-bar__label {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 0 4px;
+    font-weight: 800;
+    font-size: clamp(0.85rem, 1.2vw, 1rem);
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  .score-bar__segment--ace {
+    background: #2f6fb6;
+  }
+
+  .score-bar__segment--birdie {
+    background: #6c9bd1;
+  }
+
+  .score-bar__segment--par {
+    background: #ffffff;
+  }
+
+  .score-bar__segment--bogey {
+    background: #f2d8c8;
+  }
+
+  .score-bar__segment--double {
+    background: #efb286;
+  }
+
+  .score-bar__segment--triple {
+    background: #eb7b3c;
+  }
+
+  .score-bar__segment--ace .score-bar__label,
+  .score-bar__segment--birdie .score-bar__label,
+  .score-bar__segment--triple .score-bar__label {
+    color: #ffffff;
+  }
+
+  .score-bar__segment--par .score-bar__label,
+  .score-bar__segment--bogey .score-bar__label,
+  .score-bar__segment--double .score-bar__label {
+    color: #2e3440;
+  }
+
+  @media (max-width: 720px) {
+    .hole-chart {
+      gap: 12px;
+    }
+
+    .hole-card {
+      border-radius: 20px;
+      padding: 14px;
+    }
+
+    .hole-card__header {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .hole-card__header h3 {
+      font-size: clamp(1.45rem, 6vw, 2rem);
+    }
+
+    .hole-card__stats {
+      width: 100%;
+      justify-content: space-between;
+      font-size: clamp(1rem, 3.8vw, 1.2rem);
+    }
+
+    .hole-card__stats strong {
+      font-size: 1.75em;
+    }
+
+    .score-bar {
+      min-height: 52px;
+      border-radius: 16px;
+    }
+
+    .score-bar__label {
+      font-size: clamp(0.9rem, 4vw, 1.1rem);
+    }
+  }
+</style>
