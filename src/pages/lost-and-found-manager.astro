@@ -1,7 +1,7 @@
 ---
 import SiteLayout from "../layouts/SiteLayout.astro";
 
-const apiUrl = "https://script.google.com/macros/s/AKfycbz_mbgUjcsCFYNoMGl2Cv0f0VhkUSNIAxQ-AYofe44GVqgW9NcJbn8a8fzlkMeJMl_Z/exec";
+const apiUrl = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
 const messageText =
   "Your disc was returned to the Lufbery lost and found. Please visit https://lufberydiscgolf.com/lost-and-found/ for our current lost disc inventory and pick-up instructions. Discs not picked up within 60 days will be donated.";
 ---
@@ -41,7 +41,7 @@ const messageText =
     }
 
     .lost-found-manager-page h2 {
-      margin: 0 0 10px;
+      margin: 0;
       font-size: 1.08rem;
       line-height: 1.2;
       color: var(--text);
@@ -75,35 +75,20 @@ const messageText =
       gap: 14px;
     }
 
-    .lost-found-manager-page .lfm-grid-2 {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+    .lost-found-manager-page .lfm-grid-4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
     .lost-found-manager-page .lfm-grid-3 {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    .lost-found-manager-page .lfm-grid-4 {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-
-    .lost-found-manager-page label {
-      display: grid;
-      gap: 6px;
-      font-size: 0.88rem;
-      color: var(--muted);
-      font-weight: 600;
-    }
-
     .lost-found-manager-page input,
-    .lost-found-manager-page textarea,
-    .lost-found-manager-page button,
-    .lost-found-manager-page select {
+    .lost-found-manager-page button {
       font: inherit;
     }
 
-    .lost-found-manager-page input,
-    .lost-found-manager-page textarea {
+    .lost-found-manager-page input {
       width: 100%;
       border: 1px solid var(--line);
       border-radius: 10px;
@@ -115,13 +100,7 @@ const messageText =
       transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
     }
 
-    .lost-found-manager-page textarea {
-      min-height: 112px;
-      resize: vertical;
-    }
-
-    .lost-found-manager-page input:focus,
-    .lost-found-manager-page textarea:focus {
+    .lost-found-manager-page input:focus {
       border-color: rgba(37, 99, 235, 0.5);
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
     }
@@ -135,13 +114,18 @@ const messageText =
 
     .lost-found-manager-page .lfm-button,
     .lost-found-manager-page .lfm-icon-button,
-    .lost-found-manager-page .lfm-pill-link {
+    .lost-found-manager-page .lfm-link-button,
+    .lost-found-manager-page .lfm-phone-link {
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+    }
+
+    .lost-found-manager-page .lfm-button,
+    .lost-found-manager-page .lfm-icon-button {
       border: 1px solid var(--line);
       background: #fff;
       color: var(--text);
       border-radius: 10px;
       cursor: pointer;
-      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
     }
 
     .lost-found-manager-page .lfm-button {
@@ -151,15 +135,13 @@ const messageText =
     }
 
     .lost-found-manager-page .lfm-button:hover,
-    .lost-found-manager-page .lfm-icon-button:hover,
-    .lost-found-manager-page .lfm-pill-link:hover {
+    .lost-found-manager-page .lfm-icon-button:hover {
       background: #f8fafc;
       border-color: var(--line-soft);
     }
 
     .lost-found-manager-page .lfm-button:active,
-    .lost-found-manager-page .lfm-icon-button:active,
-    .lost-found-manager-page .lfm-pill-link:active {
+    .lost-found-manager-page .lfm-icon-button:active {
       transform: translateY(1px);
     }
 
@@ -185,6 +167,17 @@ const messageText =
       border-color: #fca5a5;
     }
 
+    .lost-found-manager-page .lfm-button-restore {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+      color: #166534;
+    }
+
+    .lost-found-manager-page .lfm-button-restore:hover {
+      background: #dcfce7;
+      border-color: #86efac;
+    }
+
     .lost-found-manager-page .lfm-icon-button {
       width: 38px;
       height: 38px;
@@ -201,18 +194,6 @@ const messageText =
       display: block;
     }
 
-    .lost-found-manager-page .lfm-message-box {
-      display: grid;
-      gap: 10px;
-    }
-
-    .lost-found-manager-page .lfm-message-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
     .lost-found-manager-page .lfm-status {
       min-height: 22px;
       font-size: 0.94rem;
@@ -225,6 +206,29 @@ const messageText =
 
     .lost-found-manager-page .lfm-status.is-success {
       color: #166534;
+    }
+
+    .lost-found-manager-page .lfm-section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .lost-found-manager-page .lfm-link-button {
+      border: 0;
+      background: transparent;
+      padding: 0;
+      color: var(--accent);
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .lost-found-manager-page .lfm-link-button:hover {
+      text-decoration: underline;
     }
 
     .lost-found-manager-page .lfm-table-wrap {
@@ -316,10 +320,8 @@ const messageText =
     }
 
     html[data-theme="dark"] .lost-found-manager-page input,
-    html[data-theme="dark"] .lost-found-manager-page textarea,
     html[data-theme="dark"] .lost-found-manager-page .lfm-button,
-    html[data-theme="dark"] .lost-found-manager-page .lfm-icon-button,
-    html[data-theme="dark"] .lost-found-manager-page .lfm-pill-link {
+    html[data-theme="dark"] .lost-found-manager-page .lfm-icon-button {
       background: #0f172a !important;
       color: var(--text) !important;
       border-color: var(--line) !important;
@@ -335,6 +337,12 @@ const messageText =
       background: rgba(127, 29, 29, 0.22) !important;
       border-color: rgba(248, 113, 113, 0.35) !important;
       color: #fecaca !important;
+    }
+
+    html[data-theme="dark"] .lost-found-manager-page .lfm-button-restore {
+      background: rgba(20, 83, 45, 0.22) !important;
+      border-color: rgba(134, 239, 172, 0.35) !important;
+      color: #bbf7d0 !important;
     }
 
     html[data-theme="dark"] .lost-found-manager-page thead th {
@@ -362,10 +370,8 @@ const messageText =
       }
 
       html[data-theme="system"] .lost-found-manager-page input,
-      html[data-theme="system"] .lost-found-manager-page textarea,
       html[data-theme="system"] .lost-found-manager-page .lfm-button,
-      html[data-theme="system"] .lost-found-manager-page .lfm-icon-button,
-      html[data-theme="system"] .lost-found-manager-page .lfm-pill-link {
+      html[data-theme="system"] .lost-found-manager-page .lfm-icon-button {
         background: #0f172a !important;
         color: var(--text) !important;
         border-color: var(--line) !important;
@@ -381,6 +387,12 @@ const messageText =
         background: rgba(127, 29, 29, 0.22) !important;
         border-color: rgba(248, 113, 113, 0.35) !important;
         color: #fecaca !important;
+      }
+
+      html[data-theme="system"] .lost-found-manager-page .lfm-button-restore {
+        background: rgba(20, 83, 45, 0.22) !important;
+        border-color: rgba(134, 239, 172, 0.35) !important;
+        color: #bbf7d0 !important;
       }
 
       html[data-theme="system"] .lost-found-manager-page thead th {
@@ -416,12 +428,11 @@ const messageText =
 
       .lost-found-manager-page .lfm-password-row,
       .lost-found-manager-page .lfm-grid-4,
-      .lost-found-manager-page .lfm-grid-3,
-      .lost-found-manager-page .lfm-grid-2 {
+      .lost-found-manager-page .lfm-grid-3 {
         grid-template-columns: 1fr;
       }
 
-      .lost-found-manager-page .lfm-message-top {
+      .lost-found-manager-page .lfm-section-head {
         align-items: flex-start;
         flex-direction: column;
       }
@@ -457,68 +468,27 @@ const messageText =
 
       <div id="lfmApp" hidden>
         <section class="lfm-card">
-          <div class="lfm-message-box">
-            <div class="lfm-message-top">
-              <div>
-                <h2>Text message to owners</h2>
-                <p class="lfm-muted">Tap a phone number below to open a prefilled text, or copy the message here.</p>
-              </div>
-
-              <button id="lfmCopyTopMessage" class="lfm-button" type="button" aria-label="Copy message text">
-                Copy text
-              </button>
+          <div class="lfm-section-head">
+            <div>
+              <h2>Add a new disc</h2>
+              <p class="lfm-muted">Deadline is set automatically to 60 days after the date found.</p>
             </div>
-
-            <textarea id="lfmMessageText" readonly>{messageText}</textarea>
           </div>
-        </section>
-
-        <section class="lfm-card">
-          <h2>Add a new disc</h2>
 
           <form id="lfmAddForm" class="lfm-grid">
             <div class="lfm-grid lfm-grid-4">
-              <label>
-                Date found
-                <input id="lfmDate" name="date" type="date" required />
-              </label>
-
-              <label>
-                Deadline
-                <input id="lfmDeadline" name="deadline" type="date" />
-              </label>
-
-              <label>
-                Last 4
-                <input name="last4" type="text" maxlength="4" inputmode="numeric" placeholder="1234" />
-              </label>
-
-              <label>
-                Full phone
-                <input name="phone" type="text" inputmode="tel" placeholder="203-555-1234" />
-              </label>
+              <input id="lfmDate" name="date" type="date" required aria-label="Date found" title="Date found" />
+              <input name="name" type="text" placeholder="Name" aria-label="Name" />
+              <input name="disc" type="text" placeholder="Disc" aria-label="Disc" required />
+              <input name="color" type="text" placeholder="Color" aria-label="Color" />
             </div>
 
             <div class="lfm-grid lfm-grid-3">
-              <label>
-                Name
-                <input name="name" type="text" placeholder="Owner name" />
-              </label>
-
-              <label>
-                Disc
-                <input name="disc" type="text" placeholder="Disc model" required />
-              </label>
-
-              <label>
-                Color
-                <input name="color" type="text" placeholder="Color" />
-              </label>
-            </div>
-
-            <div class="lfm-actions">
-              <button class="lfm-button lfm-button-primary" type="submit">Add disc</button>
-              <button id="lfmForgetPassword" class="lfm-button" type="button">Forget password</button>
+              <input name="last4" type="text" maxlength="4" inputmode="numeric" placeholder="Last 4" aria-label="Last 4" />
+              <input name="phone" type="text" inputmode="tel" placeholder="Full phone" aria-label="Full phone" />
+              <div class="lfm-actions">
+                <button class="lfm-button lfm-button-primary" type="submit">Add disc</button>
+              </div>
             </div>
           </form>
 
@@ -526,8 +496,16 @@ const messageText =
         </section>
 
         <section class="lfm-card">
-          <h2>Current inventory</h2>
-          <p class="lfm-muted">Tap a phone number to open a text with the prefilled message. Returned discs are hidden here after you mark them returned.</p>
+          <div class="lfm-section-head">
+            <div>
+              <h2>Current inventory</h2>
+              <p class="lfm-muted">Tap a phone number to open a text with the prefilled message.</p>
+            </div>
+
+            <button id="lfmToggleReturned" class="lfm-link-button" type="button">
+              View returned discs
+            </button>
+          </div>
 
           <div class="lfm-table-wrap">
             <table>
@@ -551,6 +529,37 @@ const messageText =
             </table>
           </div>
         </section>
+
+        <section id="lfmReturnedSection" class="lfm-card" hidden>
+          <div class="lfm-section-head">
+            <div>
+              <h2>Returned discs</h2>
+              <p class="lfm-muted">Use Restore if one was marked returned by mistake.</p>
+            </div>
+          </div>
+
+          <div class="lfm-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Deadline</th>
+                  <th>Name</th>
+                  <th>Disc</th>
+                  <th>Color</th>
+                  <th>Last 4</th>
+                  <th>Full Phone</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="lfmReturnedBody">
+                <tr>
+                  <td class="lfm-empty" colspan="8">Hidden.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
     </div>
   </div>
@@ -565,14 +574,17 @@ const messageText =
     const appStatus = document.getElementById("lfmAppStatus");
     const addForm = document.getElementById("lfmAddForm");
     const inventoryBody = document.getElementById("lfmInventoryBody");
-    const copyTopMessageButton = document.getElementById("lfmCopyTopMessage");
-    const messageTextarea = document.getElementById("lfmMessageText");
-    const forgetPasswordButton = document.getElementById("lfmForgetPassword");
+    const returnedBody = document.getElementById("lfmReturnedBody");
+    const returnedSection = document.getElementById("lfmReturnedSection");
+    const toggleReturnedButton = document.getElementById("lfmToggleReturned");
     const dateInput = document.getElementById("lfmDate");
 
     const state = {
       password: "",
-      records: [],
+      activeRecords: [],
+      returnedRecords: [],
+      returnedLoaded: false,
+      returnedVisible: false,
     };
 
     function escapeHtml(value) {
@@ -707,23 +719,23 @@ const messageText =
       });
     }
 
-    function renderInventory() {
-      const records = [...state.records].sort((a, b) => {
+    function renderRows(target, rows, mode) {
+      const sortedRows = [...rows].sort((a, b) => {
         const deadlineDiff = sortDateValue(a.deadline) - sortDateValue(b.deadline);
         if (deadlineDiff !== 0) return deadlineDiff;
         return sortDateValue(b.date) - sortDateValue(a.date);
       });
 
-      if (!records.length) {
-        inventoryBody.innerHTML = `
+      if (!sortedRows.length) {
+        target.innerHTML = `
           <tr>
-            <td class="lfm-empty" colspan="8">No active discs found.</td>
+            <td class="lfm-empty" colspan="8">${mode === "returned" ? "No returned discs found." : "No active discs found."}</td>
           </tr>
         `;
         return;
       }
 
-      inventoryBody.innerHTML = records
+      target.innerHTML = sortedRows
         .map((row) => {
           const hasPhone = String(row.phone ?? "").trim() !== "";
           const phoneLabel = hasPhone ? escapeHtml(formatPhone(row.phone)) : "—";
@@ -736,7 +748,7 @@ const messageText =
                 <button
                   class="lfm-icon-button"
                   type="button"
-                  data-copy-message="${escapeHtml(formatPhone(row.phone))}"
+                  data-copy-message="1"
                   aria-label="Copy message text"
                   title="Copy message text"
                 >
@@ -749,6 +761,27 @@ const messageText =
             `
             : "—";
 
+          const actionButton =
+            mode === "returned"
+              ? `
+                <button
+                  class="lfm-button lfm-button-restore"
+                  type="button"
+                  data-restore-row="${Number(row.rowNumber)}"
+                >
+                  Restore
+                </button>
+              `
+              : `
+                <button
+                  class="lfm-button lfm-button-danger"
+                  type="button"
+                  data-return-row="${Number(row.rowNumber)}"
+                >
+                  Returned
+                </button>
+              `;
+
           return `
             <tr>
               <td>${escapeHtml(row.date || "")}</td>
@@ -760,13 +793,7 @@ const messageText =
               <td>${phoneHtml}</td>
               <td>
                 <div class="lfm-row-actions">
-                  <button
-                    class="lfm-button lfm-button-danger"
-                    type="button"
-                    data-return-row="${Number(row.rowNumber)}"
-                  >
-                    Returned
-                  </button>
+                  ${actionButton}
                 </div>
               </td>
             </tr>
@@ -775,7 +802,12 @@ const messageText =
         .join("");
     }
 
-    async function loadInventory() {
+    function renderTables() {
+      renderRows(inventoryBody, state.activeRecords, "active");
+      renderRows(returnedBody, state.returnedRecords, "returned");
+    }
+
+    async function loadActiveInventory() {
       const payload = await jsonp({
         action: "list",
         password: state.password,
@@ -785,8 +817,23 @@ const messageText =
         throw new Error(payload?.error || "Unable to load inventory.");
       }
 
-      state.records = Array.isArray(payload.records) ? payload.records : [];
-      renderInventory();
+      state.activeRecords = Array.isArray(payload.records) ? payload.records : [];
+      renderTables();
+    }
+
+    async function loadReturnedInventory() {
+      const payload = await jsonp({
+        action: "listReturned",
+        password: state.password,
+      });
+
+      if (!payload?.ok) {
+        throw new Error(payload?.error || "Unable to load returned discs.");
+      }
+
+      state.returnedRecords = Array.isArray(payload.records) ? payload.records : [];
+      state.returnedLoaded = true;
+      renderTables();
     }
 
     async function unlock(password, { remember = true } = {}) {
@@ -797,7 +844,7 @@ const messageText =
 
       state.password = trimmed;
       setStatus(loginStatus, "Unlocking…");
-      await loadInventory();
+      await loadActiveInventory();
 
       if (remember) {
         try {
@@ -808,7 +855,11 @@ const messageText =
       loginCard.hidden = true;
       appWrap.hidden = false;
       setStatus(loginStatus, "");
-      setStatus(appStatus, `${state.records.length} active disc${state.records.length === 1 ? "" : "s"} loaded.`, "success");
+      setStatus(
+        appStatus,
+        `${state.activeRecords.length} active disc${state.activeRecords.length === 1 ? "" : "s"} loaded.`,
+        "success"
+      );
     }
 
     unlockForm?.addEventListener("submit", async (event) => {
@@ -837,7 +888,6 @@ const messageText =
           action: "add",
           password: state.password,
           date: toSheetDate(formData.get("date")),
-          deadline: toSheetDate(formData.get("deadline")),
           name: formData.get("name"),
           disc: formData.get("disc"),
           color: formData.get("color"),
@@ -851,12 +901,61 @@ const messageText =
 
         addForm.reset();
         if (dateInput) dateInput.value = todayIso();
-        await loadInventory();
+        await loadActiveInventory();
+        if (state.returnedVisible || state.returnedLoaded) {
+          await loadReturnedInventory();
+        }
         setStatus(appStatus, "Disc added.", "success");
       } catch (error) {
         setStatus(appStatus, error?.message || "Unable to add disc.", "error");
       }
     });
+
+    async function handleReturn(rowNumber) {
+      const confirmed = window.confirm("Mark this disc as returned?");
+      if (!confirmed) return;
+
+      setStatus(appStatus, "Marking disc returned…");
+
+      const payload = await jsonp({
+        action: "markReturned",
+        password: state.password,
+        rowNumber,
+      });
+
+      if (!payload?.ok) {
+        throw new Error(payload?.error || "Unable to mark disc returned.");
+      }
+
+      await loadActiveInventory();
+      if (state.returnedVisible || state.returnedLoaded) {
+        await loadReturnedInventory();
+      }
+      setStatus(appStatus, "Disc marked returned.", "success");
+    }
+
+    async function handleRestore(rowNumber) {
+      const confirmed = window.confirm("Restore this disc to active inventory?");
+      if (!confirmed) return;
+
+      setStatus(appStatus, "Restoring disc…");
+
+      const payload = await jsonp({
+        action: "restore",
+        password: state.password,
+        rowNumber,
+      });
+
+      if (!payload?.ok) {
+        throw new Error(payload?.error || "Unable to restore disc.");
+      }
+
+      await loadActiveInventory();
+      if (state.returnedVisible || state.returnedLoaded) {
+        await loadReturnedInventory();
+      }
+      setStatus(appStatus, "Disc restored.", "success");
+    }
 
     inventoryBody?.addEventListener("click", async (event) => {
       const copyButton = event.target.closest("[data-copy-message]");
@@ -869,52 +968,48 @@ const messageText =
       const returnButton = event.target.closest("[data-return-row]");
       if (!returnButton) return;
 
-      const rowNumber = Number(returnButton.getAttribute("data-return-row"));
-      if (!rowNumber) return;
-
-      const confirmed = window.confirm("Mark this disc as returned?");
-      if (!confirmed) return;
-
       try {
-        setStatus(appStatus, "Marking disc returned…");
-
-        const payload = await jsonp({
-          action: "markReturned",
-          password: state.password,
-          rowNumber,
-        });
-
-        if (!payload?.ok) {
-          throw new Error(payload?.error || "Unable to mark disc returned.");
-        }
-
-        await loadInventory();
-        setStatus(appStatus, "Disc marked returned.", "success");
+        await handleReturn(Number(returnButton.getAttribute("data-return-row")));
       } catch (error) {
         setStatus(appStatus, error?.message || "Unable to mark disc returned.", "error");
       }
     });
 
-    copyTopMessageButton?.addEventListener("click", async () => {
-      const ok = await copyText(messageTextarea?.value || messageText);
-      setStatus(appStatus, ok ? "Message copied." : "Unable to copy message.", ok ? "success" : "error");
+    returnedBody?.addEventListener("click", async (event) => {
+      const copyButton = event.target.closest("[data-copy-message]");
+      if (copyButton) {
+        const ok = await copyText(messageText);
+        setStatus(appStatus, ok ? "Message copied." : "Unable to copy message.", ok ? "success" : "error");
+        return;
+      }
+
+      const restoreButton = event.target.closest("[data-restore-row]");
+      if (!restoreButton) return;
+
+      try {
+        await handleRestore(Number(restoreButton.getAttribute("data-restore-row")));
+      } catch (error) {
+        setStatus(appStatus, error?.message || "Unable to restore disc.", "error");
+      }
     });
 
-    forgetPasswordButton?.addEventListener("click", () => {
-      try {
-        localStorage.removeItem(PASSWORD_KEY);
-      } catch {}
-      state.password = "";
-      state.records = [];
-      renderInventory();
-      appWrap.hidden = true;
-      loginCard.hidden = false;
-      if (passwordInput) {
-        passwordInput.value = "";
-        passwordInput.focus();
+    toggleReturnedButton?.addEventListener("click", async () => {
+      state.returnedVisible = !state.returnedVisible;
+      returnedSection.hidden = !state.returnedVisible;
+      toggleReturnedButton.textContent = state.returnedVisible ? "Hide returned discs" : "View returned discs";
+
+      if (state.returnedVisible && !state.returnedLoaded) {
+        try {
+          setStatus(appStatus, "Loading returned discs…");
+          await loadReturnedInventory();
+          setStatus(appStatus, "Returned discs loaded.", "success");
+        } catch (error) {
+          state.returnedVisible = false;
+          returnedSection.hidden = true;
+          toggleReturnedButton.textContent = "View returned discs";
+          setStatus(appStatus, error?.message || "Unable to load returned discs.", "error");
+        }
       }
-      setStatus(loginStatus, "Saved password cleared.");
-      setStatus(appStatus, "");
     });
 
     if (dateInput) {
