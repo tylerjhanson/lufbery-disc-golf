@@ -3,12 +3,14 @@ interface Props {
   title?: string;
   description?: string;
   showBrandBar?: boolean;
+  noindex?: boolean;
 }
 
 const {
   title = "Lufbery Disc Golf",
   description = "Lufbery Disc Golf results, handicaps, course records, aces, and league information.",
   showBrandBar = true,
+  noindex = false,
 } = Astro.props;
 
 const siteUrl = "https://lufberydiscgolf.com";
@@ -35,7 +37,7 @@ const doublesLinks = [
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <meta name="robots" content="index,follow" />
+    <meta name="robots" content={noindex ? "noindex,nofollow" : "index,follow"} />
     <link rel="canonical" href={canonicalUrl} />
     <link rel="icon" type="image/png" href="/favicon.png" sizes="32x32" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
