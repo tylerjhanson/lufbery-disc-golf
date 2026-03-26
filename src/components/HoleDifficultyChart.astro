@@ -857,16 +857,57 @@ const holes = [
 
 <style>
   .hole-chart {
+    --hd-card-bg: #f7f9fc;
+    --hd-card-border: #d7e6f3;
+    --hd-card-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+    --hd-title: var(--text, #1f2937);
+    --hd-muted: var(--muted, #6b7280);
+    --hd-bar-bg: #ffffff;
+    --hd-bar-border: #cfe0ef;
+    --hd-bar-divider: rgba(22, 34, 51, 0.08);
+    --hd-par-fill: #ffffff;
+    --hd-par-label: #2e3440;
+    --hd-warm-label: #2e3440;
     display: grid;
     gap: 8px;
   }
 
+  html[data-theme="dark"] .hole-chart {
+    --hd-card-bg: #111b2d;
+    --hd-card-border: #31445f;
+    --hd-card-shadow: 0 1px 0 rgba(255, 255, 255, 0.03);
+    --hd-title: var(--text, #f8fafc);
+    --hd-muted: var(--muted, #94a3b8);
+    --hd-bar-bg: #0d1625;
+    --hd-bar-border: #2e425d;
+    --hd-bar-divider: rgba(255, 255, 255, 0.06);
+    --hd-par-fill: #172233;
+    --hd-par-label: #e8eff9;
+    --hd-warm-label: #2b3441;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    html[data-theme="system"] .hole-chart {
+      --hd-card-bg: #111b2d;
+      --hd-card-border: #31445f;
+      --hd-card-shadow: 0 1px 0 rgba(255, 255, 255, 0.03);
+      --hd-title: var(--text, #f8fafc);
+      --hd-muted: var(--muted, #94a3b8);
+      --hd-bar-bg: #0d1625;
+      --hd-bar-border: #2e425d;
+      --hd-bar-divider: rgba(255, 255, 255, 0.06);
+      --hd-par-fill: #172233;
+      --hd-par-label: #e8eff9;
+      --hd-warm-label: #2b3441;
+    }
+  }
+
   .hole-card {
-    border: 2px solid #d7e6f3;
+    border: 2px solid var(--hd-card-border);
     border-radius: 16px;
-    background: #f7f9fc;
+    background: var(--hd-card-bg);
     padding: 10px 14px;
-    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+    box-shadow: var(--hd-card-shadow);
   }
 
   .hole-card__header {
@@ -879,9 +920,9 @@ const holes = [
 
   .hole-card__header h3 {
     margin: 0;
-    font-size: clamp(1rem, 1.4vw, 1.25rem);
+    font-size: clamp(1.08rem, 1.45vw, 1.34rem);
     line-height: 1;
-    color: #2b3038;
+    color: var(--hd-title);
     font-weight: 800;
     letter-spacing: -0.03em;
   }
@@ -890,17 +931,23 @@ const holes = [
     display: flex;
     align-items: baseline;
     gap: 14px;
-    color: #6b7280;
-    font-size: clamp(0.92rem, 1vw, 1rem);
+    color: var(--hd-muted);
+    font-size: clamp(0.86rem, 0.96vw, 0.96rem);
     white-space: nowrap;
   }
 
+  .hole-card__stats span {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 5px;
+  }
+
   .hole-card__stats strong {
-    color: #2b3038;
-    font-size: 1.9em;
-    line-height: 0.9;
+    color: var(--hd-title);
+    font-size: 1.46em;
+    line-height: 0.95;
     font-weight: 800;
-    letter-spacing: -0.05em;
+    letter-spacing: -0.04em;
   }
 
   .score-bar {
@@ -908,8 +955,8 @@ const holes = [
     overflow: hidden;
     min-height: 34px;
     border-radius: 12px;
-    border: 2px solid #cfe0ef;
-    background: #ffffff;
+    border: 2px solid var(--hd-bar-border);
+    background: var(--hd-bar-bg);
   }
 
   .score-bar__segment {
@@ -918,7 +965,7 @@ const holes = [
   }
 
   .score-bar__segment + .score-bar__segment {
-    box-shadow: inset 1px 0 0 rgba(22, 34, 51, 0.08);
+    box-shadow: inset 1px 0 0 var(--hd-bar-divider);
   }
 
   .score-bar__label {
@@ -928,7 +975,7 @@ const holes = [
     place-items: center;
     padding: 0 4px;
     font-weight: 800;
-    font-size: clamp(0.85rem, 1.2vw, 1rem);
+    font-size: clamp(0.84rem, 1.05vw, 0.98rem);
     line-height: 1;
     pointer-events: none;
   }
@@ -942,7 +989,7 @@ const holes = [
   }
 
   .score-bar__segment--par {
-    background: #ffffff;
+    background: var(--hd-par-fill);
   }
 
   .score-bar__segment--bogey {
@@ -963,50 +1010,54 @@ const holes = [
     color: #ffffff;
   }
 
-  .score-bar__segment--par .score-bar__label,
+  .score-bar__segment--par .score-bar__label {
+    color: var(--hd-par-label);
+  }
+
   .score-bar__segment--bogey .score-bar__label,
   .score-bar__segment--double .score-bar__label {
-    color: #2e3440;
+    color: var(--hd-warm-label);
   }
 
   @media (max-width: 720px) {
     .hole-chart {
-      gap: 12px;
+      gap: 10px;
     }
 
     .hole-card {
-      border-radius: 20px;
-      padding: 14px;
+      border-radius: 18px;
+      padding: 12px 14px;
     }
 
     .hole-card__header {
       align-items: flex-start;
       flex-direction: column;
-      gap: 8px;
-      margin-bottom: 10px;
+      gap: 6px;
+      margin-bottom: 8px;
     }
 
     .hole-card__header h3 {
-      font-size: clamp(1.45rem, 6vw, 2rem);
+      font-size: clamp(1.42rem, 5.8vw, 1.84rem);
     }
 
     .hole-card__stats {
       width: 100%;
       justify-content: space-between;
-      font-size: clamp(1rem, 3.8vw, 1.2rem);
+      gap: 12px;
+      font-size: clamp(0.9rem, 3.3vw, 0.98rem);
     }
 
     .hole-card__stats strong {
-      font-size: 1.75em;
+      font-size: 1.42em;
     }
 
     .score-bar {
-      min-height: 52px;
-      border-radius: 16px;
+      min-height: 46px;
+      border-radius: 14px;
     }
 
     .score-bar__label {
-      font-size: clamp(0.9rem, 4vw, 1.1rem);
+      font-size: clamp(0.86rem, 3.6vw, 0.98rem);
     }
   }
 </style>
