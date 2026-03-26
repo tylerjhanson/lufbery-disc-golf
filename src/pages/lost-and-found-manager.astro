@@ -1135,32 +1135,43 @@ const messageText =
     });
 
     addForm?.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const formData = new FormData(addForm);
+  event.preventDefault();
+  const formData = new FormData(addForm);
+  const submittedPhone = String(formData.get("phone") || "").trim();
 
-      try {
-        setStatus(appStatus, "Adding disc…");
+  try {
+    setStatus(appStatus, "Adding disc…");
 
-        const payload = await jsonp({
-          action: "add",
-          password: state.password,
-          name: formData.get("name"),
-          disc: formData.get("disc"),
-          color: formData.get("color"),
-          phone: formData.get("phone"),
-        });
-
-        if (!payload?.ok) {
-          throw new Error(payload?.error || "Unable to add disc.");
-        }
-
-        addForm.reset();
-        await refreshAfterChange();
-        setStatus(appStatus, "Disc added.", "success");
-      } catch (error) {
-        setStatus(appStatus, error?.message || "Unable to add disc.", "error");
-      }
+    const payload = await jsonp({
+      action: "add",
+      password: state.password,
+      name: formData.get("name"),
+      disc: formData.get("disc"),
+      color: formData.get("color"),
+      phone: submittedPhone,
     });
+
+    if (!payload?.ok) {
+      throw new Error(payload?.error || "Unable to add disc.");
+    }
+
+    addForm.reset();
+    await refreshAfterChange();
+    setStatus(appStatus, "Disc added.", "success");
+
+    if (submittedPhone) {
+      const shouldText = window.confirm(
+        "Disc added. Would you like to text the owner now?"
+      );
+
+      if (shouldText) {
+        window.location.href = getSmsHref(submittedPhone);
+      }
+    }
+  } catch (error) {
+    setStatus(appStatus, error?.message || "Unable to add disc.", "error");
+  }
+});
 
     function handleEditClick(event, mode) {
       const button = event.target.closest("[data-edit-row]");
