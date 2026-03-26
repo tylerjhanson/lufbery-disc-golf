@@ -21,10 +21,10 @@ const messageText =
     .lost-found-manager-page .lfm-card {
       background: var(--card) !important;
       border: 1px solid var(--line-soft) !important;
-      border-radius: 14px !important;
+      border-radius: 10px !important;
       box-shadow: var(--shadow) !important;
-      padding: 24px 24px 20px;
       overflow: hidden;
+      padding: 22px 22px 18px;
     }
 
     .lost-found-manager-page .lfm-stack {
@@ -33,29 +33,32 @@ const messageText =
     }
 
     .lost-found-manager-page h1 {
-      margin: 0 0 10px;
-      font-size: clamp(2rem, 4vw, 2.8rem);
-      line-height: 1.04;
+      margin: 0 0 14px;
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1.05;
       letter-spacing: -0.03em;
       color: var(--text);
     }
 
     .lost-found-manager-page h2 {
       margin: 0;
-      font-size: 1.08rem;
+      font-size: 0.98rem;
       line-height: 1.2;
       color: var(--text);
+      font-weight: 700;
     }
 
     .lost-found-manager-page p {
       margin: 0;
+      font-size: 1rem;
+      line-height: 1.6;
       color: var(--text);
-      line-height: 1.55;
     }
 
     .lost-found-manager-page .lfm-muted {
       color: var(--muted);
       font-size: 0.95rem;
+      line-height: 1.45;
     }
 
     .lost-found-manager-page .lfm-login {
@@ -67,20 +70,20 @@ const messageText =
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 10px;
-      margin-top: 14px;
+      margin-top: 12px;
     }
 
     .lost-found-manager-page .lfm-grid {
       display: grid;
-      gap: 14px;
+      gap: 10px;
     }
 
     .lost-found-manager-page .lfm-grid-4 {
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
-    .lost-found-manager-page .lfm-grid-3 {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+    .lost-found-manager-page .lfm-grid-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .lost-found-manager-page input,
@@ -94,8 +97,8 @@ const messageText =
       border-radius: 10px;
       background: #fff;
       color: var(--text);
-      min-height: 42px;
-      padding: 10px 12px;
+      min-height: 40px;
+      padding: 0 12px;
       outline: none;
       transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
     }
@@ -113,14 +116,14 @@ const messageText =
     }
 
     .lost-found-manager-page .lfm-button,
-    .lost-found-manager-page .lfm-icon-button,
-    .lost-found-manager-page .lfm-link-button,
-    .lost-found-manager-page .lfm-phone-link {
+    .lost-found-manager-page .lfm-link-button {
       transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
     }
 
-    .lost-found-manager-page .lfm-button,
-    .lost-found-manager-page .lfm-icon-button {
+    .lost-found-manager-page .lfm-button {
+      min-height: 40px;
+      padding: 0 14px;
+      font-weight: 600;
       border: 1px solid var(--line);
       background: #fff;
       color: var(--text);
@@ -128,20 +131,12 @@ const messageText =
       cursor: pointer;
     }
 
-    .lost-found-manager-page .lfm-button {
-      min-height: 42px;
-      padding: 0 14px;
-      font-weight: 600;
-    }
-
-    .lost-found-manager-page .lfm-button:hover,
-    .lost-found-manager-page .lfm-icon-button:hover {
+    .lost-found-manager-page .lfm-button:hover {
       background: #f8fafc;
       border-color: var(--line-soft);
     }
 
-    .lost-found-manager-page .lfm-button:active,
-    .lost-found-manager-page .lfm-icon-button:active {
+    .lost-found-manager-page .lfm-button:active {
       transform: translateY(1px);
     }
 
@@ -178,42 +173,10 @@ const messageText =
       border-color: #86efac;
     }
 
-    .lost-found-manager-page .lfm-icon-button {
-      width: 38px;
-      height: 38px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
-      flex: 0 0 auto;
-    }
-
-    .lost-found-manager-page .lfm-icon-button svg {
-      width: 16px;
-      height: 16px;
-      display: block;
-    }
-
-    .lost-found-manager-page .lfm-status {
-      min-height: 22px;
-      font-size: 0.94rem;
-      color: var(--muted);
-    }
-
-    .lost-found-manager-page .lfm-status.is-error {
-      color: #b91c1c;
-    }
-
-    .lost-found-manager-page .lfm-status.is-success {
-      color: #166534;
-    }
-
-    .lost-found-manager-page .lfm-section-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 10px;
+    .lost-found-manager-page .lfm-button-light {
+      background: #fff;
+      color: var(--text);
+      border-color: var(--line);
     }
 
     .lost-found-manager-page .lfm-link-button {
@@ -231,60 +194,116 @@ const messageText =
       text-decoration: underline;
     }
 
-    .lost-found-manager-page .lfm-table-wrap {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      border: 1px solid var(--line-soft);
-      border-radius: 12px;
-      background: var(--card);
+    .lost-found-manager-page .lfm-status {
+      min-height: 22px;
+      font-size: 0.94rem;
+      color: var(--muted);
+      margin-top: 10px;
     }
 
-    .lost-found-manager-page table {
+    .lost-found-manager-page .lfm-status.is-error {
+      color: #b91c1c;
+    }
+
+    .lost-found-manager-page .lfm-status.is-success {
+      color: #166534;
+    }
+
+    .lost-found-manager-page .lfm-section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .lost-found-manager-page .lfm-table-wrap {
+      padding: 0;
+      margin: 0;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .lost-found-manager-page table.lfm-table {
       width: 100%;
       border-collapse: separate;
       border-spacing: 0;
-      min-width: 860px;
+      table-layout: fixed;
+      min-width: 420px;
+      background: transparent;
+      margin: 0;
     }
 
-    .lost-found-manager-page thead th {
-      background: #f8fafc;
+    .lost-found-manager-page table.lfm-table col.col-name {
+      width: 9ch;
+    }
+
+    .lost-found-manager-page table.lfm-table col.col-disc {
+      width: 11ch;
+    }
+
+    .lost-found-manager-page table.lfm-table col.col-color {
+      width: 6ch;
+    }
+
+    .lost-found-manager-page table.lfm-table col.col-phone {
+      width: 10ch;
+    }
+
+    .lost-found-manager-page table.lfm-table col.col-actions {
+      width: 8ch;
+    }
+
+    .lost-found-manager-page table.lfm-table thead th {
+      background: var(--header, #f8fafc);
       color: var(--muted);
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.04em;
-      text-align: left;
-      padding: 10px 10px;
+      letter-spacing: 0.03em;
+      padding: 8px 5px;
       border-bottom: 1px solid var(--line);
-      white-space: nowrap;
+      text-align: left;
+      white-space: normal;
+      line-height: 1.1;
     }
 
-    .lost-found-manager-page tbody td {
-      padding: 10px 10px;
+    .lost-found-manager-page table.lfm-table thead th:first-child {
+      border-top-left-radius: 14px;
+      padding-left: 0;
+    }
+
+    .lost-found-manager-page table.lfm-table thead th:last-child {
+      border-top-right-radius: 14px;
+    }
+
+    .lost-found-manager-page table.lfm-table tbody td {
+      padding: 8px 5px;
       border-bottom: 1px solid var(--line-soft);
-      font-size: 0.9rem;
-      color: var(--text);
+      font-size: 0.84rem;
+      text-align: left;
       vertical-align: middle;
+      line-height: 1.1;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
       background: transparent;
     }
 
-    .lost-found-manager-page tbody tr:nth-child(even) td {
-      background: #fcfdff;
+    .lost-found-manager-page table.lfm-table tbody td:first-child {
+      padding-left: 0;
     }
 
-    .lost-found-manager-page tbody tr:hover td {
-      background: #f9fbff;
+    .lost-found-manager-page table.lfm-table tbody tr:nth-child(even) td {
+      background: #fcfdff !important;
     }
 
-    .lost-found-manager-page tbody tr:last-child td {
-      border-bottom: 0;
+    .lost-found-manager-page table.lfm-table tbody tr:nth-child(odd) td {
+      background: transparent !important;
     }
 
-    .lost-found-manager-page .lfm-phone-cell {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
+    .lost-found-manager-page table.lfm-table tbody tr:hover td {
+      background: var(--hover, #f9fbff) !important;
     }
 
     .lost-found-manager-page .lfm-phone-link {
@@ -300,13 +319,20 @@ const messageText =
     .lost-found-manager-page .lfm-row-actions {
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: flex-start;
+      gap: 6px;
       flex-wrap: wrap;
     }
 
+    .lost-found-manager-page .lfm-row-actions .lfm-button {
+      min-height: 32px;
+      padding: 0 10px;
+      font-size: 0.8rem;
+    }
+
     .lost-found-manager-page .lfm-empty {
-      text-align: center;
       color: var(--muted);
+      text-align: center;
       padding: 18px 12px;
     }
 
@@ -314,14 +340,73 @@ const messageText =
       display: none !important;
     }
 
-    html[data-theme="dark"] .lost-found-manager-page .lfm-card {
+    .lost-found-manager-page .lfm-modal-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 110;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+    }
+
+    .lost-found-manager-page .lfm-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.4);
+    }
+
+    .lost-found-manager-page .lfm-modal-card {
+      position: relative;
+      width: min(100%, 560px);
+      background: var(--card);
+      border: 1px solid var(--line-soft);
+      border-radius: 14px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+      padding: 18px 18px 16px;
+    }
+
+    .lost-found-manager-page .lfm-modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .lost-found-manager-page .lfm-modal-close {
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1.15rem;
+      line-height: 1;
+    }
+
+    .lost-found-manager-page .lfm-modal-grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .lost-found-manager-page .lfm-modal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    html[data-theme="dark"] .lost-found-manager-page .lfm-card,
+    html[data-theme="dark"] .lost-found-manager-page .lfm-modal-card {
       background: var(--card) !important;
       border-color: var(--line-soft) !important;
     }
 
     html[data-theme="dark"] .lost-found-manager-page input,
     html[data-theme="dark"] .lost-found-manager-page .lfm-button,
-    html[data-theme="dark"] .lost-found-manager-page .lfm-icon-button {
+    html[data-theme="dark"] .lost-found-manager-page .lfm-modal-close {
       background: #0f172a !important;
       color: var(--text) !important;
       border-color: var(--line) !important;
@@ -345,33 +430,40 @@ const messageText =
       color: #bbf7d0 !important;
     }
 
-    html[data-theme="dark"] .lost-found-manager-page thead th {
+    html[data-theme="dark"] .lost-found-manager-page table.lfm-table thead th {
       background: #162033 !important;
       color: var(--muted) !important;
       border-bottom-color: var(--line) !important;
     }
 
-    html[data-theme="dark"] .lost-found-manager-page tbody td {
+    html[data-theme="dark"] .lost-found-manager-page table.lfm-table tbody td {
+      color: var(--text) !important;
       border-bottom-color: var(--line-soft) !important;
+      background: transparent !important;
     }
 
-    html[data-theme="dark"] .lost-found-manager-page tbody tr:nth-child(even) td {
+    html[data-theme="dark"] .lost-found-manager-page table.lfm-table tbody tr:nth-child(odd) td {
+      background: transparent !important;
+    }
+
+    html[data-theme="dark"] .lost-found-manager-page table.lfm-table tbody tr:nth-child(even) td {
       background: rgba(255, 255, 255, 0.03) !important;
     }
 
-    html[data-theme="dark"] .lost-found-manager-page tbody tr:hover td {
+    html[data-theme="dark"] .lost-found-manager-page table.lfm-table tbody tr:hover td {
       background: rgba(255, 255, 255, 0.06) !important;
     }
 
     @media (prefers-color-scheme: dark) {
-      html[data-theme="system"] .lost-found-manager-page .lfm-card {
+      html[data-theme="system"] .lost-found-manager-page .lfm-card,
+      html[data-theme="system"] .lost-found-manager-page .lfm-modal-card {
         background: var(--card) !important;
         border-color: var(--line-soft) !important;
       }
 
       html[data-theme="system"] .lost-found-manager-page input,
       html[data-theme="system"] .lost-found-manager-page .lfm-button,
-      html[data-theme="system"] .lost-found-manager-page .lfm-icon-button {
+      html[data-theme="system"] .lost-found-manager-page .lfm-modal-close {
         background: #0f172a !important;
         color: var(--text) !important;
         border-color: var(--line) !important;
@@ -395,29 +487,28 @@ const messageText =
         color: #bbf7d0 !important;
       }
 
-      html[data-theme="system"] .lost-found-manager-page thead th {
+      html[data-theme="system"] .lost-found-manager-page table.lfm-table thead th {
         background: #162033 !important;
         color: var(--muted) !important;
         border-bottom-color: var(--line) !important;
       }
 
-      html[data-theme="system"] .lost-found-manager-page tbody td {
+      html[data-theme="system"] .lost-found-manager-page table.lfm-table tbody td {
+        color: var(--text) !important;
         border-bottom-color: var(--line-soft) !important;
+        background: transparent !important;
       }
 
-      html[data-theme="system"] .lost-found-manager-page tbody tr:nth-child(even) td {
+      html[data-theme="system"] .lost-found-manager-page table.lfm-table tbody tr:nth-child(odd) td {
+        background: transparent !important;
+      }
+
+      html[data-theme="system"] .lost-found-manager-page table.lfm-table tbody tr:nth-child(even) td {
         background: rgba(255, 255, 255, 0.03) !important;
       }
 
-      html[data-theme="system"] .lost-found-manager-page tbody tr:hover td {
+      html[data-theme="system"] .lost-found-manager-page table.lfm-table tbody tr:hover td {
         background: rgba(255, 255, 255, 0.06) !important;
-      }
-    }
-
-    @media (max-width: 900px) {
-      .lost-found-manager-page .lfm-grid-4,
-      .lost-found-manager-page .lfm-grid-3 {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
 
@@ -428,7 +519,8 @@ const messageText =
 
       .lost-found-manager-page .lfm-password-row,
       .lost-found-manager-page .lfm-grid-4,
-      .lost-found-manager-page .lfm-grid-3 {
+      .lost-found-manager-page .lfm-grid-2,
+      .lost-found-manager-page .lfm-modal-grid {
         grid-template-columns: 1fr;
       }
 
@@ -437,23 +529,76 @@ const messageText =
         flex-direction: column;
       }
 
-      .lost-found-manager-page table {
-        min-width: 760px;
+      .lost-found-manager-page table.lfm-table {
+        min-width: 380px;
+      }
+
+      .lost-found-manager-page table.lfm-table thead th {
+        font-size: 0.58rem !important;
+        padding: 6px 2px !important;
+        letter-spacing: 0 !important;
+        line-height: 1.05 !important;
+      }
+
+      .lost-found-manager-page table.lfm-table thead th:first-child {
+        padding-left: 0 !important;
+      }
+
+      .lost-found-manager-page table.lfm-table tbody td {
+        font-size: 0.76rem !important;
+        padding: 6px 2px !important;
+        line-height: 1.06 !important;
+      }
+
+      .lost-found-manager-page table.lfm-table tbody td:first-child {
+        padding-left: 0 !important;
+      }
+
+      .lost-found-manager-page .lfm-row-actions .lfm-button {
+        min-height: 30px;
+        padding: 0 8px;
+        font-size: 0.76rem;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .lost-found-manager-page h1 {
+        font-size: 1.9rem;
+      }
+
+      .lost-found-manager-page .lfm-card {
+        padding: 18px 10px 14px;
+      }
+
+      .lost-found-manager-page table.lfm-table {
+        min-width: 360px;
+      }
+
+      .lost-found-manager-page table.lfm-table thead th {
+        font-size: 0.54rem !important;
+        padding: 5px 2px !important;
+      }
+
+      .lost-found-manager-page table.lfm-table tbody td {
+        font-size: 0.72rem !important;
+        padding: 5px 2px !important;
       }
     }
   </style>
 
   <div class="wrap lost-found-manager-page">
     <div class="lfm-stack">
-      <section id="lfmLoginCard" class="lfm-card lfm-login">
+      <section id="lfmLoginCard" class="lfm-card lfm-login" hidden>
         <h1>Lost &amp; Found Manager</h1>
-  
-        <form id="lfmUnlockForm" class="lfm-password-row">
+
+        <form id="lfmUnlockForm" class="lfm-password-row" autocomplete="off">
           <input
             id="lfmPassword"
-            name="password"
+            name="manager_key"
             type="password"
-            autocomplete="current-password"
+            autocomplete="new-password"
+            autocapitalize="none"
+            spellcheck="false"
             placeholder="Manager password"
             required
           />
@@ -466,26 +611,24 @@ const messageText =
       <div id="lfmApp" hidden>
         <section class="lfm-card">
           <div class="lfm-section-head">
-            <div>
-              <h2>Add a new disc</h2>
-              <p class="lfm-muted">Deadline is set automatically to 60 days after the date found.</p>
-            </div>
+            <h2>Add a new disc</h2>
           </div>
 
-          <form id="lfmAddForm" class="lfm-grid">
+          <form id="lfmAddForm" class="lfm-grid" autocomplete="off">
             <div class="lfm-grid lfm-grid-4">
-              <input id="lfmDate" name="date" type="date" required aria-label="Date found" title="Date found" />
+              <input id="lfmDate" name="date" type="date" required aria-label="Date found" placeholder="Date found" />
               <input name="name" type="text" placeholder="Name" aria-label="Name" />
               <input name="disc" type="text" placeholder="Disc" aria-label="Disc" required />
               <input name="color" type="text" placeholder="Color" aria-label="Color" />
             </div>
 
-            <div class="lfm-grid lfm-grid-3">
+            <div class="lfm-grid lfm-grid-2">
               <input name="last4" type="text" maxlength="4" inputmode="numeric" placeholder="Last 4" aria-label="Last 4" />
               <input name="phone" type="text" inputmode="tel" placeholder="Full phone" aria-label="Full phone" />
-              <div class="lfm-actions">
-                <button class="lfm-button lfm-button-primary" type="submit">Add disc</button>
-              </div>
+            </div>
+
+            <div class="lfm-actions">
+              <button class="lfm-button lfm-button-primary" type="submit">Add disc</button>
             </div>
           </form>
 
@@ -505,22 +648,26 @@ const messageText =
           </div>
 
           <div class="lfm-table-wrap">
-            <table>
+            <table class="lfm-table">
+              <colgroup>
+                <col class="col-name" />
+                <col class="col-disc" />
+                <col class="col-color" />
+                <col class="col-phone" />
+                <col class="col-actions" />
+              </colgroup>
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Deadline</th>
                   <th>Name</th>
                   <th>Disc</th>
                   <th>Color</th>
-                  <th>Last 4</th>
-                  <th>Full Phone</th>
-                  <th>Actions</th>
+                  <th>Phone</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody id="lfmInventoryBody">
                 <tr>
-                  <td class="lfm-empty" colspan="8">Locked.</td>
+                  <td class="lfm-empty" colspan="5">Loading…</td>
                 </tr>
               </tbody>
             </table>
@@ -531,32 +678,62 @@ const messageText =
           <div class="lfm-section-head">
             <div>
               <h2>Returned discs</h2>
-              <p class="lfm-muted">Use Restore if one was marked returned by mistake.</p>
+              <p class="lfm-muted">Open a disc to restore it or edit it.</p>
             </div>
           </div>
 
           <div class="lfm-table-wrap">
-            <table>
+            <table class="lfm-table">
+              <colgroup>
+                <col class="col-name" />
+                <col class="col-disc" />
+                <col class="col-color" />
+                <col class="col-phone" />
+                <col class="col-actions" />
+              </colgroup>
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Deadline</th>
                   <th>Name</th>
                   <th>Disc</th>
                   <th>Color</th>
-                  <th>Last 4</th>
-                  <th>Full Phone</th>
-                  <th>Actions</th>
+                  <th>Phone</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody id="lfmReturnedBody">
                 <tr>
-                  <td class="lfm-empty" colspan="8">Hidden.</td>
+                  <td class="lfm-empty" colspan="5">Hidden.</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </section>
+      </div>
+
+      <div id="lfmModalLayer" class="lfm-modal-layer" hidden>
+        <div class="lfm-modal-backdrop" data-close-modal></div>
+
+        <div class="lfm-modal-card" role="dialog" aria-modal="true" aria-labelledby="lfmModalTitle">
+          <div class="lfm-modal-head">
+            <h2 id="lfmModalTitle">Edit disc</h2>
+            <button id="lfmModalClose" class="lfm-modal-close" type="button" aria-label="Close edit dialog">×</button>
+          </div>
+
+          <form id="lfmEditForm" class="lfm-modal-grid" autocomplete="off">
+            <input id="lfmEditDate" name="date" type="date" required aria-label="Date found" placeholder="Date found" />
+            <input id="lfmEditName" name="name" type="text" placeholder="Name" aria-label="Name" />
+            <input id="lfmEditDisc" name="disc" type="text" placeholder="Disc" aria-label="Disc" required />
+            <input id="lfmEditColor" name="color" type="text" placeholder="Color" aria-label="Color" />
+            <input id="lfmEditLast4" name="last4" type="text" maxlength="4" inputmode="numeric" placeholder="Last 4" aria-label="Last 4" />
+            <input id="lfmEditPhone" name="phone" type="text" inputmode="tel" placeholder="Full phone" aria-label="Full phone" />
+          </form>
+
+          <div class="lfm-modal-actions">
+            <button id="lfmSaveEdit" class="lfm-button lfm-button-primary" type="button">Save changes</button>
+            <button id="lfmSecondaryEditAction" class="lfm-button" type="button">Mark returned</button>
+            <button id="lfmCancelEdit" class="lfm-button lfm-button-light" type="button">Cancel</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -576,12 +753,27 @@ const messageText =
     const toggleReturnedButton = document.getElementById("lfmToggleReturned");
     const dateInput = document.getElementById("lfmDate");
 
+    const modalLayer = document.getElementById("lfmModalLayer");
+    const modalClose = document.getElementById("lfmModalClose");
+    const modalCancel = document.getElementById("lfmCancelEdit");
+    const modalTitle = document.getElementById("lfmModalTitle");
+    const editForm = document.getElementById("lfmEditForm");
+    const editDate = document.getElementById("lfmEditDate");
+    const editName = document.getElementById("lfmEditName");
+    const editDisc = document.getElementById("lfmEditDisc");
+    const editColor = document.getElementById("lfmEditColor");
+    const editLast4 = document.getElementById("lfmEditLast4");
+    const editPhone = document.getElementById("lfmEditPhone");
+    const saveEditButton = document.getElementById("lfmSaveEdit");
+    const secondaryEditAction = document.getElementById("lfmSecondaryEditAction");
+
     const state = {
       password: "",
       activeRecords: [],
       returnedRecords: [],
       returnedLoaded: false,
       returnedVisible: false,
+      editing: null,
     };
 
     function escapeHtml(value) {
@@ -630,6 +822,16 @@ const messageText =
       return Number.isNaN(direct.getTime()) ? null : direct;
     }
 
+    function toInputDate(value) {
+      const parsed = parseDisplayDate(value);
+      if (!parsed) return "";
+
+      const y = parsed.getFullYear();
+      const m = String(parsed.getMonth() + 1).padStart(2, "0");
+      const d = String(parsed.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
     function sortDateValue(value) {
       const parsed = parseDisplayDate(value);
       return parsed ? parsed.getTime() : Number.MAX_SAFE_INTEGER;
@@ -650,39 +852,17 @@ const messageText =
       return `sms:${cleaned}${separator}body=${encodeURIComponent(messageText)}`;
     }
 
-    async function copyText(text) {
-      try {
-        if (navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(text);
-          return true;
-        }
-      } catch {}
-
-      try {
-        const temp = document.createElement("textarea");
-        temp.value = text;
-        temp.setAttribute("readonly", "");
-        temp.style.position = "absolute";
-        temp.style.left = "-9999px";
-        document.body.appendChild(temp);
-        temp.select();
-        const ok = document.execCommand("copy");
-        temp.remove();
-        return ok;
-      } catch {
-        return false;
-      }
-    }
-
     function jsonp(params) {
       return new Promise((resolve, reject) => {
         const callbackName = `__lfm_cb_${Date.now()}_${Math.random().toString(36).slice(2)}`;
         const url = new URL(apiUrl);
+
         Object.entries(params || {}).forEach(([key, value]) => {
           if (value !== undefined && value !== null && String(value) !== "") {
             url.searchParams.set(key, String(value));
           }
         });
+
         url.searchParams.set("callback", callbackName);
 
         const script = document.createElement("script");
@@ -726,7 +906,7 @@ const messageText =
       if (!sortedRows.length) {
         target.innerHTML = `
           <tr>
-            <td class="lfm-empty" colspan="8">${mode === "returned" ? "No returned discs found." : "No active discs found."}</td>
+            <td class="lfm-empty" colspan="5">${mode === "returned" ? "No returned discs found." : "No active discs found."}</td>
           </tr>
         `;
         return;
@@ -735,62 +915,26 @@ const messageText =
       target.innerHTML = sortedRows
         .map((row) => {
           const hasPhone = String(row.phone ?? "").trim() !== "";
-          const phoneLabel = hasPhone ? escapeHtml(formatPhone(row.phone)) : "—";
           const phoneHtml = hasPhone
-            ? `
-              <span class="lfm-phone-cell">
-                <a class="lfm-phone-link" href="${escapeHtml(getSmsHref(row.phone))}">
-                  ${phoneLabel}
-                </a>
-                <button
-                  class="lfm-icon-button"
-                  type="button"
-                  data-copy-message="1"
-                  aria-label="Copy message text"
-                  title="Copy message text"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <rect x="9" y="9" width="11" height="11" rx="2"></rect>
-                    <path d="M5 15V6a2 2 0 0 1 2-2h9"></path>
-                  </svg>
-                </button>
-              </span>
-            `
+            ? `<a class="lfm-phone-link" href="${escapeHtml(getSmsHref(row.phone))}">${escapeHtml(formatPhone(row.phone))}</a>`
             : "—";
-
-          const actionButton =
-            mode === "returned"
-              ? `
-                <button
-                  class="lfm-button lfm-button-restore"
-                  type="button"
-                  data-restore-row="${Number(row.rowNumber)}"
-                >
-                  Restore
-                </button>
-              `
-              : `
-                <button
-                  class="lfm-button lfm-button-danger"
-                  type="button"
-                  data-return-row="${Number(row.rowNumber)}"
-                >
-                  Returned
-                </button>
-              `;
 
           return `
             <tr>
-              <td>${escapeHtml(row.date || "")}</td>
-              <td>${escapeHtml(row.deadline || "")}</td>
               <td>${escapeHtml(row.name || "") || "&nbsp;"}</td>
-              <td>${escapeHtml(row.disc || "")}</td>
+              <td>${escapeHtml(row.disc || "") || "&nbsp;"}</td>
               <td>${escapeHtml(row.color || "") || "&nbsp;"}</td>
-              <td>${escapeHtml(row.last4 || "") || "&nbsp;"}</td>
               <td>${phoneHtml}</td>
               <td>
                 <div class="lfm-row-actions">
-                  ${actionButton}
+                  <button
+                    class="lfm-button"
+                    type="button"
+                    data-edit-row="${Number(row.rowNumber)}"
+                    data-mode="${mode}"
+                  >
+                    Edit
+                  </button>
                 </div>
               </td>
             </tr>
@@ -833,6 +977,13 @@ const messageText =
       renderTables();
     }
 
+    async function refreshAfterChange() {
+      await loadActiveInventory();
+      if (state.returnedVisible || state.returnedLoaded) {
+        await loadReturnedInventory();
+      }
+    }
+
     async function unlock(password, { remember = true } = {}) {
       const trimmed = String(password || "");
       if (!trimmed) {
@@ -840,7 +991,6 @@ const messageText =
       }
 
       state.password = trimmed;
-      setStatus(loginStatus, "Unlocking…");
       await loadActiveInventory();
 
       if (remember) {
@@ -859,23 +1009,105 @@ const messageText =
       );
     }
 
+    function showLogin(message = "", type = "") {
+      appWrap.hidden = true;
+      loginCard.hidden = false;
+      if (passwordInput) passwordInput.value = "";
+      setStatus(loginStatus, message, type);
+    }
+
+    function getRecordByRow(rowNumber, mode) {
+      const source = mode === "returned" ? state.returnedRecords : state.activeRecords;
+      return source.find((row) => Number(row.rowNumber) === Number(rowNumber)) || null;
+    }
+
+    function openEditModal(row, mode) {
+      if (!row) return;
+
+      state.editing = {
+        rowNumber: Number(row.rowNumber),
+        mode,
+      };
+
+      modalTitle.textContent = mode === "returned" ? "Edit returned disc" : "Edit disc";
+      editDate.value = toInputDate(row.date) || todayIso();
+      editName.value = row.name || "";
+      editDisc.value = row.disc || "";
+      editColor.value = row.color || "";
+      editLast4.value = row.last4 || "";
+      editPhone.value = row.phone || "";
+
+      if (mode === "returned") {
+        secondaryEditAction.textContent = "Restore";
+        secondaryEditAction.className = "lfm-button lfm-button-restore";
+      } else {
+        secondaryEditAction.textContent = "Mark returned";
+        secondaryEditAction.className = "lfm-button lfm-button-danger";
+      }
+
+      modalLayer.hidden = false;
+      document.body.style.overflow = "hidden";
+      window.setTimeout(() => editDisc.focus(), 0);
+    }
+
+    function closeEditModal() {
+      modalLayer.hidden = true;
+      document.body.style.overflow = "";
+      state.editing = null;
+      editForm.reset();
+    }
+
+    function getEditPayload() {
+      return {
+        rowNumber: state.editing?.rowNumber,
+        date: toSheetDate(editDate.value),
+        name: editName.value,
+        disc: editDisc.value,
+        color: editColor.value,
+        last4: editLast4.value,
+        phone: editPhone.value,
+      };
+    }
+
+    async function saveEdit(returnedOverride) {
+      if (!state.editing) return;
+
+      const payload = {
+        action: "update",
+        password: state.password,
+        ...getEditPayload(),
+      };
+
+      if (returnedOverride === true) payload.returned = "true";
+      if (returnedOverride === false) payload.returned = "false";
+
+      const response = await jsonp(payload);
+
+      if (!response?.ok) {
+        throw new Error(response?.error || "Unable to save changes.");
+      }
+
+      await refreshAfterChange();
+      closeEditModal();
+    }
+
     unlockForm?.addEventListener("submit", async (event) => {
       event.preventDefault();
 
       try {
+        setStatus(loginStatus, "Unlocking…");
         await unlock(passwordInput?.value || "");
       } catch (error) {
         try {
           localStorage.removeItem(PASSWORD_KEY);
         } catch {}
         state.password = "";
-        setStatus(loginStatus, error?.message || "Unable to unlock.", "error");
+        showLogin(error?.message || "Unable to unlock.", "error");
       }
     });
 
     addForm?.addEventListener("submit", async (event) => {
       event.preventDefault();
-
       const formData = new FormData(addForm);
 
       try {
@@ -898,96 +1130,28 @@ const messageText =
 
         addForm.reset();
         if (dateInput) dateInput.value = todayIso();
-        await loadActiveInventory();
-        if (state.returnedVisible || state.returnedLoaded) {
-          await loadReturnedInventory();
-        }
+        await refreshAfterChange();
         setStatus(appStatus, "Disc added.", "success");
       } catch (error) {
         setStatus(appStatus, error?.message || "Unable to add disc.", "error");
       }
     });
 
-    async function handleReturn(rowNumber) {
-      const confirmed = window.confirm("Mark this disc as returned?");
-      if (!confirmed) return;
+    function handleEditClick(event, mode) {
+      const button = event.target.closest("[data-edit-row]");
+      if (!button) return;
 
-      setStatus(appStatus, "Marking disc returned…");
-
-      const payload = await jsonp({
-        action: "markReturned",
-        password: state.password,
-        rowNumber,
-      });
-
-      if (!payload?.ok) {
-        throw new Error(payload?.error || "Unable to mark disc returned.");
-      }
-
-      await loadActiveInventory();
-      if (state.returnedVisible || state.returnedLoaded) {
-        await loadReturnedInventory();
-      }
-      setStatus(appStatus, "Disc marked returned.", "success");
+      const rowNumber = Number(button.getAttribute("data-edit-row"));
+      const row = getRecordByRow(rowNumber, mode);
+      openEditModal(row, mode);
     }
 
-    async function handleRestore(rowNumber) {
-      const confirmed = window.confirm("Restore this disc to active inventory?");
-      if (!confirmed) return;
-
-      setStatus(appStatus, "Restoring disc…");
-
-      const payload = await jsonp({
-        action: "restore",
-        password: state.password,
-        rowNumber,
-      });
-
-      if (!payload?.ok) {
-        throw new Error(payload?.error || "Unable to restore disc.");
-      }
-
-      await loadActiveInventory();
-      if (state.returnedVisible || state.returnedLoaded) {
-        await loadReturnedInventory();
-      }
-      setStatus(appStatus, "Disc restored.", "success");
-    }
-
-    inventoryBody?.addEventListener("click", async (event) => {
-      const copyButton = event.target.closest("[data-copy-message]");
-      if (copyButton) {
-        const ok = await copyText(messageText);
-        setStatus(appStatus, ok ? "Message copied." : "Unable to copy message.", ok ? "success" : "error");
-        return;
-      }
-
-      const returnButton = event.target.closest("[data-return-row]");
-      if (!returnButton) return;
-
-      try {
-        await handleReturn(Number(returnButton.getAttribute("data-return-row")));
-      } catch (error) {
-        setStatus(appStatus, error?.message || "Unable to mark disc returned.", "error");
-      }
+    inventoryBody?.addEventListener("click", (event) => {
+      handleEditClick(event, "active");
     });
 
-    returnedBody?.addEventListener("click", async (event) => {
-      const copyButton = event.target.closest("[data-copy-message]");
-      if (copyButton) {
-        const ok = await copyText(messageText);
-        setStatus(appStatus, ok ? "Message copied." : "Unable to copy message.", ok ? "success" : "error");
-        return;
-      }
-
-      const restoreButton = event.target.closest("[data-restore-row]");
-      if (!restoreButton) return;
-
-      try {
-        await handleRestore(Number(restoreButton.getAttribute("data-restore-row")));
-      } catch (error) {
-        setStatus(appStatus, error?.message || "Unable to restore disc.", "error");
-      }
+    returnedBody?.addEventListener("click", (event) => {
+      handleEditClick(event, "returned");
     });
 
     toggleReturnedButton?.addEventListener("click", async () => {
@@ -1009,21 +1173,63 @@ const messageText =
       }
     });
 
+    saveEditButton?.addEventListener("click", async () => {
+      try {
+        setStatus(appStatus, "Saving changes…");
+        await saveEdit(undefined);
+        setStatus(appStatus, "Changes saved.", "success");
+      } catch (error) {
+        setStatus(appStatus, error?.message || "Unable to save changes.", "error");
+      }
+    });
+
+    secondaryEditAction?.addEventListener("click", async () => {
+      if (!state.editing) return;
+
+      try {
+        const makeReturned = state.editing.mode === "active";
+        setStatus(appStatus, makeReturned ? "Saving and marking returned…" : "Saving and restoring…");
+        await saveEdit(makeReturned ? true : false);
+        setStatus(appStatus, makeReturned ? "Disc marked returned." : "Disc restored.", "success");
+      } catch (error) {
+        setStatus(appStatus, error?.message || "Unable to update disc.", "error");
+      }
+    });
+
+    modalClose?.addEventListener("click", closeEditModal);
+    modalCancel?.addEventListener("click", closeEditModal);
+    modalLayer?.addEventListener("click", (event) => {
+      if (event.target.closest("[data-close-modal]")) {
+        closeEditModal();
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !modalLayer.hidden) {
+        closeEditModal();
+      }
+    });
+
     if (dateInput) {
       dateInput.value = todayIso();
     }
 
     try {
       const savedPassword = localStorage.getItem(PASSWORD_KEY);
+
       if (savedPassword) {
         unlock(savedPassword, { remember: false }).catch((error) => {
           try {
             localStorage.removeItem(PASSWORD_KEY);
           } catch {}
           state.password = "";
-          setStatus(loginStatus, error?.message || "Unable to unlock.", "error");
+          showLogin(error?.message || "Unable to unlock.", "error");
         });
+      } else {
+        showLogin();
       }
-    } catch {}
+    } catch {
+      showLogin();
+    }
   </script>
 </SiteLayout>
