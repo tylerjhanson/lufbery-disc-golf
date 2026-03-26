@@ -289,6 +289,36 @@ const messageText =
       border-top-right-radius: 14px;
     }
 
+    .lost-found-manager-page .lfm-th-button {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      cursor: pointer;
+      text-transform: inherit;
+      letter-spacing: inherit;
+      line-height: inherit;
+    }
+
+    .lost-found-manager-page .lfm-th-button:hover {
+      color: var(--text);
+    }
+
+    .lost-found-manager-page .lfm-sort-indicator {
+      color: var(--muted);
+      font-size: 0.66rem;
+      line-height: 1;
+      min-width: 0.8em;
+      text-align: right;
+      flex: 0 0 auto;
+    }
+
     .lost-found-manager-page table.lfm-table tbody td {
       padding: 8px 5px;
       border-bottom: 1px solid var(--line-soft);
@@ -572,6 +602,10 @@ const messageText =
         padding-left: 0 !important;
       }
 
+      .lost-found-manager-page .lfm-sort-indicator {
+        font-size: 0.56rem !important;
+      }
+
       .lost-found-manager-page table.lfm-table tbody td {
         font-size: 0.76rem !important;
         padding: 6px 2px !important;
@@ -621,6 +655,10 @@ const messageText =
       .lost-found-manager-page table.lfm-table thead th {
         font-size: 0.54rem !important;
         padding: 5px 2px !important;
+      }
+
+      .lost-found-manager-page .lfm-sort-indicator {
+        font-size: 0.52rem !important;
       }
 
       .lost-found-manager-page table.lfm-table tbody td {
@@ -696,10 +734,30 @@ const messageText =
               </colgroup>
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Disc</th>
-                  <th>Color</th>
-                  <th>Phone</th>
+                  <th>
+                    <button class="lfm-th-button" type="button" data-sort-table="active" data-sort-index="0">
+                      <span>Name</span>
+                      <span class="lfm-sort-indicator" data-sort-indicator="active-0"></span>
+                    </button>
+                  </th>
+                  <th>
+                    <button class="lfm-th-button" type="button" data-sort-table="active" data-sort-index="1">
+                      <span>Disc</span>
+                      <span class="lfm-sort-indicator" data-sort-indicator="active-1"></span>
+                    </button>
+                  </th>
+                  <th>
+                    <button class="lfm-th-button" type="button" data-sort-table="active" data-sort-index="2">
+                      <span>Color</span>
+                      <span class="lfm-sort-indicator" data-sort-indicator="active-2"></span>
+                    </button>
+                  </th>
+                  <th>
+                    <button class="lfm-th-button" type="button" data-sort-table="active" data-sort-index="3">
+                      <span>Phone</span>
+                      <span class="lfm-sort-indicator" data-sort-indicator="active-3"></span>
+                    </button>
+                  </th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -731,10 +789,30 @@ const messageText =
               </colgroup>
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Disc</th>
-                  <th>Color</th>
-                  <th>Phone</th>
+                  <th>
+                    <button class="lfm-th-button" type="button" data-sort-table="returned" data-sort-index="0">
+                      <span>Name</span>
+                      <span class="lfm-sort-indicator" data-sort-indicator="returned-0"></span>
+                    </button>
+                  </th>
+                  <th>
+                    <button class="lfm-th-button" type="button" data-sort-table="returned" data-sort-index="1">
+                      <span>Disc</span>
+                      <span class="lfm-sort-indicator" data-sort-indicator="returned-1"></span>
+                    </button>
+                  </th>
+                  <th>
+                    <button class="lfm-th-button" type="button" data-sort-table="returned" data-sort-index="2">
+                      <span>Color</span>
+                      <span class="lfm-sort-indicator" data-sort-indicator="returned-2"></span>
+                    </button>
+                  </th>
+                  <th>
+                    <button class="lfm-th-button" type="button" data-sort-table="returned" data-sort-index="3">
+                      <span>Phone</span>
+                      <span class="lfm-sort-indicator" data-sort-indicator="returned-3"></span>
+                    </button>
+                  </th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -809,6 +887,10 @@ const messageText =
       returnedLoaded: false,
       returnedVisible: false,
       editing: null,
+      sorts: {
+        active: { index: 0, dir: "asc" },
+        returned: { index: 0, dir: "asc" },
+      },
     };
 
     function escapeHtml(value) {
@@ -824,21 +906,6 @@ const messageText =
       if (!target) return;
       target.textContent = message || "";
       target.className = `lfm-status${type ? ` is-${type}` : ""}`;
-    }
-
-    function todayIso() {
-      const now = new Date();
-      const y = now.getFullYear();
-      const m = String(now.getMonth() + 1).padStart(2, "0");
-      const d = String(now.getDate()).padStart(2, "0");
-      return `${y}-${m}-${d}`;
-    }
-
-    function toSheetDate(value) {
-      if (!value) return "";
-      const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
-      if (!match) return String(value);
-      return `${Number(match[2])}/${Number(match[3])}/${match[1]}`;
     }
 
     function parseDisplayDate(value) {
@@ -867,9 +934,11 @@ const messageText =
       return `${y}-${m}-${d}`;
     }
 
-    function sortDateValue(value) {
-      const parsed = parseDisplayDate(value);
-      return parsed ? parsed.getTime() : Number.MAX_SAFE_INTEGER;
+    function toSheetDate(value) {
+      if (!value) return "";
+      const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!match) return String(value);
+      return `${Number(match[2])}/${Number(match[3])}/${match[1]}`;
     }
 
     function normalizePhone(value) {
@@ -887,56 +956,66 @@ const messageText =
       return `sms:${cleaned}${separator}body=${encodeURIComponent(messageText)}`;
     }
 
-    function jsonp(params) {
-      return new Promise((resolve, reject) => {
-        const callbackName = `__lfm_cb_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-        const url = new URL(apiUrl);
+    function getSortValue(row, index) {
+      switch (index) {
+        case 0:
+          return String(row.name ?? "").trim().toLowerCase();
+        case 1:
+          return String(row.disc ?? "").trim().toLowerCase();
+        case 2:
+          return String(row.color ?? "").trim().toLowerCase();
+        case 3:
+          return String(row.phone ?? "").replace(/[^\d]/g, "");
+        default:
+          return "";
+      }
+    }
 
-        Object.entries(params || {}).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && String(value) !== "") {
-            url.searchParams.set(key, String(value));
-          }
-        });
+    function compareRows(a, b, tableName) {
+      const sort = state.sorts[tableName];
+      const left = getSortValue(a, sort.index);
+      const right = getSortValue(b, sort.index);
 
-        url.searchParams.set("callback", callbackName);
+      const leftEmpty = left === "";
+      const rightEmpty = right === "";
 
-        const script = document.createElement("script");
-        const timeout = window.setTimeout(() => {
-          cleanup();
-          reject(new Error("Request timed out."));
-        }, 15000);
+      if (leftEmpty && rightEmpty) return 0;
+      if (leftEmpty) return 1;
+      if (rightEmpty) return -1;
 
-        function cleanup() {
-          window.clearTimeout(timeout);
-          if (script.parentNode) script.parentNode.removeChild(script);
-          try {
-            delete window[callbackName];
-          } catch {
-            window[callbackName] = undefined;
-          }
+      let comparison = 0;
+
+      if (sort.index === 3) {
+        comparison = left.localeCompare(right, undefined, { numeric: true, sensitivity: "base" });
+      } else {
+        comparison = left.localeCompare(right, undefined, { sensitivity: "base" });
+      }
+
+      return sort.dir === "asc" ? comparison : -comparison;
+    }
+
+    function sortRows(rows, tableName) {
+      return [...rows].sort((a, b) => compareRows(a, b, tableName));
+    }
+
+    function updateSortIndicators() {
+      document.querySelectorAll("[data-sort-indicator]").forEach((el) => {
+        const key = el.getAttribute("data-sort-indicator") || "";
+        const [tableName, indexText] = key.split("-");
+        const index = Number(indexText);
+        const sort = state.sorts[tableName];
+
+        if (!sort || sort.index !== index) {
+          el.textContent = "";
+          return;
         }
 
-        window[callbackName] = (payload) => {
-          cleanup();
-          resolve(payload);
-        };
-
-        script.onerror = () => {
-          cleanup();
-          reject(new Error("Unable to reach the manager service."));
-        };
-
-        script.src = url.toString();
-        document.body.appendChild(script);
+        el.textContent = sort.dir === "asc" ? "▲" : "▼";
       });
     }
 
     function renderRows(target, rows, mode) {
-      const sortedRows = [...rows].sort((a, b) => {
-        const deadlineDiff = sortDateValue(a.deadline) - sortDateValue(b.deadline);
-        if (deadlineDiff !== 0) return deadlineDiff;
-        return sortDateValue(b.date) - sortDateValue(a.date);
-      });
+      const sortedRows = sortRows(rows, mode);
 
       if (!sortedRows.length) {
         target.innerHTML = `
@@ -981,6 +1060,64 @@ const messageText =
     function renderTables() {
       renderRows(inventoryBody, state.activeRecords, "active");
       renderRows(returnedBody, state.returnedRecords, "returned");
+      updateSortIndicators();
+    }
+
+    function handleSort(tableName, index) {
+      const current = state.sorts[tableName];
+
+      if (current.index === index) {
+        current.dir = current.dir === "asc" ? "desc" : "asc";
+      } else {
+        current.index = index;
+        current.dir = "asc";
+      }
+
+      renderTables();
+    }
+
+    function jsonp(params) {
+      return new Promise((resolve, reject) => {
+        const callbackName = `__lfm_cb_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        const url = new URL(apiUrl);
+
+        Object.entries(params || {}).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && String(value) !== "") {
+            url.searchParams.set(key, String(value));
+          }
+        });
+
+        url.searchParams.set("callback", callbackName);
+
+        const script = document.createElement("script");
+        const timeout = window.setTimeout(() => {
+          cleanup();
+          reject(new Error("Request timed out."));
+        }, 15000);
+
+        function cleanup() {
+          window.clearTimeout(timeout);
+          if (script.parentNode) script.parentNode.removeChild(script);
+          try {
+            delete window[callbackName];
+          } catch {
+            window[callbackName] = undefined;
+          }
+        }
+
+        window[callbackName] = (payload) => {
+          cleanup();
+          resolve(payload);
+        };
+
+        script.onerror = () => {
+          cleanup();
+          reject(new Error("Unable to reach the manager service."));
+        };
+
+        script.src = url.toString();
+        document.body.appendChild(script);
+      });
     }
 
     async function loadActiveInventory() {
@@ -1061,7 +1198,7 @@ const messageText =
       };
 
       modalTitle.textContent = mode === "returned" ? "Edit returned disc" : "Edit disc";
-      editDate.value = toInputDate(row.date) || todayIso();
+      editDate.value = toInputDate(row.date) || "";
       editName.value = row.name || "";
       editDisc.value = row.disc || "";
       editColor.value = row.color || "";
@@ -1135,43 +1272,43 @@ const messageText =
     });
 
     addForm?.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const formData = new FormData(addForm);
-  const submittedPhone = String(formData.get("phone") || "").trim();
+      event.preventDefault();
+      const formData = new FormData(addForm);
+      const submittedPhone = String(formData.get("phone") || "").trim();
 
-  try {
-    setStatus(appStatus, "Adding disc…");
+      try {
+        setStatus(appStatus, "Adding disc…");
 
-    const payload = await jsonp({
-      action: "add",
-      password: state.password,
-      name: formData.get("name"),
-      disc: formData.get("disc"),
-      color: formData.get("color"),
-      phone: submittedPhone,
-    });
+        const payload = await jsonp({
+          action: "add",
+          password: state.password,
+          name: formData.get("name"),
+          disc: formData.get("disc"),
+          color: formData.get("color"),
+          phone: submittedPhone,
+        });
 
-    if (!payload?.ok) {
-      throw new Error(payload?.error || "Unable to add disc.");
-    }
+        if (!payload?.ok) {
+          throw new Error(payload?.error || "Unable to add disc.");
+        }
 
-    addForm.reset();
-    await refreshAfterChange();
-    setStatus(appStatus, "Disc added.", "success");
+        addForm.reset();
+        await refreshAfterChange();
+        setStatus(appStatus, "Disc added.", "success");
 
-    if (submittedPhone) {
-      const shouldText = window.confirm(
-        "Disc added. Would you like to text the owner now?"
-      );
+        if (submittedPhone) {
+          const shouldText = window.confirm(
+            "Disc added. Would you like to text the owner now?"
+          );
 
-      if (shouldText) {
-        window.location.href = getSmsHref(submittedPhone);
+          if (shouldText) {
+            window.location.href = getSmsHref(submittedPhone);
+          }
+        }
+      } catch (error) {
+        setStatus(appStatus, error?.message || "Unable to add disc.", "error");
       }
-    }
-  } catch (error) {
-    setStatus(appStatus, error?.message || "Unable to add disc.", "error");
-  }
-});
+    });
 
     function handleEditClick(event, mode) {
       const button = event.target.closest("[data-edit-row]");
@@ -1188,6 +1325,17 @@ const messageText =
 
     returnedBody?.addEventListener("click", (event) => {
       handleEditClick(event, "returned");
+    });
+
+    document.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-sort-table][data-sort-index]");
+      if (!button) return;
+
+      const tableName = button.getAttribute("data-sort-table");
+      const index = Number(button.getAttribute("data-sort-index"));
+
+      if (!tableName || Number.isNaN(index)) return;
+      handleSort(tableName, index);
     });
 
     toggleReturnedButton?.addEventListener("click", async () => {
@@ -1223,9 +1371,12 @@ const messageText =
 
       try {
         const makeReturned = state.editing.mode === "active";
+        const successMessage = makeReturned ? "Disc marked returned." : "Disc restored.";
+
         setStatus(appStatus, makeReturned ? "Saving and marking returned…" : "Saving and restoring…");
         await saveEdit(makeReturned ? true : false);
-        setStatus(appStatus, makeReturned ? "Disc marked returned." : "Disc restored.", "success");
+        setStatus(appStatus, successMessage, "success");
+        window.alert(successMessage);
       } catch (error) {
         setStatus(appStatus, error?.message || "Unable to update disc.", "error");
       }
