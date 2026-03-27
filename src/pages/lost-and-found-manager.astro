@@ -440,8 +440,55 @@ const messageText =
       margin-top: 14px;
     }
 
+    .lost-found-manager-page .lfm-busy-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: grid;
+      place-items: center;
+      background: rgba(15, 23, 42, 0.42);
+      backdrop-filter: blur(2px);
+      padding: 16px;
+    }
+
+    .lost-found-manager-page .lfm-busy-card {
+      width: min(100%, 320px);
+      background: var(--card);
+      border: 1px solid var(--line-soft);
+      border-radius: 14px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+      padding: 18px 18px 16px;
+      display: grid;
+      gap: 12px;
+      place-items: center;
+      text-align: center;
+    }
+
+    .lost-found-manager-page .lfm-spinner {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      border: 3px solid rgba(37, 99, 235, 0.2);
+      border-top-color: var(--accent);
+      animation: lfm-spin 0.9s linear infinite;
+    }
+
+    .lost-found-manager-page .lfm-busy-text {
+      color: var(--text);
+      font-size: 0.95rem;
+      line-height: 1.4;
+      font-weight: 600;
+    }
+
+    @keyframes lfm-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
     html[data-theme="dark"] .lost-found-manager-page .lfm-card,
-    html[data-theme="dark"] .lost-found-manager-page .lfm-modal-card {
+    html[data-theme="dark"] .lost-found-manager-page .lfm-modal-card,
+    html[data-theme="dark"] .lost-found-manager-page .lfm-busy-card {
       background: var(--card) !important;
       border-color: var(--line-soft) !important;
     }
@@ -498,7 +545,8 @@ const messageText =
 
     @media (prefers-color-scheme: dark) {
       html[data-theme="system"] .lost-found-manager-page .lfm-card,
-      html[data-theme="system"] .lost-found-manager-page .lfm-modal-card {
+      html[data-theme="system"] .lost-found-manager-page .lfm-modal-card,
+      html[data-theme="system"] .lost-found-manager-page .lfm-busy-card {
         background: var(--card) !important;
         border-color: var(--line-soft) !important;
       }
@@ -836,7 +884,6 @@ const messageText =
           </div>
 
           <form id="lfmEditForm" class="lfm-modal-grid" autocomplete="off">
-            <input id="lfmEditDate" name="date" type="date" required aria-label="Date found" placeholder="Date found" />
             <input id="lfmEditName" name="name" type="text" placeholder="Name" aria-label="Name" />
             <input id="lfmEditDisc" name="disc" type="text" placeholder="Disc" aria-label="Disc" required />
             <input id="lfmEditColor" name="color" type="text" placeholder="Color" aria-label="Color" />
@@ -848,6 +895,13 @@ const messageText =
             <button id="lfmSecondaryEditAction" class="lfm-button" type="button">Mark returned</button>
             <button id="lfmCancelEdit" class="lfm-button lfm-button-light" type="button">Cancel</button>
           </div>
+        </div>
+      </div>
+
+      <div id="lfmBusyOverlay" class="lfm-busy-overlay" hidden>
+        <div class="lfm-busy-card">
+          <div class="lfm-spinner" aria-hidden="true"></div>
+          <div id="lfmBusyText" class="lfm-busy-text">Working…</div>
         </div>
       </div>
     </div>
@@ -872,13 +926,15 @@ const messageText =
     const modalCancel = document.getElementById("lfmCancelEdit");
     const modalTitle = document.getElementById("lfmModalTitle");
     const editForm = document.getElementById("lfmEditForm");
-    const editDate = document.getElementById("lfmEditDate");
     const editName = document.getElementById("lfmEditName");
     const editDisc = document.getElementById("lfmEditDisc");
     const editColor = document.getElementById("lfmEditColor");
     const editPhone = document.getElementById("lfmEditPhone");
     const saveEditButton = document.getElementById("lfmSaveEdit");
     const secondaryEditAction = document.getElementById("lfmSecondaryEditAction");
+
+    const busyOverlay = document.getElementById("lfmBusyOverlay");
+    const busyText = document.getElementById("lfmBusyText");
 
     const state = {
       password: "",
@@ -908,6 +964,21 @@ const messageText =
       target.className = `lfm-status${type ? ` is-${type}` : ""}`;
     }
 
+    function setBusy(isBusy, message = "Working…") {
+      if (!busyOverlay || !busyText) return;
+      busyText.textContent = message;
+      busyOverlay.hidden = !isBusy;
+    }
+
+    async function runWithBusy(message, fn) {
+      setBusy(true, message);
+      try {
+        return await fn();
+      } finally {
+        setBusy(false);
+      }
+    }
+
     function parseDisplayDate(value) {
       const text = String(value ?? "").trim();
       if (!text) return null;
@@ -922,23 +993,6 @@ const messageText =
 
       const direct = new Date(text);
       return Number.isNaN(direct.getTime()) ? null : direct;
-    }
-
-    function toInputDate(value) {
-      const parsed = parseDisplayDate(value);
-      if (!parsed) return "";
-
-      const y = parsed.getFullYear();
-      const m = String(parsed.getMonth() + 1).padStart(2, "0");
-      const d = String(parsed.getDate()).padStart(2, "0");
-      return `${y}-${m}-${d}`;
-    }
-
-    function toSheetDate(value) {
-      if (!value) return "";
-      const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
-      if (!match) return String(value);
-      return `${Number(match[2])}/${Number(match[3])}/${match[1]}`;
     }
 
     function normalizePhone(value) {
@@ -1205,7 +1259,6 @@ const messageText =
       };
 
       modalTitle.textContent = mode === "returned" ? "Edit returned disc" : "Edit disc";
-      editDate.value = toInputDate(row.date) || "";
       editName.value = row.name || "";
       editDisc.value = row.disc || "";
       editColor.value = row.color || "";
@@ -1233,7 +1286,6 @@ const messageText =
     function getEditPayload() {
       return {
         rowNumber: state.editing?.rowNumber,
-        date: toSheetDate(editDate.value),
         name: editName.value,
         disc: editDisc.value,
         color: editColor.value,
@@ -1241,10 +1293,8 @@ const messageText =
       };
     }
 
-    async function saveEdit(returnedOverride, options = {}) {
+    async function saveEdit(returnedOverride) {
       if (!state.editing) return;
-
-      const { refreshMode = "await" } = options;
 
       const payload = {
         action: "update",
@@ -1262,14 +1312,6 @@ const messageText =
       }
 
       closeEditModal();
-
-      if (refreshMode === "background") {
-        refreshAfterChange().catch((error) => {
-          setStatus(appStatus, error?.message || "Unable to refresh tables.", "error");
-        });
-        return;
-      }
-
       await refreshAfterChange();
     }
 
@@ -1278,7 +1320,7 @@ const messageText =
 
       try {
         setStatus(loginStatus, "Unlocking…");
-        await unlock(passwordInput?.value || "");
+        await runWithBusy("Unlocking…", () => unlock(passwordInput?.value || ""));
       } catch (error) {
         try {
           localStorage.removeItem(PASSWORD_KEY);
@@ -1294,23 +1336,24 @@ const messageText =
       const submittedPhone = String(formData.get("phone") || "").trim();
 
       try {
-        setStatus(appStatus, "Adding disc…");
+        await runWithBusy("Adding disc…", async () => {
+          const payload = await jsonp({
+            action: "add",
+            password: state.password,
+            name: formData.get("name"),
+            disc: formData.get("disc"),
+            color: formData.get("color"),
+            phone: submittedPhone,
+          });
 
-        const payload = await jsonp({
-          action: "add",
-          password: state.password,
-          name: formData.get("name"),
-          disc: formData.get("disc"),
-          color: formData.get("color"),
-          phone: submittedPhone,
+          if (!payload?.ok) {
+            throw new Error(payload?.error || "Unable to add disc.");
+          }
+
+          addForm.reset();
+          await refreshAfterChange();
         });
 
-        if (!payload?.ok) {
-          throw new Error(payload?.error || "Unable to add disc.");
-        }
-
-        addForm.reset();
-        await refreshAfterChange();
         setStatus(appStatus, "Disc added.", "success");
 
         if (submittedPhone) {
@@ -1362,7 +1405,9 @@ const messageText =
 
       if (state.returnedVisible && !state.returnedLoaded) {
         try {
-          await loadReturnedInventory();
+          await runWithBusy("Loading returned discs…", async () => {
+            await loadReturnedInventory();
+          });
           setStatus(appStatus, "");
         } catch (error) {
           state.returnedVisible = false;
@@ -1375,8 +1420,9 @@ const messageText =
 
     saveEditButton?.addEventListener("click", async () => {
       try {
-        setStatus(appStatus, "Saving changes…");
-        await saveEdit(undefined);
+        await runWithBusy("Saving changes…", async () => {
+          await saveEdit(undefined);
+        });
         setStatus(appStatus, "Changes saved.", "success");
       } catch (error) {
         setStatus(appStatus, error?.message || "Unable to save changes.", "error");
@@ -1390,10 +1436,12 @@ const messageText =
         const makeReturned = state.editing.mode === "active";
         const successMessage = makeReturned ? "Disc marked returned." : "Disc restored.";
 
-        setStatus(appStatus, makeReturned ? "Marking disc returned…" : "Restoring disc…");
-        await saveEdit(makeReturned ? true : false, { refreshMode: "background" });
+        await runWithBusy(makeReturned ? "Marking disc returned…" : "Restoring disc…", async () => {
+          await saveEdit(makeReturned ? true : false);
+        });
+
         setStatus(appStatus, successMessage, "success");
-        window.setTimeout(() => window.alert(successMessage), 0);
+        window.alert(successMessage);
       } catch (error) {
         setStatus(appStatus, error?.message || "Unable to update disc.", "error");
       }
@@ -1417,7 +1465,7 @@ const messageText =
       const savedPassword = localStorage.getItem(PASSWORD_KEY);
 
       if (savedPassword) {
-        unlock(savedPassword, { remember: false }).catch((error) => {
+        runWithBusy("Unlocking…", () => unlock(savedPassword, { remember: false })).catch((error) => {
           try {
             localStorage.removeItem(PASSWORD_KEY);
           } catch {}
