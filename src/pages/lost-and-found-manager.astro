@@ -888,8 +888,8 @@ const messageText =
       returnedVisible: false,
       editing: null,
       sorts: {
-        active: { index: 0, dir: "asc" },
-        returned: { index: 0, dir: "asc" },
+        active: { index: 4, dir: "desc" },
+        returned: { index: 4, dir: "desc" },
       },
     };
 
@@ -966,6 +966,10 @@ const messageText =
           return String(row.color ?? "").trim().toLowerCase();
         case 3:
           return String(row.phone ?? "").replace(/[^\d]/g, "");
+        case 4: {
+          const parsed = parseDisplayDate(row.date);
+          return parsed ? parsed.getTime() : 0;
+        }
         default:
           return "";
       }
@@ -976,8 +980,8 @@ const messageText =
       const left = getSortValue(a, sort.index);
       const right = getSortValue(b, sort.index);
 
-      const leftEmpty = left === "";
-      const rightEmpty = right === "";
+      const leftEmpty = left === "" || left === 0 || left == null;
+      const rightEmpty = right === "" || right === 0 || right == null;
 
       if (leftEmpty && rightEmpty) return 0;
       if (leftEmpty) return 1;
@@ -985,10 +989,13 @@ const messageText =
 
       let comparison = 0;
 
-      if (sort.index === 3) {
-        comparison = left.localeCompare(right, undefined, { numeric: true, sensitivity: "base" });
+      if (typeof left === "number" && typeof right === "number") {
+        comparison = left - right;
       } else {
-        comparison = left.localeCompare(right, undefined, { sensitivity: "base" });
+        comparison = String(left).localeCompare(String(right), undefined, {
+          numeric: true,
+          sensitivity: "base",
+        });
       }
 
       return sort.dir === "asc" ? comparison : -comparison;
@@ -1234,8 +1241,10 @@ const messageText =
       };
     }
 
-    async function saveEdit(returnedOverride) {
+    async function saveEdit(returnedOverride, options = {}) {
       if (!state.editing) return;
+
+      const { refreshMode = "await" } = options;
 
       const payload = {
         action: "update",
@@ -1252,8 +1261,16 @@ const messageText =
         throw new Error(response?.error || "Unable to save changes.");
       }
 
-      await refreshAfterChange();
       closeEditModal();
+
+      if (refreshMode === "background") {
+        refreshAfterChange().catch((error) => {
+          setStatus(appStatus, error?.message || "Unable to refresh tables.", "error");
+        });
+        return;
+      }
+
+      await refreshAfterChange();
     }
 
     unlockForm?.addEventListener("submit", async (event) => {
@@ -1373,10 +1390,10 @@ const messageText =
         const makeReturned = state.editing.mode === "active";
         const successMessage = makeReturned ? "Disc marked returned." : "Disc restored.";
 
-        setStatus(appStatus, makeReturned ? "Saving and marking returned…" : "Saving and restoring…");
-        await saveEdit(makeReturned ? true : false);
+        setStatus(appStatus, makeReturned ? "Marking disc returned…" : "Restoring disc…");
+        await saveEdit(makeReturned ? true : false, { refreshMode: "background" });
         setStatus(appStatus, successMessage, "success");
-        window.alert(successMessage);
+        window.setTimeout(() => window.alert(successMessage), 0);
       } catch (error) {
         setStatus(appStatus, error?.message || "Unable to update disc.", "error");
       }
