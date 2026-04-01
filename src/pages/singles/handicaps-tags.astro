@@ -1,8 +1,10 @@
 ---
 import SiteLayout from "../../layouts/SiteLayout.astro";
-import { getHandicaps } from "../../lib/data";
+import { getHandicaps, getHandicapColumnsUsed } from "../../lib/data";
 
 const rows = getHandicaps();
+const countedColumns = getHandicapColumnsUsed();
+const countedColumnDates = countedColumns.map((column) => column.resolvedDate);
 ---
 
 <SiteLayout title="Handicaps & Tags" showBrandBar={true}>
@@ -318,6 +320,55 @@ const rows = getHandicaps();
       font-weight: 800;
     }
 
+    .round-chart-shell {
+      margin: 0 0 14px;
+      padding: 12px;
+      border: 1px solid var(--line-soft);
+      border-radius: 14px;
+      background: #f8fafc;
+    }
+
+    .round-chart-heading {
+      margin: 0 0 8px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 0.01em;
+      text-transform: uppercase;
+    }
+
+    .round-chart-svg {
+      display: block;
+      width: 100%;
+      height: 160px;
+    }
+
+    .chart-grid {
+      stroke: #e2e8f0;
+      stroke-width: 1;
+    }
+
+    .chart-line {
+      fill: none;
+      stroke: #2563eb;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .chart-dot {
+      fill: #2563eb;
+    }
+
+    .round-chart-axis {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 6px;
+      font-size: 0.72rem;
+      color: #64748b;
+    }
+
     .round-history-table {
       width: 100%;
       border-collapse: collapse;
@@ -460,6 +511,10 @@ const rows = getHandicaps();
         margin-bottom: 10px;
       }
 
+      .round-chart-svg {
+        height: 148px;
+      }
+
       .round-history-table th,
       .round-history-table td {
         font-size: 0.92rem;
@@ -522,7 +577,7 @@ const rows = getHandicaps();
             </button>
           </div>
 
-          <div class="click-note">Click a player name to view most recent five rounds.</div>
+          <div class="click-note">Click a player name to view recent rounds and full history chart.</div>
         </div>
       </div>
 
@@ -565,6 +620,7 @@ const rows = getHandicaps();
                     type="button"
                     data-player={row.name}
                     data-rounds={encodeURIComponent(JSON.stringify(row.recentRounds))}
+                    data-all-rounds={encodeURIComponent(JSON.stringify(row.allRounds))}
                     data-average={row.recentRoundsAverage}
                     data-handicap={row.hcp}
                     data-established={row.handicapEstablished ? "true" : "false"}
@@ -584,6 +640,12 @@ const rows = getHandicaps();
       </div>
     </div>
   </div>
+
+  <div
+    id="handicapColumnsMeta"
+    data-columns={encodeURIComponent(JSON.stringify(countedColumnDates))}
+    hidden
+  ></div>
 
   <div id="roundModal" class="round-modal" hidden>
     <div class="round-modal-backdrop" data-close-modal></div>
@@ -618,6 +680,7 @@ const rows = getHandicaps();
     const playerSearch = document.getElementById("playerSearch");
     const searchWrap = document.getElementById("searchWrap");
     const clearSearch = document.getElementById("clearSearch");
+    const handicapColumnsMeta = document.getElementById("handicapColumnsMeta");
 
     const roundModal = document.getElementById("roundModal");
     const roundModalTitle = document.getElementById("roundModalTitle");
@@ -727,7 +790,105 @@ const rows = getHandicaps();
       return `${numericScore} (${diffText})`;
     }
 
-    function renderRoundModal(playerName, rounds, average, handicap, established) {
+    function getCountedColumns() {
+      if (!handicapColumnsMeta) return [];
+
+      try {
+        return JSON.parse(
+          decodeURIComponent(handicapColumnsMeta.dataset.columns || "[]")
+        );
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function buildRoundChart(rounds) {
+      if (!rounds || !rounds.length) return "";
+
+      const width = 640;
+      const height = 180;
+      const padLeft = 8;
+      const padRight = 8;
+      const padTop = 10;
+      const padBottom = 22;
+
+      const values = rounds
+        .map((round) => Number(round.score))
+        .filter((value) => !Number.isNaN(value));
+
+      if (!values.length) return "";
+
+      let min = Math.floor(Math.min(...values) - 1);
+      let max = Math.ceil(Math.max(...values) + 1);
+
+      if (min === max) {
+        max = min + 1;
+      }
+
+      const innerWidth = width - padLeft - padRight;
+      const innerHeight = height - padTop - padBottom;
+
+      const getX = (index) =>
+        rounds.length === 1
+          ? padLeft + innerWidth / 2
+          : padLeft + (index / (rounds.length - 1)) * innerWidth;
+
+      const getY = (value) => padTop + ((max - value) / (max - min)) * innerHeight;
+
+      const linePoints = rounds
+        .map((round, index) => `${getX(index)},${getY(Number(round.score))}`)
+        .join(" ");
+
+      const dots = rounds
+        .map(
+          (round, index) => `
+            <circle
+              class="chart-dot"
+              cx="${getX(index)}"
+              cy="${getY(Number(round.score))}"
+              r="2.5"
+            />
+          `
+        )
+        .join("");
+
+      return `
+        <div class="round-chart-shell">
+          <div class="round-chart-heading">All counted rounds</div>
+
+          <svg
+            class="round-chart-svg"
+            viewBox="0 0 ${width} ${height}"
+            preserveAspectRatio="none"
+            aria-label="Round history chart"
+          >
+            <line
+              x1="${padLeft}"
+              y1="${getY(max)}"
+              x2="${width - padRight}"
+              y2="${getY(max)}"
+              class="chart-grid"
+            />
+            <line
+              x1="${padLeft}"
+              y1="${getY(min)}"
+              x2="${width - padRight}"
+              y2="${getY(min)}"
+              class="chart-grid"
+            />
+            <polyline points="${linePoints}" class="chart-line" />
+            ${dots}
+          </svg>
+
+          <div class="round-chart-axis">
+            <span>${escapeHtml(rounds[0].date)}</span>
+            <span>${escapeHtml(rounds[rounds.length - 1].date)}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderRoundModal(playerName, rounds, allRounds, average, handicap, established) {
       if (!roundModalTitle || !roundModalBody) return;
 
       roundModalTitle.textContent = playerName;
@@ -764,7 +925,14 @@ const rows = getHandicaps();
           ? ""
           : `<p class="round-note">3 rounds are required to establish a handicap.</p>`;
 
+      const countedColumns = getCountedColumns();
+      const countedRange = countedColumns.length
+        ? `${countedColumns[0]} – ${countedColumns[countedColumns.length - 1]}`
+        : "—";
+
       roundModalBody.innerHTML = `
+        ${buildRoundChart(allRounds)}
+
         <table class="round-history-table">
           <thead>
             <tr>
@@ -780,6 +948,7 @@ const rows = getHandicaps();
         <div class="round-summary">
           <div class="round-summary-row">Average: <strong>${averageValue}</strong></div>
           <div class="round-summary-row">Handicap: <strong>${handicapValue}</strong></div>
+          <div class="round-summary-row">Counted dates: <strong>${escapeHtml(countedRange)}</strong></div>
         </div>
 
         ${establishmentNote}
@@ -792,15 +961,24 @@ const rows = getHandicaps();
       lastTrigger = button;
 
       let rounds = [];
+      let allRounds = [];
+
       try {
         rounds = JSON.parse(decodeURIComponent(button.dataset.rounds || "[]"));
       } catch (error) {
         rounds = [];
       }
 
+      try {
+        allRounds = JSON.parse(decodeURIComponent(button.dataset.allRounds || "[]"));
+      } catch (error) {
+        allRounds = [];
+      }
+
       renderRoundModal(
         button.dataset.player || "Recent rounds",
         rounds,
+        allRounds,
         button.dataset.average || "",
         button.dataset.handicap || "",
         button.dataset.established === "true"
