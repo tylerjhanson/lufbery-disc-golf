@@ -699,6 +699,19 @@ function getDerivedSinglesData() {
   return derivedSinglesCache;
 }
 
+export function getHandicapColumnsUsed() {
+  const rows = readCsv("hcp.csv");
+  const dateMap = buildHandicapDateMap(rows);
+
+  return Array.from(dateMap.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([index, resolvedDate]) => ({
+      index,
+      header: String(rows[0][index] || ""),
+      resolvedDate,
+    }));
+}
+
 export function getHandicaps() {
   const rows = readCsv("hcp.csv");
   const dateMap = buildHandicapDateMap(rows);
@@ -751,6 +764,7 @@ export function getHandicaps() {
         tag: row[2] || "",
         rounds: row[3] || "",
         best: row[4] || "",
+        allRounds: roundHistory,
         recentRounds: recentRounds.map((round, index) => ({
           ...round,
           dropped: index === droppedIndex,
