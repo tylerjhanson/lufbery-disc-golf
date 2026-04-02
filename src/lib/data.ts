@@ -749,13 +749,13 @@ export function getHandicaps() {
 
       const keptRounds = recentRounds.filter((_, index) => index !== droppedIndex);
 
-      const average =
-        keptRounds.length > 0
-          ? keptRounds.reduce((sum, round) => sum + round.score, 0) /
-            keptRounds.length
+      const allRoundsAverage =
+        roundHistory.length > 0
+          ? roundHistory.reduce((sum, round) => sum + round.score, 0) /
+            roundHistory.length
           : null;
 
-      const averageDisplay = average == null ? "" : average.toFixed(1);
+      const averageDisplay = allRoundsAverage == null ? "" : allRoundsAverage.toFixed(1);
       const handicapValue = String(row[1] || "").trim();
 
       return {
