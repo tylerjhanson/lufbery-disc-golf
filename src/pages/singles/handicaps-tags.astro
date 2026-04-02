@@ -6,7 +6,7 @@ const rows = getHandicaps();
 ---
 
 <SiteLayout title="Handicaps & Tags" showBrandBar={true}>
-  <style>
+  <style is:global>
     :root {
       --bg: #f5f7fb;
       --card: #ffffff;
@@ -364,7 +364,7 @@ const rows = getHandicaps();
 
     .round-summary--after-table {
       margin-top: 2px;
-      margin-bottom: 12px;
+      margin-bottom: 24px;
     }
 
     .round-summary--average {
@@ -382,8 +382,8 @@ const rows = getHandicaps();
     }
 
     .round-chart-shell {
-      margin-top: 2px;
-      padding: 10px 12px 8px;
+      margin-top: 0;
+      padding: 12px 12px 10px;
       border: 1px solid var(--line-soft);
       border-radius: 14px;
       background: var(--header);
@@ -397,8 +397,9 @@ const rows = getHandicaps();
     }
 
     .chart-grid {
-      stroke: var(--line-soft);
+      stroke: var(--line);
       stroke-width: 1;
+      opacity: 0.8;
     }
 
     .chart-axis-label {
@@ -423,7 +424,7 @@ const rows = getHandicaps();
       stroke-linecap: round;
       stroke-linejoin: round;
       stroke-dasharray: 5 5;
-      opacity: 0.45;
+      opacity: 0.5;
       vector-effect: non-scaling-stroke;
     }
 
@@ -795,18 +796,6 @@ const rows = getHandicaps();
     }
 
 
-    function getNiceStep(rawStep) {
-      if (!Number.isFinite(rawStep) || rawStep <= 0) return 1;
-
-      const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
-      const normalized = rawStep / magnitude;
-
-      if (normalized <= 1) return 1 * magnitude;
-      if (normalized <= 2) return 2 * magnitude;
-      if (normalized <= 5) return 5 * magnitude;
-      return 10 * magnitude;
-    }
-
     function buildTrendValues(rounds) {
       if (!rounds || rounds.length < 2) return [];
 
@@ -848,19 +837,15 @@ const rows = getHandicaps();
       const padRight = 8;
       const padBottom = 10;
       const padLeft = 34;
+      const step = 5;
 
-      const rawMin = Math.min(...values);
-      const rawMax = Math.max(...values);
-      const rawRange = Math.max(rawMax - rawMin, 2);
-      const step = getNiceStep(rawRange / 3);
-
-      let chartMin = Math.floor((rawMin - 1) / step) * step;
-      let chartMax = Math.ceil((rawMax + 1) / step) * step;
+      let chartMin = Math.floor((Math.min(...values) - 2) / step) * step;
+      let chartMax = Math.ceil((Math.max(...values) + 2) / step) * step;
 
       if (chartMin === chartMax) chartMax = chartMin + step;
 
       const ticks = [];
-      for (let value = chartMin; value <= chartMax + step * 0.25; value += step) {
+      for (let value = chartMin; value <= chartMax; value += step) {
         ticks.push(value);
       }
 
@@ -916,11 +901,7 @@ const rows = getHandicaps();
             aria-label="Handicap round trend chart"
           >
             ${gridMarkup}
-            ${
-              trendPoints
-                ? `<polyline class="chart-line-trend" points="${trendPoints}" />`
-                : ""
-            }
+            ${trendPoints ? `<polyline class="chart-line-trend" points="${trendPoints}" />` : ""}
             <polyline class="chart-line-player" points="${playerPoints}" />
           </svg>
         </div>
@@ -954,6 +935,12 @@ const rows = getHandicaps();
         `;
 
       const averageValue = average ? escapeHtml(average) : "—";
+      const chartMarkup = allRounds.length
+        ? `
+          <p class="round-section-label">Round history</p>
+          ${buildRoundChart(allRounds)}
+        `
+        : "";
       const handicapValue =
         established && handicap !== ""
           ? escapeHtml(handicap)
@@ -983,7 +970,7 @@ const rows = getHandicaps();
           <div class="round-summary-row">Handicap: <strong>${handicapValue}</strong></div>
         </div>
 
-        ${buildRoundChart(allRounds)}
+        ${chartMarkup}
 
         <div class="round-summary round-summary--average">
           <div class="round-summary-row">Average: <strong>${averageValue}</strong></div>
