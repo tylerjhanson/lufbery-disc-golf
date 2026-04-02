@@ -1,10 +1,8 @@
 ---
 import SiteLayout from "../../layouts/SiteLayout.astro";
-import { getHandicaps, getHandicapColumnsUsed } from "../../lib/data";
+import { getHandicaps } from "../../lib/data";
 
 const rows = getHandicaps();
-const countedColumns = getHandicapColumnsUsed();
-const countedColumnDates = countedColumns.map((column) => column.resolvedDate);
 ---
 
 <SiteLayout title="Handicaps & Tags" showBrandBar={true}>
@@ -89,7 +87,7 @@ const countedColumnDates = countedColumns.map((column) => column.resolvedDate);
       height: 26px;
       border: 1px solid var(--line-soft);
       border-radius: 999px;
-      background: #fff;
+      background: var(--card);
       color: #94a3b8;
       font-size: 0.95rem;
       line-height: 1;
@@ -109,7 +107,7 @@ const countedColumnDates = countedColumns.map((column) => column.resolvedDate);
 
     .search-clear:hover {
       color: var(--text);
-      background: #f8fafc;
+      background: var(--header);
     }
 
     .click-note {
@@ -301,7 +299,7 @@ const countedColumnDates = countedColumns.map((column) => column.resolvedDate);
       height: 36px;
       border: 1px solid var(--line-soft);
       border-radius: 999px;
-      background: #fff;
+      background: var(--card);
       color: var(--muted);
       font-size: 1.15rem;
       line-height: 1;
@@ -310,7 +308,7 @@ const countedColumnDates = countedColumns.map((column) => column.resolvedDate);
 
     .round-modal-close:hover {
       color: var(--text);
-      background: #f8fafc;
+      background: var(--header);
     }
 
     .round-modal-title {
@@ -320,59 +318,18 @@ const countedColumnDates = countedColumns.map((column) => column.resolvedDate);
       font-weight: 800;
     }
 
-    .round-chart-shell {
-      margin: 0 0 14px;
-      padding: 12px;
-      border: 1px solid var(--line-soft);
-      border-radius: 14px;
-      background: #f8fafc;
-    }
-
-    .round-chart-heading {
+    .round-section-label {
       margin: 0 0 8px;
-      font-size: 0.82rem;
-      font-weight: 700;
+      font-size: 0.84rem;
+      font-weight: 800;
+      line-height: 1.2;
       color: var(--muted);
-      letter-spacing: 0.01em;
-      text-transform: uppercase;
-    }
-
-    .round-chart-svg {
-      display: block;
-      width: 100%;
-      height: 160px;
-    }
-
-    .chart-grid {
-      stroke: #e2e8f0;
-      stroke-width: 1;
-    }
-
-    .chart-line {
-      fill: none;
-      stroke: #2563eb;
-      stroke-width: 2.5;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-
-    .chart-dot {
-      fill: #2563eb;
-    }
-
-    .round-chart-axis {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      margin-top: 6px;
-      font-size: 0.72rem;
-      color: #64748b;
     }
 
     .round-history-table {
       width: 100%;
       border-collapse: collapse;
-      margin: 0 0 14px;
+      margin: 0 0 12px;
     }
 
     .round-history-table th,
@@ -401,9 +358,17 @@ const countedColumnDates = countedColumns.map((column) => column.resolvedDate);
     }
 
     .round-summary {
-      margin-top: 8px;
       display: grid;
       gap: 4px;
+    }
+
+    .round-summary--after-table {
+      margin-top: 2px;
+      margin-bottom: 12px;
+    }
+
+    .round-summary--average {
+      margin-top: 10px;
     }
 
     .round-summary-row {
@@ -414,6 +379,52 @@ const countedColumnDates = countedColumns.map((column) => column.resolvedDate);
 
     .round-summary-row strong {
       font-weight: 800;
+    }
+
+    .round-chart-shell {
+      margin-top: 2px;
+      padding: 10px 12px 8px;
+      border: 1px solid var(--line-soft);
+      border-radius: 14px;
+      background: var(--header);
+    }
+
+    .round-chart-svg {
+      display: block;
+      width: 100%;
+      height: 180px;
+      overflow: visible;
+    }
+
+    .chart-grid {
+      stroke: var(--line-soft);
+      stroke-width: 1;
+    }
+
+    .chart-axis-label {
+      fill: var(--muted);
+      font-size: 10px;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+    }
+
+    .chart-line-player {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .chart-line-trend {
+      fill: none;
+      stroke: var(--muted);
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 5 5;
+      opacity: 0.45;
+      vector-effect: non-scaling-stroke;
     }
 
     .round-muted {
@@ -512,7 +523,7 @@ const countedColumnDates = countedColumns.map((column) => column.resolvedDate);
       }
 
       .round-chart-svg {
-        height: 148px;
+        height: 150px;
       }
 
       .round-history-table th,
@@ -577,7 +588,7 @@ const countedColumnDates = countedColumns.map((column) => column.resolvedDate);
             </button>
           </div>
 
-          <div class="click-note">Click a player name to view recent rounds and full history chart.</div>
+          <div class="click-note">Click a player name to view handicap details.</div>
         </div>
       </div>
 
@@ -641,11 +652,6 @@ const countedColumnDates = countedColumns.map((column) => column.resolvedDate);
     </div>
   </div>
 
-  <div
-    id="handicapColumnsMeta"
-    data-columns={encodeURIComponent(JSON.stringify(countedColumnDates))}
-    hidden
-  ></div>
 
   <div id="roundModal" class="round-modal" hidden>
     <div class="round-modal-backdrop" data-close-modal></div>
@@ -680,8 +686,6 @@ const countedColumnDates = countedColumns.map((column) => column.resolvedDate);
     const playerSearch = document.getElementById("playerSearch");
     const searchWrap = document.getElementById("searchWrap");
     const clearSearch = document.getElementById("clearSearch");
-    const handicapColumnsMeta = document.getElementById("handicapColumnsMeta");
-
     const roundModal = document.getElementById("roundModal");
     const roundModalTitle = document.getElementById("roundModalTitle");
     const roundModalBody = document.getElementById("roundModalBody");
@@ -790,27 +794,47 @@ const countedColumnDates = countedColumns.map((column) => column.resolvedDate);
       return `${numericScore} (${diffText})`;
     }
 
-    function getCountedColumns() {
-      if (!handicapColumnsMeta) return [];
 
-      try {
-        return JSON.parse(
-          decodeURIComponent(handicapColumnsMeta.dataset.columns || "[]")
-        );
-      } catch (error) {
-        return [];
-      }
+    function getNiceStep(rawStep) {
+      if (!Number.isFinite(rawStep) || rawStep <= 0) return 1;
+
+      const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+      const normalized = rawStep / magnitude;
+
+      if (normalized <= 1) return 1 * magnitude;
+      if (normalized <= 2) return 2 * magnitude;
+      if (normalized <= 5) return 5 * magnitude;
+      return 10 * magnitude;
+    }
+
+    function buildTrendValues(rounds) {
+      if (!rounds || rounds.length < 2) return [];
+
+      const n = rounds.length;
+      let sumX = 0;
+      let sumY = 0;
+      let sumXY = 0;
+      let sumXX = 0;
+
+      rounds.forEach((round, index) => {
+        const y = Number(round.score);
+        sumX += index;
+        sumY += y;
+        sumXY += index * y;
+        sumXX += index * index;
+      });
+
+      const denominator = n * sumXX - sumX * sumX;
+      if (!denominator) return [];
+
+      const slope = (n * sumXY - sumX * sumY) / denominator;
+      const intercept = (sumY - slope * sumX) / n;
+
+      return rounds.map((_, index) => intercept + slope * index);
     }
 
     function buildRoundChart(rounds) {
       if (!rounds || !rounds.length) return "";
-
-      const width = 640;
-      const height = 180;
-      const padLeft = 8;
-      const padRight = 8;
-      const padTop = 10;
-      const padBottom = 22;
 
       const values = rounds
         .map((round) => Number(round.score))
@@ -818,11 +842,26 @@ const countedColumnDates = countedColumns.map((column) => column.resolvedDate);
 
       if (!values.length) return "";
 
-      let min = Math.floor(Math.min(...values) - 1);
-      let max = Math.ceil(Math.max(...values) + 1);
+      const width = 640;
+      const height = 200;
+      const padTop = 10;
+      const padRight = 8;
+      const padBottom = 10;
+      const padLeft = 34;
 
-      if (min === max) {
-        max = min + 1;
+      const rawMin = Math.min(...values);
+      const rawMax = Math.max(...values);
+      const rawRange = Math.max(rawMax - rawMin, 2);
+      const step = getNiceStep(rawRange / 3);
+
+      let chartMin = Math.floor((rawMin - 1) / step) * step;
+      let chartMax = Math.ceil((rawMax + 1) / step) * step;
+
+      if (chartMin === chartMax) chartMax = chartMin + step;
+
+      const ticks = [];
+      for (let value = chartMin; value <= chartMax + step * 0.25; value += step) {
+        ticks.push(value);
       }
 
       const innerWidth = width - padLeft - padRight;
@@ -833,57 +872,57 @@ const countedColumnDates = countedColumns.map((column) => column.resolvedDate);
           ? padLeft + innerWidth / 2
           : padLeft + (index / (rounds.length - 1)) * innerWidth;
 
-      const getY = (value) => padTop + ((max - value) / (max - min)) * innerHeight;
+      const getY = (value) =>
+        padTop + ((chartMax - value) / (chartMax - chartMin)) * innerHeight;
 
-      const linePoints = rounds
+      const playerPoints = rounds
         .map((round, index) => `${getX(index)},${getY(Number(round.score))}`)
         .join(" ");
 
-      const dots = rounds
-        .map(
-          (round, index) => `
-            <circle
-              class="chart-dot"
-              cx="${getX(index)}"
-              cy="${getY(Number(round.score))}"
-              r="2.5"
+      const trendValues = buildTrendValues(rounds);
+      const trendPoints = trendValues.length
+        ? trendValues
+            .map((value, index) => `${getX(index)},${getY(value)}`)
+            .join(" ")
+        : "";
+
+      const gridMarkup = ticks
+        .map((tick) => {
+          const y = getY(tick);
+          return `
+            <line
+              class="chart-grid"
+              x1="${padLeft}"
+              y1="${y}"
+              x2="${width - padRight}"
+              y2="${y}"
             />
-          `
-        )
+            <text
+              class="chart-axis-label"
+              x="${padLeft - 6}"
+              y="${y + 3}"
+              text-anchor="end"
+            >${Math.round(tick)}</text>
+          `;
+        })
         .join("");
 
       return `
         <div class="round-chart-shell">
-          <div class="round-chart-heading">All counted rounds</div>
-
           <svg
             class="round-chart-svg"
             viewBox="0 0 ${width} ${height}"
             preserveAspectRatio="none"
-            aria-label="Round history chart"
+            aria-label="Handicap round trend chart"
           >
-            <line
-              x1="${padLeft}"
-              y1="${getY(max)}"
-              x2="${width - padRight}"
-              y2="${getY(max)}"
-              class="chart-grid"
-            />
-            <line
-              x1="${padLeft}"
-              y1="${getY(min)}"
-              x2="${width - padRight}"
-              y2="${getY(min)}"
-              class="chart-grid"
-            />
-            <polyline points="${linePoints}" class="chart-line" />
-            ${dots}
+            ${gridMarkup}
+            ${
+              trendPoints
+                ? `<polyline class="chart-line-trend" points="${trendPoints}" />`
+                : ""
+            }
+            <polyline class="chart-line-player" points="${playerPoints}" />
           </svg>
-
-          <div class="round-chart-axis">
-            <span>${escapeHtml(rounds[0].date)}</span>
-            <span>${escapeHtml(rounds[rounds.length - 1].date)}</span>
-          </div>
         </div>
       `;
     }
@@ -897,7 +936,7 @@ const countedColumnDates = countedColumns.map((column) => column.resolvedDate);
         ? rounds
             .map((round) => {
               const droppedStyle = round.dropped
-                ? 'style="text-decoration: line-through; text-decoration-thickness: 1.5px; color: #6b7280;"'
+                ? 'style="text-decoration: line-through; text-decoration-thickness: 1.5px; color: var(--muted);"'
                 : "";
 
               return `
@@ -925,13 +964,8 @@ const countedColumnDates = countedColumns.map((column) => column.resolvedDate);
           ? ""
           : `<p class="round-note">3 rounds are required to establish a handicap.</p>`;
 
-      const countedColumns = getCountedColumns();
-      const countedRange = countedColumns.length
-        ? `${countedColumns[0]} – ${countedColumns[countedColumns.length - 1]}`
-        : "—";
-
       roundModalBody.innerHTML = `
-        ${buildRoundChart(allRounds)}
+        <p class="round-section-label">Rounds counting towards handicap</p>
 
         <table class="round-history-table">
           <thead>
@@ -945,10 +979,14 @@ const countedColumnDates = countedColumns.map((column) => column.resolvedDate);
           </tbody>
         </table>
 
-        <div class="round-summary">
-          <div class="round-summary-row">Average: <strong>${averageValue}</strong></div>
+        <div class="round-summary round-summary--after-table">
           <div class="round-summary-row">Handicap: <strong>${handicapValue}</strong></div>
-          <div class="round-summary-row">Counted dates: <strong>${escapeHtml(countedRange)}</strong></div>
+        </div>
+
+        ${buildRoundChart(allRounds)}
+
+        <div class="round-summary round-summary--average">
+          <div class="round-summary-row">Average: <strong>${averageValue}</strong></div>
         </div>
 
         ${establishmentNote}
