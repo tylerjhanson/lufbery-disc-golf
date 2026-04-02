@@ -128,11 +128,13 @@ const messageText =
     }
 
     .lost-found-manager-page .lfm-button,
-    .lost-found-manager-page .lfm-link-button {
+    .lost-found-manager-page .lfm-link-button,
+    .lost-found-manager-page .lfm-filter-button {
       transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
     }
 
-    .lost-found-manager-page .lfm-button {
+    .lost-found-manager-page .lfm-button,
+    .lost-found-manager-page .lfm-filter-button {
       min-height: 40px;
       padding: 0 14px;
       font-weight: 600;
@@ -143,12 +145,14 @@ const messageText =
       cursor: pointer;
     }
 
-    .lost-found-manager-page .lfm-button:hover {
+    .lost-found-manager-page .lfm-button:hover,
+    .lost-found-manager-page .lfm-filter-button:hover {
       background: #f8fafc;
       border-color: var(--line-soft);
     }
 
-    .lost-found-manager-page .lfm-button:active {
+    .lost-found-manager-page .lfm-button:active,
+    .lost-found-manager-page .lfm-filter-button:active {
       transform: translateY(1px);
     }
 
@@ -185,6 +189,17 @@ const messageText =
       border-color: #86efac;
     }
 
+    .lost-found-manager-page .lfm-button-donated {
+      background: #fff7ed;
+      border-color: #fdba74;
+      color: #9a3412;
+    }
+
+    .lost-found-manager-page .lfm-button-donated:hover {
+      background: #ffedd5;
+      border-color: #fb923c;
+    }
+
     .lost-found-manager-page .lfm-button-light {
       background: #fff;
       color: var(--text);
@@ -204,6 +219,19 @@ const messageText =
 
     .lost-found-manager-page .lfm-link-button:hover {
       text-decoration: underline;
+    }
+
+    .lost-found-manager-page .lfm-filter-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .lost-found-manager-page .lfm-filter-button.is-active {
+      background: #111827;
+      color: #fff;
+      border-color: #111827;
     }
 
     .lost-found-manager-page .lfm-status {
@@ -495,13 +523,15 @@ const messageText =
 
     html[data-theme="dark"] .lost-found-manager-page input,
     html[data-theme="dark"] .lost-found-manager-page .lfm-button,
+    html[data-theme="dark"] .lost-found-manager-page .lfm-filter-button,
     html[data-theme="dark"] .lost-found-manager-page .lfm-modal-close {
       background: #0f172a !important;
       color: var(--text) !important;
       border-color: var(--line) !important;
     }
 
-    html[data-theme="dark"] .lost-found-manager-page .lfm-button-primary {
+    html[data-theme="dark"] .lost-found-manager-page .lfm-button-primary,
+    html[data-theme="dark"] .lost-found-manager-page .lfm-filter-button.is-active {
       background: #e5e7eb !important;
       color: #111827 !important;
       border-color: #e5e7eb !important;
@@ -517,6 +547,12 @@ const messageText =
       background: rgba(20, 83, 45, 0.22) !important;
       border-color: rgba(134, 239, 172, 0.35) !important;
       color: #bbf7d0 !important;
+    }
+
+    html[data-theme="dark"] .lost-found-manager-page .lfm-button-donated {
+      background: rgba(154, 52, 18, 0.22) !important;
+      border-color: rgba(251, 146, 60, 0.35) !important;
+      color: #fdba74 !important;
     }
 
     html[data-theme="dark"] .lost-found-manager-page table.lfm-table thead th {
@@ -553,13 +589,15 @@ const messageText =
 
       html[data-theme="system"] .lost-found-manager-page input,
       html[data-theme="system"] .lost-found-manager-page .lfm-button,
+      html[data-theme="system"] .lost-found-manager-page .lfm-filter-button,
       html[data-theme="system"] .lost-found-manager-page .lfm-modal-close {
         background: #0f172a !important;
         color: var(--text) !important;
         border-color: var(--line) !important;
       }
 
-      html[data-theme="system"] .lost-found-manager-page .lfm-button-primary {
+      html[data-theme="system"] .lost-found-manager-page .lfm-button-primary,
+      html[data-theme="system"] .lost-found-manager-page .lfm-filter-button.is-active {
         background: #e5e7eb !important;
         color: #111827 !important;
         border-color: #e5e7eb !important;
@@ -575,6 +613,12 @@ const messageText =
         background: rgba(20, 83, 45, 0.22) !important;
         border-color: rgba(134, 239, 172, 0.35) !important;
         color: #bbf7d0 !important;
+      }
+
+      html[data-theme="system"] .lost-found-manager-page .lfm-button-donated {
+        background: rgba(154, 52, 18, 0.22) !important;
+        border-color: rgba(251, 146, 60, 0.35) !important;
+        color: #fdba74 !important;
       }
 
       html[data-theme="system"] .lost-found-manager-page table.lfm-table thead th {
@@ -762,13 +806,13 @@ const messageText =
 
         <section class="lfm-card">
           <div class="lfm-section-head">
-            <div>
-              <h2>Current inventory</h2>
-            </div>
+            <h2 id="lfmTableHeading">Current inventory</h2>
 
-            <button id="lfmToggleReturned" class="lfm-link-button" type="button">
-              View returned discs
-            </button>
+            <div class="lfm-filter-wrap" role="tablist" aria-label="Inventory filters">
+              <button id="lfmFilterCurrent" class="lfm-filter-button is-active" type="button" data-view="current">Current</button>
+              <button id="lfmFilterReturned" class="lfm-filter-button" type="button" data-view="returned">Returned</button>
+              <button id="lfmFilterDonated" class="lfm-filter-button" type="button" data-view="donated">Donated</button>
+            </div>
           </div>
 
           <div class="lfm-table-wrap">
@@ -783,90 +827,35 @@ const messageText =
               <thead>
                 <tr>
                   <th>
-                    <button class="lfm-th-button" type="button" data-sort-table="active" data-sort-index="0">
+                    <button class="lfm-th-button" type="button" data-sort-index="0">
                       <span>Name</span>
-                      <span class="lfm-sort-indicator" data-sort-indicator="active-0"></span>
+                      <span class="lfm-sort-indicator" data-sort-indicator="0"></span>
                     </button>
                   </th>
                   <th>
-                    <button class="lfm-th-button" type="button" data-sort-table="active" data-sort-index="1">
+                    <button class="lfm-th-button" type="button" data-sort-index="1">
                       <span>Disc</span>
-                      <span class="lfm-sort-indicator" data-sort-indicator="active-1"></span>
+                      <span class="lfm-sort-indicator" data-sort-indicator="1"></span>
                     </button>
                   </th>
                   <th>
-                    <button class="lfm-th-button" type="button" data-sort-table="active" data-sort-index="2">
+                    <button class="lfm-th-button" type="button" data-sort-index="2">
                       <span>Color</span>
-                      <span class="lfm-sort-indicator" data-sort-indicator="active-2"></span>
+                      <span class="lfm-sort-indicator" data-sort-indicator="2"></span>
                     </button>
                   </th>
                   <th>
-                    <button class="lfm-th-button" type="button" data-sort-table="active" data-sort-index="3">
+                    <button class="lfm-th-button" type="button" data-sort-index="3">
                       <span>Phone</span>
-                      <span class="lfm-sort-indicator" data-sort-indicator="active-3"></span>
+                      <span class="lfm-sort-indicator" data-sort-indicator="3"></span>
                     </button>
                   </th>
                   <th>Action</th>
                 </tr>
               </thead>
-              <tbody id="lfmInventoryBody">
+              <tbody id="lfmTableBody">
                 <tr>
                   <td class="lfm-empty" colspan="5">Loading…</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section id="lfmReturnedSection" class="lfm-card" hidden>
-          <div class="lfm-section-head">
-            <div>
-              <h2>Returned discs</h2>
-              <p class="lfm-muted">Open a disc to restore it or edit it.</p>
-            </div>
-          </div>
-
-          <div class="lfm-table-wrap">
-            <table class="lfm-table">
-              <colgroup>
-                <col class="col-name" />
-                <col class="col-disc" />
-                <col class="col-color" />
-                <col class="col-phone" />
-                <col class="col-actions" />
-              </colgroup>
-              <thead>
-                <tr>
-                  <th>
-                    <button class="lfm-th-button" type="button" data-sort-table="returned" data-sort-index="0">
-                      <span>Name</span>
-                      <span class="lfm-sort-indicator" data-sort-indicator="returned-0"></span>
-                    </button>
-                  </th>
-                  <th>
-                    <button class="lfm-th-button" type="button" data-sort-table="returned" data-sort-index="1">
-                      <span>Disc</span>
-                      <span class="lfm-sort-indicator" data-sort-indicator="returned-1"></span>
-                    </button>
-                  </th>
-                  <th>
-                    <button class="lfm-th-button" type="button" data-sort-table="returned" data-sort-index="2">
-                      <span>Color</span>
-                      <span class="lfm-sort-indicator" data-sort-indicator="returned-2"></span>
-                    </button>
-                  </th>
-                  <th>
-                    <button class="lfm-th-button" type="button" data-sort-table="returned" data-sort-index="3">
-                      <span>Phone</span>
-                      <span class="lfm-sort-indicator" data-sort-indicator="returned-3"></span>
-                    </button>
-                  </th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="lfmReturnedBody">
-                <tr>
-                  <td class="lfm-empty" colspan="5">Hidden.</td>
                 </tr>
               </tbody>
             </table>
@@ -892,7 +881,9 @@ const messageText =
 
           <div class="lfm-modal-actions">
             <button id="lfmSaveEdit" class="lfm-button lfm-button-primary" type="button">Save changes</button>
-            <button id="lfmSecondaryEditAction" class="lfm-button" type="button">Mark returned</button>
+            <button id="lfmActionRestore" class="lfm-button lfm-button-restore" type="button" hidden>Restore</button>
+            <button id="lfmActionReturned" class="lfm-button lfm-button-danger" type="button" hidden>Mark returned</button>
+            <button id="lfmActionDonated" class="lfm-button lfm-button-donated" type="button" hidden>Mark donated</button>
             <button id="lfmCancelEdit" class="lfm-button lfm-button-light" type="button">Cancel</button>
           </div>
         </div>
@@ -916,10 +907,14 @@ const messageText =
     const loginStatus = document.getElementById("lfmLoginStatus");
     const appStatus = document.getElementById("lfmAppStatus");
     const addForm = document.getElementById("lfmAddForm");
-    const inventoryBody = document.getElementById("lfmInventoryBody");
-    const returnedBody = document.getElementById("lfmReturnedBody");
-    const returnedSection = document.getElementById("lfmReturnedSection");
-    const toggleReturnedButton = document.getElementById("lfmToggleReturned");
+    const tableBody = document.getElementById("lfmTableBody");
+    const tableHeading = document.getElementById("lfmTableHeading");
+
+    const filterButtons = {
+      current: document.getElementById("lfmFilterCurrent"),
+      returned: document.getElementById("lfmFilterReturned"),
+      donated: document.getElementById("lfmFilterDonated"),
+    };
 
     const modalLayer = document.getElementById("lfmModalLayer");
     const modalClose = document.getElementById("lfmModalClose");
@@ -931,21 +926,31 @@ const messageText =
     const editColor = document.getElementById("lfmEditColor");
     const editPhone = document.getElementById("lfmEditPhone");
     const saveEditButton = document.getElementById("lfmSaveEdit");
-    const secondaryEditAction = document.getElementById("lfmSecondaryEditAction");
+    const actionRestoreButton = document.getElementById("lfmActionRestore");
+    const actionReturnedButton = document.getElementById("lfmActionReturned");
+    const actionDonatedButton = document.getElementById("lfmActionDonated");
 
     const busyOverlay = document.getElementById("lfmBusyOverlay");
     const busyText = document.getElementById("lfmBusyText");
 
     const state = {
       password: "",
-      activeRecords: [],
-      returnedRecords: [],
-      returnedLoaded: false,
-      returnedVisible: false,
+      records: {
+        current: [],
+        returned: [],
+        donated: [],
+      },
+      loaded: {
+        current: false,
+        returned: false,
+        donated: false,
+      },
+      activeView: "current",
       editing: null,
       sorts: {
-        active: { index: 4, dir: "desc" },
+        current: { index: 4, dir: "desc" },
         returned: { index: 4, dir: "desc" },
+        donated: { index: 4, dir: "desc" },
       },
     };
 
@@ -1029,8 +1034,8 @@ const messageText =
       }
     }
 
-    function compareRows(a, b, tableName) {
-      const sort = state.sorts[tableName];
+    function compareRows(a, b, view) {
+      const sort = state.sorts[view];
       const left = getSortValue(a, sort.index);
       const right = getSortValue(b, sort.index);
 
@@ -1055,39 +1060,63 @@ const messageText =
       return sort.dir === "asc" ? comparison : -comparison;
     }
 
-    function sortRows(rows, tableName) {
-      return [...rows].sort((a, b) => compareRows(a, b, tableName));
+    function sortRows(rows, view) {
+      return [...rows].sort((a, b) => compareRows(a, b, view));
     }
 
     function updateSortIndicators() {
-      document.querySelectorAll("[data-sort-indicator]").forEach((el) => {
-        const key = el.getAttribute("data-sort-indicator") || "";
-        const [tableName, indexText] = key.split("-");
-        const index = Number(indexText);
-        const sort = state.sorts[tableName];
+      const activeSort = state.sorts[state.activeView];
 
-        if (!sort || sort.index !== index) {
+      document.querySelectorAll("[data-sort-indicator]").forEach((el) => {
+        const index = Number(el.getAttribute("data-sort-indicator"));
+
+        if (activeSort.index !== index) {
           el.textContent = "";
           return;
         }
 
-        el.textContent = sort.dir === "asc" ? "▲" : "▼";
+        el.textContent = activeSort.dir === "asc" ? "▲" : "▼";
       });
     }
 
-    function renderRows(target, rows, mode) {
-      const sortedRows = sortRows(rows, mode);
+    function updateFilterButtons() {
+      Object.entries(filterButtons).forEach(([view, button]) => {
+        if (!button) return;
+        button.classList.toggle("is-active", state.activeView === view);
+      });
 
-      if (!sortedRows.length) {
-        target.innerHTML = `
+      if (tableHeading) {
+        tableHeading.textContent =
+          state.activeView === "current"
+            ? "Current inventory"
+            : state.activeView === "returned"
+              ? "Returned discs"
+              : "Donated discs";
+      }
+    }
+
+    function renderTable() {
+      const rows = sortRows(state.records[state.activeView] || [], state.activeView);
+
+      if (!rows.length) {
+        const emptyText =
+          state.activeView === "current"
+            ? "No active discs found."
+            : state.activeView === "returned"
+              ? "No returned discs found."
+              : "No donated discs found.";
+
+        tableBody.innerHTML = `
           <tr>
-            <td class="lfm-empty" colspan="5">${mode === "returned" ? "No returned discs found." : "No active discs found."}</td>
+            <td class="lfm-empty" colspan="5">${emptyText}</td>
           </tr>
         `;
+        updateSortIndicators();
+        updateFilterButtons();
         return;
       }
 
-      target.innerHTML = sortedRows
+      tableBody.innerHTML = rows
         .map((row) => {
           const hasPhone = String(row.phone ?? "").trim() !== "";
           const phoneHtml = hasPhone
@@ -1106,7 +1135,6 @@ const messageText =
                     class="lfm-button"
                     type="button"
                     data-edit-row="${Number(row.rowNumber)}"
-                    data-mode="${mode}"
                   >
                     Edit
                   </button>
@@ -1116,16 +1144,13 @@ const messageText =
           `;
         })
         .join("");
-    }
 
-    function renderTables() {
-      renderRows(inventoryBody, state.activeRecords, "active");
-      renderRows(returnedBody, state.returnedRecords, "returned");
       updateSortIndicators();
+      updateFilterButtons();
     }
 
-    function handleSort(tableName, index) {
-      const current = state.sorts[tableName];
+    function handleSort(index) {
+      const current = state.sorts[state.activeView];
 
       if (current.index === index) {
         current.dir = current.dir === "asc" ? "desc" : "asc";
@@ -1134,7 +1159,7 @@ const messageText =
         current.dir = "asc";
       }
 
-      renderTables();
+      renderTable();
     }
 
     function jsonp(params) {
@@ -1181,39 +1206,40 @@ const messageText =
       });
     }
 
-    async function loadActiveInventory() {
+    function getActionForView(view) {
+      return view === "current" ? "list" : view === "returned" ? "listReturned" : "listDonated";
+    }
+
+    async function loadView(view) {
       const payload = await jsonp({
-        action: "list",
+        action: getActionForView(view),
         password: state.password,
       });
 
       if (!payload?.ok) {
-        throw new Error(payload?.error || "Unable to load inventory.");
+        throw new Error(payload?.error || `Unable to load ${view} discs.`);
       }
 
-      state.activeRecords = Array.isArray(payload.records) ? payload.records : [];
-      renderTables();
-    }
+      state.records[view] = Array.isArray(payload.records) ? payload.records : [];
+      state.loaded[view] = true;
 
-    async function loadReturnedInventory() {
-      const payload = await jsonp({
-        action: "listReturned",
-        password: state.password,
-      });
-
-      if (!payload?.ok) {
-        throw new Error(payload?.error || "Unable to load returned discs.");
+      if (state.activeView === view) {
+        renderTable();
       }
-
-      state.returnedRecords = Array.isArray(payload.records) ? payload.records : [];
-      state.returnedLoaded = true;
-      renderTables();
     }
 
-    async function refreshAfterChange() {
-      await loadActiveInventory();
-      if (state.returnedVisible || state.returnedLoaded) {
-        await loadReturnedInventory();
+    async function ensureViewLoaded(view) {
+      if (state.loaded[view]) return;
+      await loadView(view);
+    }
+
+    async function refreshLoadedViews() {
+      const views = ["current", "returned", "donated"].filter(
+        (view) => state.loaded[view] || view === state.activeView || view === "current"
+      );
+
+      for (const view of views) {
+        await loadView(view);
       }
     }
 
@@ -1224,7 +1250,9 @@ const messageText =
       }
 
       state.password = trimmed;
-      await loadActiveInventory();
+      await loadView("current");
+      state.activeView = "current";
+      renderTable();
 
       if (remember) {
         try {
@@ -1245,32 +1273,34 @@ const messageText =
       setStatus(loginStatus, message, type);
     }
 
-    function getRecordByRow(rowNumber, mode) {
-      const source = mode === "returned" ? state.returnedRecords : state.activeRecords;
+    function getRecordByRow(rowNumber) {
+      const source = state.records[state.activeView] || [];
       return source.find((row) => Number(row.rowNumber) === Number(rowNumber)) || null;
     }
 
-    function openEditModal(row, mode) {
+    function openEditModal(row) {
       if (!row) return;
 
       state.editing = {
         rowNumber: Number(row.rowNumber),
-        mode,
+        mode: state.activeView,
       };
 
-      modalTitle.textContent = mode === "returned" ? "Edit returned disc" : "Edit disc";
+      modalTitle.textContent =
+        state.activeView === "current"
+          ? "Edit disc"
+          : state.activeView === "returned"
+            ? "Edit returned disc"
+            : "Edit donated disc";
+
       editName.value = row.name || "";
       editDisc.value = row.disc || "";
       editColor.value = row.color || "";
       editPhone.value = row.phone || "";
 
-      if (mode === "returned") {
-        secondaryEditAction.textContent = "Restore";
-        secondaryEditAction.className = "lfm-button lfm-button-restore";
-      } else {
-        secondaryEditAction.textContent = "Mark returned";
-        secondaryEditAction.className = "lfm-button lfm-button-danger";
-      }
+      actionRestoreButton.hidden = state.activeView === "current";
+      actionReturnedButton.hidden = state.activeView === "returned";
+      actionDonatedButton.hidden = state.activeView === "donated";
 
       modalLayer.hidden = false;
       document.body.style.overflow = "hidden";
@@ -1293,42 +1323,37 @@ const messageText =
       };
     }
 
-    async function saveEdit(returnedOverride) {
+    async function saveEditWithState({ returned, status }, busyMessage, successMessage) {
       if (!state.editing) return;
 
-      const payload = {
-        action: "update",
-        password: state.password,
-        ...getEditPayload(),
-      };
+      await runWithBusy(busyMessage, async () => {
+        const payload = {
+          action: "update",
+          password: state.password,
+          ...getEditPayload(),
+        };
 
-      if (returnedOverride === true) payload.returned = "true";
-      if (returnedOverride === false) payload.returned = "false";
+        if (returned !== undefined) {
+          payload.returned = returned ? "true" : "false";
+        }
 
-      const response = await jsonp(payload);
+        if (status !== undefined) {
+          payload.status = status;
+        }
 
-      if (!response?.ok) {
-        throw new Error(response?.error || "Unable to save changes.");
-      }
+        const response = await jsonp(payload);
 
-      closeEditModal();
-      await refreshAfterChange();
+        if (!response?.ok) {
+          throw new Error(response?.error || "Unable to update disc.");
+        }
+
+        closeEditModal();
+        await refreshLoadedViews();
+      });
+
+      setStatus(appStatus, successMessage, "success");
+      window.alert(successMessage);
     }
-
-    unlockForm?.addEventListener("submit", async (event) => {
-      event.preventDefault();
-
-      try {
-        setStatus(loginStatus, "Unlocking…");
-        await runWithBusy("Unlocking…", () => unlock(passwordInput?.value || ""));
-      } catch (error) {
-        try {
-          localStorage.removeItem(PASSWORD_KEY);
-        } catch {}
-        state.password = "";
-        showLogin(error?.message || "Unable to unlock.", "error");
-      }
-    });
 
     addForm?.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -1351,7 +1376,7 @@ const messageText =
           }
 
           addForm.reset();
-          await refreshAfterChange();
+          await refreshLoadedViews();
         });
 
         setStatus(appStatus, "Disc added.", "success");
@@ -1370,50 +1395,52 @@ const messageText =
       }
     });
 
-    function handleEditClick(event, mode) {
+    unlockForm?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      try {
+        setStatus(loginStatus, "Unlocking…");
+        await runWithBusy("Unlocking…", () => unlock(passwordInput?.value || ""));
+      } catch (error) {
+        try {
+          localStorage.removeItem(PASSWORD_KEY);
+        } catch {}
+        state.password = "";
+        showLogin(error?.message || "Unable to unlock.", "error");
+      }
+    });
+
+    tableBody?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-edit-row]");
       if (!button) return;
 
       const rowNumber = Number(button.getAttribute("data-edit-row"));
-      const row = getRecordByRow(rowNumber, mode);
-      openEditModal(row, mode);
-    }
-
-    inventoryBody?.addEventListener("click", (event) => {
-      handleEditClick(event, "active");
+      const row = getRecordByRow(rowNumber);
+      openEditModal(row);
     });
 
-    returnedBody?.addEventListener("click", (event) => {
-      handleEditClick(event, "returned");
-    });
+    document.addEventListener("click", async (event) => {
+      const sortButton = event.target.closest("[data-sort-index]");
+      if (sortButton && sortButton.closest(".lfm-table")) {
+        const index = Number(sortButton.getAttribute("data-sort-index"));
+        if (!Number.isNaN(index)) handleSort(index);
+        return;
+      }
 
-    document.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-sort-table][data-sort-index]");
-      if (!button) return;
+      const filterButton = event.target.closest("[data-view]");
+      if (filterButton && filterButton.closest(".lfm-filter-wrap")) {
+        const view = filterButton.getAttribute("data-view");
+        if (!view || state.activeView === view) return;
 
-      const tableName = button.getAttribute("data-sort-table");
-      const index = Number(button.getAttribute("data-sort-index"));
-
-      if (!tableName || Number.isNaN(index)) return;
-      handleSort(tableName, index);
-    });
-
-    toggleReturnedButton?.addEventListener("click", async () => {
-      state.returnedVisible = !state.returnedVisible;
-      returnedSection.hidden = !state.returnedVisible;
-      toggleReturnedButton.textContent = state.returnedVisible ? "Hide returned discs" : "View returned discs";
-
-      if (state.returnedVisible && !state.returnedLoaded) {
         try {
-          await runWithBusy("Loading returned discs…", async () => {
-            await loadReturnedInventory();
+          await runWithBusy(`Loading ${view} discs…`, async () => {
+            state.activeView = view;
+            await ensureViewLoaded(view);
+            renderTable();
           });
           setStatus(appStatus, "");
         } catch (error) {
-          state.returnedVisible = false;
-          returnedSection.hidden = true;
-          toggleReturnedButton.textContent = "View returned discs";
-          setStatus(appStatus, error?.message || "Unable to load returned discs.", "error");
+          setStatus(appStatus, error?.message || `Unable to load ${view} discs.`, "error");
         }
       }
     });
@@ -1421,29 +1448,61 @@ const messageText =
     saveEditButton?.addEventListener("click", async () => {
       try {
         await runWithBusy("Saving changes…", async () => {
-          await saveEdit(undefined);
+          const payload = {
+            action: "update",
+            password: state.password,
+            ...getEditPayload(),
+          };
+
+          const response = await jsonp(payload);
+
+          if (!response?.ok) {
+            throw new Error(response?.error || "Unable to save changes.");
+          }
+
+          closeEditModal();
+          await refreshLoadedViews();
         });
+
         setStatus(appStatus, "Changes saved.", "success");
       } catch (error) {
         setStatus(appStatus, error?.message || "Unable to save changes.", "error");
       }
     });
 
-    secondaryEditAction?.addEventListener("click", async () => {
-      if (!state.editing) return;
-
+    actionReturnedButton?.addEventListener("click", async () => {
       try {
-        const makeReturned = state.editing.mode === "active";
-        const successMessage = makeReturned ? "Disc marked returned." : "Disc restored.";
-
-        await runWithBusy(makeReturned ? "Marking disc returned…" : "Restoring disc…", async () => {
-          await saveEdit(makeReturned ? true : false);
-        });
-
-        setStatus(appStatus, successMessage, "success");
-        window.alert(successMessage);
+        await saveEditWithState(
+          { returned: true, status: "" },
+          "Marking disc returned…",
+          "Disc marked returned."
+        );
       } catch (error) {
-        setStatus(appStatus, error?.message || "Unable to update disc.", "error");
+        setStatus(appStatus, error?.message || "Unable to mark disc returned.", "error");
+      }
+    });
+
+    actionRestoreButton?.addEventListener("click", async () => {
+      try {
+        await saveEditWithState(
+          { returned: false, status: "" },
+          "Restoring disc…",
+          "Disc restored."
+        );
+      } catch (error) {
+        setStatus(appStatus, error?.message || "Unable to restore disc.", "error");
+      }
+    });
+
+    actionDonatedButton?.addEventListener("click", async () => {
+      try {
+        await saveEditWithState(
+          { returned: true, status: "Donated" },
+          "Marking disc donated…",
+          "Disc marked donated."
+        );
+      } catch (error) {
+        setStatus(appStatus, error?.message || "Unable to mark disc donated.", "error");
       }
     });
 
