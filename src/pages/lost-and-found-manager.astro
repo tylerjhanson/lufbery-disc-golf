@@ -171,6 +171,17 @@ const messageText =
       border-color: #fb923c;
     }
 
+    .lost-found-manager-page .lfm-button-sold {
+      background: #f5f3ff;
+      border-color: #c4b5fd;
+      color: #5b21b6;
+    }
+
+    .lost-found-manager-page .lfm-button-sold:hover {
+      background: #ede9fe;
+      border-color: #a78bfa;
+    }
+
     .lost-found-manager-page .lfm-button-light {
       background: #fff;
       color: var(--text);
@@ -255,15 +266,6 @@ const messageText =
       white-space: nowrap;
     }
 
-    .lost-found-manager-page .lfm-check-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.9rem;
-      font-weight: 600;
-    }
-
-    .lost-found-manager-page .lfm-check-label input,
     .lost-found-manager-page .lfm-select-cell input {
       width: 16px;
       height: 16px;
@@ -535,6 +537,12 @@ const messageText =
       color: #fdba74 !important;
     }
 
+    html[data-theme="dark"] .lost-found-manager-page .lfm-button-sold {
+      background: rgba(91, 33, 182, 0.22) !important;
+      border-color: rgba(167, 139, 250, 0.35) !important;
+      color: #ddd6fe !important;
+    }
+
     html[data-theme="dark"] .lost-found-manager-page table.lfm-table thead th {
       background: #162033 !important;
       color: var(--muted) !important;
@@ -591,6 +599,12 @@ const messageText =
         background: rgba(154, 52, 18, 0.22) !important;
         border-color: rgba(251, 146, 60, 0.35) !important;
         color: #fdba74 !important;
+      }
+
+      html[data-theme="system"] .lost-found-manager-page .lfm-button-sold {
+        background: rgba(91, 33, 182, 0.22) !important;
+        border-color: rgba(167, 139, 250, 0.35) !important;
+        color: #ddd6fe !important;
       }
 
       html[data-theme="system"] .lost-found-manager-page table.lfm-table thead th {
@@ -727,15 +741,12 @@ const messageText =
               <button id="lfmFilterCurrent" class="lfm-filter-button is-active" type="button" data-view="current">Current</button>
               <button id="lfmFilterReturned" class="lfm-filter-button" type="button" data-view="returned">Returned</button>
               <button id="lfmFilterDonated" class="lfm-filter-button" type="button" data-view="donated">Donated</button>
+              <button id="lfmFilterSold" class="lfm-filter-button" type="button" data-view="sold">Archive</button>
             </div>
           </div>
 
           <div class="lfm-bulk-bar">
             <div class="lfm-bulk-meta">
-              <label class="lfm-check-label" for="lfmSelectAll">
-                <input id="lfmSelectAll" type="checkbox" />
-                <span>Select all visible</span>
-              </label>
               <span id="lfmBulkCount" class="lfm-bulk-count">0 selected</span>
             </div>
 
@@ -743,6 +754,7 @@ const messageText =
               <button id="lfmBulkReturned" class="lfm-button lfm-button-danger" type="button">Mark returned</button>
               <button id="lfmBulkRestore" class="lfm-button lfm-button-restore" type="button" hidden>Restore to Current</button>
               <button id="lfmBulkDonated" class="lfm-button lfm-button-donated" type="button">Mark donated</button>
+              <button id="lfmBulkSold" class="lfm-button lfm-button-sold" type="button" hidden>Mark sold</button>
               <button id="lfmBulkClear" class="lfm-button lfm-button-light" type="button">Clear</button>
             </div>
           </div>
@@ -818,6 +830,7 @@ const messageText =
             <button id="lfmActionRestore" class="lfm-button lfm-button-restore" type="button" hidden>Restore to Current</button>
             <button id="lfmActionReturned" class="lfm-button lfm-button-danger" type="button" hidden>Mark returned</button>
             <button id="lfmActionDonated" class="lfm-button lfm-button-donated" type="button" hidden>Mark donated</button>
+            <button id="lfmActionSold" class="lfm-button lfm-button-sold" type="button" hidden>Mark sold</button>
             <button id="lfmCancelEdit" class="lfm-button lfm-button-light" type="button">Cancel</button>
           </div>
         </div>
@@ -843,17 +856,18 @@ const messageText =
     const addForm = document.getElementById("lfmAddForm");
     const tableBody = document.getElementById("lfmTableBody");
     const tableHeading = document.getElementById("lfmTableHeading");
-    const selectAllCheckbox = document.getElementById("lfmSelectAll");
     const bulkCount = document.getElementById("lfmBulkCount");
     const bulkReturnedButton = document.getElementById("lfmBulkReturned");
     const bulkRestoreButton = document.getElementById("lfmBulkRestore");
     const bulkDonatedButton = document.getElementById("lfmBulkDonated");
+    const bulkSoldButton = document.getElementById("lfmBulkSold");
     const bulkClearButton = document.getElementById("lfmBulkClear");
 
     const filterButtons = {
       current: document.getElementById("lfmFilterCurrent"),
       returned: document.getElementById("lfmFilterReturned"),
       donated: document.getElementById("lfmFilterDonated"),
+      sold: document.getElementById("lfmFilterSold"),
     };
 
     const modalLayer = document.getElementById("lfmModalLayer");
@@ -869,6 +883,7 @@ const messageText =
     const actionRestoreButton = document.getElementById("lfmActionRestore");
     const actionReturnedButton = document.getElementById("lfmActionReturned");
     const actionDonatedButton = document.getElementById("lfmActionDonated");
+    const actionSoldButton = document.getElementById("lfmActionSold");
 
     const busyOverlay = document.getElementById("lfmBusyOverlay");
     const busyText = document.getElementById("lfmBusyText");
@@ -879,11 +894,13 @@ const messageText =
         current: [],
         returned: [],
         donated: [],
+        sold: [],
       },
       loaded: {
         current: false,
         returned: false,
         donated: false,
+        sold: false,
       },
       activeView: "current",
       editing: null,
@@ -892,6 +909,7 @@ const messageText =
         current: { index: 4, dir: "desc" },
         returned: { index: 4, dir: "desc" },
         donated: { index: 4, dir: "desc" },
+        sold: { index: 4, dir: "desc" },
       },
     };
 
@@ -1032,7 +1050,9 @@ const messageText =
             ? "Current inventory"
             : state.activeView === "returned"
               ? "Returned discs"
-              : "Donated discs";
+              : state.activeView === "donated"
+                ? "Donated discs"
+                : "Sold archive";
       }
     }
 
@@ -1041,21 +1061,11 @@ const messageText =
     }
 
     function updateBulkUi(rows = getVisibleRows()) {
-      const selectedVisibleCount = rows.filter((row) =>
-        state.selectedRows.has(Number(row.rowNumber))
-      ).length;
-
       const totalSelectedCount = state.selectedRows.size;
       const hasSelection = totalSelectedCount > 0;
 
       if (bulkCount) {
         bulkCount.textContent = `${totalSelectedCount} selected`;
-      }
-
-      if (selectAllCheckbox) {
-        selectAllCheckbox.checked = rows.length > 0 && selectedVisibleCount === rows.length;
-        selectAllCheckbox.indeterminate =
-          selectedVisibleCount > 0 && selectedVisibleCount < rows.length;
       }
 
       if (bulkReturnedButton) {
@@ -1064,8 +1074,13 @@ const messageText =
       }
 
       if (bulkDonatedButton) {
-        bulkDonatedButton.hidden = state.activeView === "donated";
+        bulkDonatedButton.hidden = !["current", "returned"].includes(state.activeView);
         bulkDonatedButton.disabled = !hasSelection;
+      }
+
+      if (bulkSoldButton) {
+        bulkSoldButton.hidden = state.activeView !== "donated";
+        bulkSoldButton.disabled = !hasSelection;
       }
 
       if (bulkRestoreButton) {
@@ -1112,7 +1127,9 @@ const messageText =
             ? "No active discs found."
             : state.activeView === "returned"
               ? "No returned discs found."
-              : "No donated discs found.";
+              : state.activeView === "donated"
+                ? "No donated discs found."
+                : "No sold discs found.";
 
         tableBody.innerHTML = `
           <tr>
@@ -1216,7 +1233,13 @@ const messageText =
     }
 
     function getActionForView(view) {
-      return view === "current" ? "list" : view === "returned" ? "listReturned" : "listDonated";
+      return view === "current"
+        ? "list"
+        : view === "returned"
+          ? "listReturned"
+          : view === "donated"
+            ? "listDonated"
+            : "listSold";
     }
 
     async function loadView(view) {
@@ -1243,7 +1266,7 @@ const messageText =
     }
 
     async function refreshLoadedViews() {
-      const views = ["current", "returned", "donated"].filter(
+      const views = ["current", "returned", "donated", "sold"].filter(
         (view) => state.loaded[view] || view === state.activeView || view === "current"
       );
 
@@ -1300,7 +1323,9 @@ const messageText =
           ? "Edit disc"
           : state.activeView === "returned"
             ? "Edit returned disc"
-            : "Edit donated disc";
+            : state.activeView === "donated"
+              ? "Edit donated disc"
+              : "Edit sold disc";
 
       editName.value = row.name || "";
       editDisc.value = row.disc || "";
@@ -1311,16 +1336,25 @@ const messageText =
         actionRestoreButton.hidden = true;
         actionReturnedButton.hidden = false;
         actionDonatedButton.hidden = false;
+        actionSoldButton.hidden = true;
       } else if (state.activeView === "returned") {
         actionRestoreButton.hidden = false;
         actionRestoreButton.textContent = "Restore to Current";
         actionReturnedButton.hidden = true;
         actionDonatedButton.hidden = false;
+        actionSoldButton.hidden = true;
+      } else if (state.activeView === "donated") {
+        actionRestoreButton.hidden = false;
+        actionRestoreButton.textContent = "Restore to Current";
+        actionReturnedButton.hidden = true;
+        actionDonatedButton.hidden = true;
+        actionSoldButton.hidden = false;
       } else {
         actionRestoreButton.hidden = false;
         actionRestoreButton.textContent = "Restore to Current";
         actionReturnedButton.hidden = true;
         actionDonatedButton.hidden = true;
+        actionSoldButton.hidden = true;
       }
 
       modalLayer.hidden = false;
@@ -1440,18 +1474,6 @@ const messageText =
       openEditModal(row);
     });
 
-    selectAllCheckbox?.addEventListener("change", () => {
-      const rows = getVisibleRows();
-
-      if (selectAllCheckbox.checked) {
-        rows.forEach((row) => state.selectedRows.add(Number(row.rowNumber)));
-      } else {
-        rows.forEach((row) => state.selectedRows.delete(Number(row.rowNumber)));
-      }
-
-      renderTable();
-    });
-
     tableBody?.addEventListener("change", (event) => {
       const checkbox = event.target.closest("[data-select-row]");
       if (!checkbox) return;
@@ -1556,6 +1578,18 @@ const messageText =
       }
     });
 
+    actionSoldButton?.addEventListener("click", async () => {
+      try {
+        await saveEditWithState(
+          { returned: true, status: "Sold" },
+          "Archiving sold disc…",
+          "Disc marked sold and archived."
+        );
+      } catch (error) {
+        setStatus(appStatus, error?.message || "Unable to mark disc sold.", "error");
+      }
+    });
+
     bulkReturnedButton?.addEventListener("click", async () => {
       try {
         await runBulkAction(
@@ -1589,6 +1623,18 @@ const messageText =
         );
       } catch (error) {
         setStatus(appStatus, error?.message || "Unable to mark discs donated.", "error");
+      }
+    });
+
+    bulkSoldButton?.addEventListener("click", async () => {
+      try {
+        await runBulkAction(
+          "sold",
+          "Archiving sold discs…",
+          "Discs marked sold and archived."
+        );
+      } catch (error) {
+        setStatus(appStatus, error?.message || "Unable to mark discs sold.", "error");
       }
     });
 
