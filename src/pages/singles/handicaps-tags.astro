@@ -612,8 +612,8 @@ const rows = getHandicaps();
                 <span class="th-inner">Hcp <span class="sort-indicator"></span></span>
               </th>
               <th class="sortable" data-column="2" data-type="tag">
-  <span class="th-inner">Tag <span class="sort-indicator"></span></span>
-</th>
+                <span class="th-inner">Tag <span class="sort-indicator"></span></span>
+              </th>
               <th class="sortable" data-column="3" data-type="number">
                 <span class="th-inner">Rounds <span class="sort-indicator"></span></span>
               </th>
@@ -652,7 +652,6 @@ const rows = getHandicaps();
       </div>
     </div>
   </div>
-
 
   <div id="roundModal" class="round-modal" hidden>
     <div class="round-modal-backdrop" data-close-modal></div>
@@ -693,7 +692,7 @@ const rows = getHandicaps();
     const roundModalClose = document.getElementById("roundModalClose");
     const playerButtons = document.querySelectorAll(".player-button");
 
-    let currentColumn = 1;
+    let currentColumn = 2;
     let currentDirection = "asc";
     let lastTrigger = null;
 
@@ -703,55 +702,57 @@ const rows = getHandicaps();
         : "";
     }
 
-   function compareValues(a, b, type, direction) {
-  const normalize = (value) => String(value || "").trim();
-  const valueA = normalize(a);
-  const valueB = normalize(b);
+    function compareValues(a, b, type, direction) {
+      const emptyA = a === "";
+      const emptyB = b === "";
 
-  const emptyA = valueA === "";
-  const emptyB = valueB === "";
+      if (emptyA && emptyB) return 0;
+      if (emptyA) return 1;
+      if (emptyB) return -1;
 
-  if (type === "tag") {
-    const getTagRank = (value) => {
-      if (value === "") return { bucket: 2, num: Infinity }; // blanks last
-      if (/^tbd$/i.test(value)) return { bucket: 1, num: Infinity }; // TBD after numbers
+      let result = 0;
 
-      const num = Number(value);
-      if (!Number.isNaN(num)) return { bucket: 0, num }; // numeric tags first
+      if (type === "number") {
+        result = Number(a) - Number(b);
+      } else {
+        result = a.localeCompare(b, undefined, { sensitivity: "base" });
+      }
 
-      return { bucket: 1, num: Infinity }; // any other text with TBD group
-    };
-
-    const rankA = getTagRank(valueA);
-    const rankB = getTagRank(valueB);
-
-    let result = 0;
-
-    if (rankA.bucket !== rankB.bucket) {
-      result = rankA.bucket - rankB.bucket;
-    } else if (rankA.bucket === 0) {
-      result = rankA.num - rankB.num;
-    } else {
-      result = valueA.localeCompare(valueB, undefined, { sensitivity: "base" });
+      return direction === "asc" ? result : -result;
     }
 
-    return direction === "asc" ? result : -result;
-  }
+    function compareTagValues(a, b, direction) {
+      const normalize = (value) => String(value ?? "").trim();
 
-  if (emptyA && emptyB) return 0;
-  if (emptyA) return 1;
-  if (emptyB) return -1;
+      const getRank = (value) => {
+        const v = normalize(value);
 
-  let result = 0;
+        if (v === "") return { bucket: 2, num: Infinity, text: "" };
+        if (/^tbd$/i.test(v)) return { bucket: 1, num: Infinity, text: "TBD" };
 
-  if (type === "number") {
-    result = Number(valueA) - Number(valueB);
-  } else {
-    result = valueA.localeCompare(valueB, undefined, { sensitivity: "base" });
-  }
+        const num = Number(v);
+        if (!Number.isNaN(num)) return { bucket: 0, num, text: "" };
 
-  return direction === "asc" ? result : -result;
-}
+        return { bucket: 1, num: Infinity, text: v.toLowerCase() };
+      };
+
+      const rankA = getRank(a);
+      const rankB = getRank(b);
+
+      let result = 0;
+
+      if (rankA.bucket !== rankB.bucket) {
+        result = rankA.bucket - rankB.bucket;
+      } else if (rankA.bucket === 0) {
+        result = rankA.num - rankB.num;
+      } else {
+        result = rankA.text.localeCompare(rankB.text, undefined, {
+          sensitivity: "base",
+        });
+      }
+
+      return direction === "asc" ? result : -result;
+    }
 
     function updateIndicators(activeColumn, direction) {
       headers.forEach((header) => {
@@ -776,6 +777,11 @@ const rows = getHandicaps();
       const sortedRows = Array.from(tbody.querySelectorAll("tr")).sort((rowA, rowB) => {
         const valueA = getCellValue(rowA, columnIndex);
         const valueB = getCellValue(rowB, columnIndex);
+
+        if (type === "tag") {
+          return compareTagValues(valueA, valueB, direction);
+        }
+
         return compareValues(valueA, valueB, type, direction);
       });
 
@@ -825,7 +831,6 @@ const rows = getHandicaps();
 
       return `${numericScore} (${diffText})`;
     }
-
 
     function buildTrendValues(rounds) {
       if (!rounds || rounds.length < 2) return [];
@@ -1102,8 +1107,16 @@ const rows = getHandicaps();
       }
     });
 
-    sortTable(currentColumn, "number", currentDirection);
+    const initialHeader = table
+      ? table.querySelector(`thead th[data-column="${currentColumn}"]`)
+      : null;
+
+    sortTable(
+      currentColumn,
+      initialHeader?.dataset.type || "text",
+      currentDirection
+    );
     applySearchFilter();
     updateSearchClear();
-  </script> 
+  </script>
 </SiteLayout>
