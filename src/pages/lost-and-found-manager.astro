@@ -1025,11 +1025,7 @@ const messageText =
         const callbackName = `__lfm_cb_${Date.now()}_${Math.random().toString(36).slice(2)}`;
         const url = new URL(apiUrl);
 
-        Object.entries(params || {}).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && String(value) !== "") {
-            url.searchParams.set(key, String(value));
-          }
-        });
+        Object.entries(params
 
         url.searchParams.set("callback", callbackName);
 
