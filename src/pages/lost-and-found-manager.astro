@@ -8,26 +8,15 @@ const messageText =
 
 <SiteLayout title="Lost & Found Manager" showBrandBar={true} noindex={true}>
   <style is:global>
-    .lost-found-manager-page * {
-      box-sizing: border-box;
-    }
-
-    .lost-found-manager-page {
-      width: 100%;
-      max-width: none;
-      margin: 0;
-      overflow-x: hidden;
-    }
-
+    .lost-found-manager-page * { box-sizing: border-box; }
+    .lost-found-manager-page { width: 100%; max-width: none; margin: 0; overflow-x: hidden; }
     .lost-found-manager-page .lfm-stack,
     .lost-found-manager-page .lfm-card,
     .lost-found-manager-page .lfm-grid,
     .lost-found-manager-page .lfm-grid > *,
     .lost-found-manager-page .lfm-section-head,
     .lost-found-manager-page .lfm-table-wrap,
-    .lost-found-manager-page .lfm-actions {
-      min-width: 0;
-    }
+    .lost-found-manager-page .lfm-actions { min-width: 0; }
 
     .lost-found-manager-page .lfm-card {
       background: var(--card) !important;
@@ -38,11 +27,7 @@ const messageText =
       padding: 22px 22px 18px;
     }
 
-    .lost-found-manager-page .lfm-stack {
-      display: grid;
-      gap: 16px;
-    }
-
+    .lost-found-manager-page .lfm-stack { display: grid; gap: 16px; }
     .lost-found-manager-page h1 {
       margin: 0 0 14px;
       font-size: clamp(2rem, 4vw, 3rem);
@@ -84,23 +69,11 @@ const messageText =
       margin-top: 12px;
     }
 
-    .lost-found-manager-page .lfm-grid {
-      display: grid;
-      gap: 10px;
-    }
-
-    .lost-found-manager-page .lfm-grid-4 {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-
-    .lost-found-manager-page .lfm-grid-2 {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+    .lost-found-manager-page .lfm-grid { display: grid; gap: 10px; }
+    .lost-found-manager-page .lfm-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
     .lost-found-manager-page input,
-    .lost-found-manager-page button {
-      font: inherit;
-    }
+    .lost-found-manager-page button { font: inherit; }
 
     .lost-found-manager-page input {
       width: 100%;
@@ -152,9 +125,7 @@ const messageText =
     }
 
     .lost-found-manager-page .lfm-button:active,
-    .lost-found-manager-page .lfm-filter-button:active {
-      transform: translateY(1px);
-    }
+    .lost-found-manager-page .lfm-filter-button:active { transform: translateY(1px); }
 
     .lost-found-manager-page .lfm-button-primary {
       background: #111827;
@@ -217,9 +188,7 @@ const messageText =
       text-decoration: none;
     }
 
-    .lost-found-manager-page .lfm-link-button:hover {
-      text-decoration: underline;
-    }
+    .lost-found-manager-page .lfm-link-button:hover { text-decoration: underline; }
 
     .lost-found-manager-page .lfm-filter-wrap {
       display: flex;
@@ -241,13 +210,8 @@ const messageText =
       margin-top: 10px;
     }
 
-    .lost-found-manager-page .lfm-status.is-error {
-      color: #b91c1c;
-    }
-
-    .lost-found-manager-page .lfm-status.is-success {
-      color: #166534;
-    }
+    .lost-found-manager-page .lfm-status.is-error { color: #b91c1c; }
+    .lost-found-manager-page .lfm-status.is-success { color: #166534; }
 
     .lost-found-manager-page .lfm-section-head {
       display: flex;
@@ -274,25 +238,11 @@ const messageText =
       margin: 0;
     }
 
-    .lost-found-manager-page table.lfm-table col.col-name {
-      width: 7.5ch;
-    }
-
-    .lost-found-manager-page table.lfm-table col.col-disc {
-      width: 8.5ch;
-    }
-
-    .lost-found-manager-page table.lfm-table col.col-color {
-      width: 5.5ch;
-    }
-
-    .lost-found-manager-page table.lfm-table col.col-phone {
-      width: 9ch;
-    }
-
-    .lost-found-manager-page table.lfm-table col.col-actions {
-      width: 7ch;
-    }
+    .lost-found-manager-page table.lfm-table col.col-name { width: 7.5ch; }
+    .lost-found-manager-page table.lfm-table col.col-disc { width: 8.5ch; }
+    .lost-found-manager-page table.lfm-table col.col-color { width: 5.5ch; }
+    .lost-found-manager-page table.lfm-table col.col-phone { width: 9ch; }
+    .lost-found-manager-page table.lfm-table col.col-actions { width: 7ch; }
 
     .lost-found-manager-page table.lfm-table thead th {
       background: var(--header, #f8fafc);
@@ -334,9 +284,7 @@ const messageText =
       line-height: inherit;
     }
 
-    .lost-found-manager-page .lfm-th-button:hover {
-      color: var(--text);
-    }
+    .lost-found-manager-page .lfm-th-button:hover { color: var(--text); }
 
     .lost-found-manager-page .lfm-sort-indicator {
       color: var(--muted);
@@ -360,21 +308,10 @@ const messageText =
       background: transparent;
     }
 
-    .lost-found-manager-page table.lfm-table tbody td:first-child {
-      padding-left: 0;
-    }
-
-    .lost-found-manager-page table.lfm-table tbody tr:nth-child(even) td {
-      background: #fcfdff !important;
-    }
-
-    .lost-found-manager-page table.lfm-table tbody tr:nth-child(odd) td {
-      background: transparent !important;
-    }
-
-    .lost-found-manager-page table.lfm-table tbody tr:hover td {
-      background: var(--hover, #f9fbff) !important;
-    }
+    .lost-found-manager-page table.lfm-table tbody td:first-child { padding-left: 0; }
+    .lost-found-manager-page table.lfm-table tbody tr:nth-child(even) td { background: #fcfdff !important; }
+    .lost-found-manager-page table.lfm-table tbody tr:nth-child(odd) td { background: transparent !important; }
+    .lost-found-manager-page table.lfm-table tbody tr:hover td { background: var(--hover, #f9fbff) !important; }
 
     .lost-found-manager-page .lfm-phone-link {
       color: var(--accent);
@@ -382,9 +319,7 @@ const messageText =
       font-weight: 600;
     }
 
-    .lost-found-manager-page .lfm-phone-link:hover {
-      text-decoration: underline;
-    }
+    .lost-found-manager-page .lfm-phone-link:hover { text-decoration: underline; }
 
     .lost-found-manager-page .lfm-row-actions {
       display: flex;
@@ -406,9 +341,7 @@ const messageText =
       padding: 18px 12px;
     }
 
-    .lost-found-manager-page [hidden] {
-      display: none !important;
-    }
+    .lost-found-manager-page [hidden] { display: none !important; }
 
     .lost-found-manager-page .lfm-modal-layer {
       position: fixed;
@@ -508,11 +441,7 @@ const messageText =
       font-weight: 600;
     }
 
-    @keyframes lfm-spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
+    @keyframes lfm-spin { to { transform: rotate(360deg); } }
 
     html[data-theme="dark"] .lost-found-manager-page .lfm-card,
     html[data-theme="dark"] .lost-found-manager-page .lfm-modal-card,
@@ -567,17 +496,9 @@ const messageText =
       background: transparent !important;
     }
 
-    html[data-theme="dark"] .lost-found-manager-page table.lfm-table tbody tr:nth-child(odd) td {
-      background: transparent !important;
-    }
-
-    html[data-theme="dark"] .lost-found-manager-page table.lfm-table tbody tr:nth-child(even) td {
-      background: rgba(255, 255, 255, 0.03) !important;
-    }
-
-    html[data-theme="dark"] .lost-found-manager-page table.lfm-table tbody tr:hover td {
-      background: rgba(255, 255, 255, 0.06) !important;
-    }
+    html[data-theme="dark"] .lost-found-manager-page table.lfm-table tbody tr:nth-child(odd) td { background: transparent !important; }
+    html[data-theme="dark"] .lost-found-manager-page table.lfm-table tbody tr:nth-child(even) td { background: rgba(255, 255, 255, 0.03) !important; }
+    html[data-theme="dark"] .lost-found-manager-page table.lfm-table tbody tr:hover td { background: rgba(255, 255, 255, 0.06) !important; }
 
     @media (prefers-color-scheme: dark) {
       html[data-theme="system"] .lost-found-manager-page .lfm-card,
@@ -633,55 +554,27 @@ const messageText =
         background: transparent !important;
       }
 
-      html[data-theme="system"] .lost-found-manager-page table.lfm-table tbody tr:nth-child(odd) td {
-        background: transparent !important;
-      }
-
-      html[data-theme="system"] .lost-found-manager-page table.lfm-table tbody tr:nth-child(even) td {
-        background: rgba(255, 255, 255, 0.03) !important;
-      }
-
-      html[data-theme="system"] .lost-found-manager-page table.lfm-table tbody tr:hover td {
-        background: rgba(255, 255, 255, 0.06) !important;
-      }
+      html[data-theme="system"] .lost-found-manager-page table.lfm-table tbody tr:nth-child(odd) td { background: transparent !important; }
+      html[data-theme="system"] .lost-found-manager-page table.lfm-table tbody tr:nth-child(even) td { background: rgba(255, 255, 255, 0.03) !important; }
+      html[data-theme="system"] .lost-found-manager-page table.lfm-table tbody tr:hover td { background: rgba(255, 255, 255, 0.06) !important; }
     }
 
     @media (max-width: 700px) {
-      .lost-found-manager-page .lfm-card {
-        padding: 18px 14px 16px;
-      }
-
+      .lost-found-manager-page .lfm-card { padding: 18px 14px 16px; }
       .lost-found-manager-page .lfm-password-row,
       .lost-found-manager-page .lfm-grid-4,
-      .lost-found-manager-page .lfm-grid-2,
-      .lost-found-manager-page .lfm-modal-grid {
-        grid-template-columns: 1fr;
-      }
+      .lost-found-manager-page .lfm-modal-grid { grid-template-columns: 1fr; }
 
       .lost-found-manager-page .lfm-section-head {
         align-items: flex-start;
         flex-direction: column;
       }
 
-      .lost-found-manager-page table.lfm-table col.col-name {
-        width: 6.5ch;
-      }
-
-      .lost-found-manager-page table.lfm-table col.col-disc {
-        width: 7.5ch;
-      }
-
-      .lost-found-manager-page table.lfm-table col.col-color {
-        width: 5ch;
-      }
-
-      .lost-found-manager-page table.lfm-table col.col-phone {
-        width: 8ch;
-      }
-
-      .lost-found-manager-page table.lfm-table col.col-actions {
-        width: 6.5ch;
-      }
+      .lost-found-manager-page table.lfm-table col.col-name { width: 6.5ch; }
+      .lost-found-manager-page table.lfm-table col.col-disc { width: 7.5ch; }
+      .lost-found-manager-page table.lfm-table col.col-color { width: 5ch; }
+      .lost-found-manager-page table.lfm-table col.col-phone { width: 8ch; }
+      .lost-found-manager-page table.lfm-table col.col-actions { width: 6.5ch; }
 
       .lost-found-manager-page table.lfm-table thead th {
         font-size: 0.58rem !important;
@@ -690,13 +583,8 @@ const messageText =
         line-height: 1.05 !important;
       }
 
-      .lost-found-manager-page table.lfm-table thead th:first-child {
-        padding-left: 0 !important;
-      }
-
-      .lost-found-manager-page .lfm-sort-indicator {
-        font-size: 0.56rem !important;
-      }
+      .lost-found-manager-page table.lfm-table thead th:first-child { padding-left: 0 !important; }
+      .lost-found-manager-page .lfm-sort-indicator { font-size: 0.56rem !important; }
 
       .lost-found-manager-page table.lfm-table tbody td {
         font-size: 0.76rem !important;
@@ -704,9 +592,7 @@ const messageText =
         line-height: 1.06 !important;
       }
 
-      .lost-found-manager-page table.lfm-table tbody td:first-child {
-        padding-left: 0 !important;
-      }
+      .lost-found-manager-page table.lfm-table tbody td:first-child { padding-left: 0 !important; }
 
       .lost-found-manager-page .lfm-row-actions .lfm-button {
         min-height: 30px;
@@ -716,42 +602,20 @@ const messageText =
     }
 
     @media (max-width: 420px) {
-      .lost-found-manager-page h1 {
-        font-size: 1.9rem;
-      }
-
-      .lost-found-manager-page .lfm-card {
-        padding: 18px 10px 14px;
-      }
-
-      .lost-found-manager-page table.lfm-table col.col-name {
-        width: 6ch;
-      }
-
-      .lost-found-manager-page table.lfm-table col.col-disc {
-        width: 7ch;
-      }
-
-      .lost-found-manager-page table.lfm-table col.col-color {
-        width: 4.8ch;
-      }
-
-      .lost-found-manager-page table.lfm-table col.col-phone {
-        width: 7.4ch;
-      }
-
-      .lost-found-manager-page table.lfm-table col.col-actions {
-        width: 6ch;
-      }
+      .lost-found-manager-page h1 { font-size: 1.9rem; }
+      .lost-found-manager-page .lfm-card { padding: 18px 10px 14px; }
+      .lost-found-manager-page table.lfm-table col.col-name { width: 6ch; }
+      .lost-found-manager-page table.lfm-table col.col-disc { width: 7ch; }
+      .lost-found-manager-page table.lfm-table col.col-color { width: 4.8ch; }
+      .lost-found-manager-page table.lfm-table col.col-phone { width: 7.4ch; }
+      .lost-found-manager-page table.lfm-table col.col-actions { width: 6ch; }
 
       .lost-found-manager-page table.lfm-table thead th {
         font-size: 0.54rem !important;
         padding: 5px 2px !important;
       }
 
-      .lost-found-manager-page .lfm-sort-indicator {
-        font-size: 0.52rem !important;
-      }
+      .lost-found-manager-page .lfm-sort-indicator { font-size: 0.52rem !important; }
 
       .lost-found-manager-page table.lfm-table tbody td {
         font-size: 0.72rem !important;
@@ -881,7 +745,7 @@ const messageText =
 
           <div class="lfm-modal-actions">
             <button id="lfmSaveEdit" class="lfm-button lfm-button-primary" type="button">Save changes</button>
-            <button id="lfmActionRestore" class="lfm-button lfm-button-restore" type="button" hidden>Restore</button>
+            <button id="lfmActionRestore" class="lfm-button lfm-button-restore" type="button" hidden>Restore to Current</button>
             <button id="lfmActionReturned" class="lfm-button lfm-button-danger" type="button" hidden>Mark returned</button>
             <button id="lfmActionDonated" class="lfm-button lfm-button-donated" type="button" hidden>Mark donated</button>
             <button id="lfmCancelEdit" class="lfm-button lfm-button-light" type="button">Cancel</button>
@@ -1131,13 +995,7 @@ const messageText =
               <td>${phoneHtml}</td>
               <td>
                 <div class="lfm-row-actions">
-                  <button
-                    class="lfm-button"
-                    type="button"
-                    data-edit-row="${Number(row.rowNumber)}"
-                  >
-                    Edit
-                  </button>
+                  <button class="lfm-button" type="button" data-edit-row="${Number(row.rowNumber)}">Edit</button>
                 </div>
               </td>
             </tr>
@@ -1298,9 +1156,21 @@ const messageText =
       editColor.value = row.color || "";
       editPhone.value = row.phone || "";
 
-      actionRestoreButton.hidden = state.activeView === "current";
-      actionReturnedButton.hidden = state.activeView === "returned";
-      actionDonatedButton.hidden = state.activeView === "donated";
+      if (state.activeView === "current") {
+        actionRestoreButton.hidden = true;
+        actionReturnedButton.hidden = false;
+        actionDonatedButton.hidden = false;
+      } else if (state.activeView === "returned") {
+        actionRestoreButton.hidden = false;
+        actionRestoreButton.textContent = "Restore to Current";
+        actionReturnedButton.hidden = true;
+        actionDonatedButton.hidden = false;
+      } else {
+        actionRestoreButton.hidden = false;
+        actionRestoreButton.textContent = "Restore to Current";
+        actionReturnedButton.hidden = true;
+        actionDonatedButton.hidden = true;
+      }
 
       modalLayer.hidden = false;
       document.body.style.overflow = "hidden";
@@ -1487,7 +1357,7 @@ const messageText =
         await saveEditWithState(
           { returned: false, status: "" },
           "Restoring disc…",
-          "Disc restored."
+          "Disc restored to current inventory."
         );
       } catch (error) {
         setStatus(appStatus, error?.message || "Unable to restore disc.", "error");
