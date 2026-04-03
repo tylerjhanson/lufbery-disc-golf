@@ -611,9 +611,9 @@ const rows = getHandicaps();
               <th class="sortable" data-column="1" data-type="number">
                 <span class="th-inner">Hcp <span class="sort-indicator"></span></span>
               </th>
-              <th class="sortable" data-column="2" data-type="number">
-                <span class="th-inner">Tag <span class="sort-indicator"></span></span>
-              </th>
+              <th class="sortable" data-column="2" data-type="tag">
+  <span class="th-inner">Tag <span class="sort-indicator"></span></span>
+</th>
               <th class="sortable" data-column="3" data-type="number">
                 <span class="th-inner">Rounds <span class="sort-indicator"></span></span>
               </th>
@@ -703,24 +703,55 @@ const rows = getHandicaps();
         : "";
     }
 
-    function compareValues(a, b, type, direction) {
-      const emptyA = a === "";
-      const emptyB = b === "";
+   function compareValues(a, b, type, direction) {
+  const normalize = (value) => String(value || "").trim();
+  const valueA = normalize(a);
+  const valueB = normalize(b);
 
-      if (emptyA && emptyB) return 0;
-      if (emptyA) return 1;
-      if (emptyB) return -1;
+  const emptyA = valueA === "";
+  const emptyB = valueB === "";
 
-      let result = 0;
+  if (type === "tag") {
+    const getTagRank = (value) => {
+      if (value === "") return { bucket: 2, num: Infinity }; // blanks last
+      if (/^tbd$/i.test(value)) return { bucket: 1, num: Infinity }; // TBD after numbers
 
-      if (type === "number") {
-        result = Number(a) - Number(b);
-      } else {
-        result = a.localeCompare(b, undefined, { sensitivity: "base" });
-      }
+      const num = Number(value);
+      if (!Number.isNaN(num)) return { bucket: 0, num }; // numeric tags first
 
-      return direction === "asc" ? result : -result;
+      return { bucket: 1, num: Infinity }; // any other text with TBD group
+    };
+
+    const rankA = getTagRank(valueA);
+    const rankB = getTagRank(valueB);
+
+    let result = 0;
+
+    if (rankA.bucket !== rankB.bucket) {
+      result = rankA.bucket - rankB.bucket;
+    } else if (rankA.bucket === 0) {
+      result = rankA.num - rankB.num;
+    } else {
+      result = valueA.localeCompare(valueB, undefined, { sensitivity: "base" });
     }
+
+    return direction === "asc" ? result : -result;
+  }
+
+  if (emptyA && emptyB) return 0;
+  if (emptyA) return 1;
+  if (emptyB) return -1;
+
+  let result = 0;
+
+  if (type === "number") {
+    result = Number(valueA) - Number(valueB);
+  } else {
+    result = valueA.localeCompare(valueB, undefined, { sensitivity: "base" });
+  }
+
+  return direction === "asc" ? result : -result;
+}
 
     function updateIndicators(activeColumn, direction) {
       headers.forEach((header) => {
