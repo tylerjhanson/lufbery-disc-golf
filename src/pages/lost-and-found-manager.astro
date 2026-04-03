@@ -228,6 +228,49 @@ const messageText =
       -webkit-overflow-scrolling: touch;
     }
 
+    .lost-found-manager-page .lfm-bulk-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 0 0 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--line, #e5e7eb);
+      border-radius: 14px;
+      background: var(--header, #f8fafc);
+    }
+
+    .lost-found-manager-page .lfm-bulk-meta,
+    .lost-found-manager-page .lfm-bulk-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .lost-found-manager-page .lfm-bulk-count {
+      color: var(--muted);
+      font-size: 0.84rem;
+      white-space: nowrap;
+    }
+
+    .lost-found-manager-page .lfm-check-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .lost-found-manager-page .lfm-check-label input,
+    .lost-found-manager-page .lfm-select-cell input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
     .lost-found-manager-page table.lfm-table {
       width: 100%;
       border-collapse: separate;
@@ -238,6 +281,7 @@ const messageText =
       margin: 0;
     }
 
+    .lost-found-manager-page table.lfm-table col.col-select { width: 3.2rem; }
     .lost-found-manager-page table.lfm-table col.col-name { width: 7.5ch; }
     .lost-found-manager-page table.lfm-table col.col-disc { width: 8.5ch; }
     .lost-found-manager-page table.lfm-table col.col-color { width: 5.5ch; }
@@ -256,6 +300,12 @@ const messageText =
       text-align: left;
       white-space: normal;
       line-height: 1.1;
+    }
+
+    .lost-found-manager-page .lfm-select-th,
+    .lost-found-manager-page .lfm-select-cell {
+      text-align: center !important;
+      width: 3.2rem;
     }
 
     .lost-found-manager-page table.lfm-table thead th:first-child {
@@ -309,6 +359,7 @@ const messageText =
     }
 
     .lost-found-manager-page table.lfm-table tbody td:first-child { padding-left: 0; }
+    .lost-found-manager-page table.lfm-table tbody td:nth-child(2) { padding-left: 0; }
     .lost-found-manager-page table.lfm-table tbody tr:nth-child(even) td { background: #fcfdff !important; }
     .lost-found-manager-page table.lfm-table tbody tr:nth-child(odd) td { background: transparent !important; }
     .lost-found-manager-page table.lfm-table tbody tr:hover td { background: var(--hover, #f9fbff) !important; }
@@ -679,9 +730,27 @@ const messageText =
             </div>
           </div>
 
+          <div class="lfm-bulk-bar">
+            <div class="lfm-bulk-meta">
+              <label class="lfm-check-label" for="lfmSelectAll">
+                <input id="lfmSelectAll" type="checkbox" />
+                <span>Select all visible</span>
+              </label>
+              <span id="lfmBulkCount" class="lfm-bulk-count">0 selected</span>
+            </div>
+
+            <div class="lfm-bulk-actions">
+              <button id="lfmBulkReturned" class="lfm-button lfm-button-danger" type="button">Mark returned</button>
+              <button id="lfmBulkRestore" class="lfm-button lfm-button-restore" type="button" hidden>Restore to Current</button>
+              <button id="lfmBulkDonated" class="lfm-button lfm-button-donated" type="button">Mark donated</button>
+              <button id="lfmBulkClear" class="lfm-button lfm-button-light" type="button">Clear</button>
+            </div>
+          </div>
+
           <div class="lfm-table-wrap">
             <table class="lfm-table">
               <colgroup>
+                <col class="col-select" />
                 <col class="col-name" />
                 <col class="col-disc" />
                 <col class="col-color" />
@@ -690,6 +759,7 @@ const messageText =
               </colgroup>
               <thead>
                 <tr>
+                  <th class="lfm-select-th"></th>
                   <th>
                     <button class="lfm-th-button" type="button" data-sort-index="0">
                       <span>Name</span>
@@ -719,7 +789,7 @@ const messageText =
               </thead>
               <tbody id="lfmTableBody">
                 <tr>
-                  <td class="lfm-empty" colspan="5">Loading…</td>
+                  <td class="lfm-empty" colspan="6">Loading…</td>
                 </tr>
               </tbody>
             </table>
@@ -773,6 +843,12 @@ const messageText =
     const addForm = document.getElementById("lfmAddForm");
     const tableBody = document.getElementById("lfmTableBody");
     const tableHeading = document.getElementById("lfmTableHeading");
+    const selectAllCheckbox = document.getElementById("lfmSelectAll");
+    const bulkCount = document.getElementById("lfmBulkCount");
+    const bulkReturnedButton = document.getElementById("lfmBulkReturned");
+    const bulkRestoreButton = document.getElementById("lfmBulkRestore");
+    const bulkDonatedButton = document.getElementById("lfmBulkDonated");
+    const bulkClearButton = document.getElementById("lfmBulkClear");
 
     const filterButtons = {
       current: document.getElementById("lfmFilterCurrent"),
@@ -811,6 +887,7 @@ const messageText =
       },
       activeView: "current",
       editing: null,
+      selectedRows: new Set(),
       sorts: {
         current: { index: 4, dir: "desc" },
         returned: { index: 4, dir: "desc" },
@@ -959,6 +1036,73 @@ const messageText =
       }
     }
 
+    function getVisibleRows() {
+      return sortRows(state.records[state.activeView] || [], state.activeView);
+    }
+
+    function updateBulkUi(rows = getVisibleRows()) {
+      const selectedVisibleCount = rows.filter((row) =>
+        state.selectedRows.has(Number(row.rowNumber))
+      ).length;
+
+      const totalSelectedCount = state.selectedRows.size;
+      const hasSelection = totalSelectedCount > 0;
+
+      if (bulkCount) {
+        bulkCount.textContent = `${totalSelectedCount} selected`;
+      }
+
+      if (selectAllCheckbox) {
+        selectAllCheckbox.checked = rows.length > 0 && selectedVisibleCount === rows.length;
+        selectAllCheckbox.indeterminate =
+          selectedVisibleCount > 0 && selectedVisibleCount < rows.length;
+      }
+
+      if (bulkReturnedButton) {
+        bulkReturnedButton.hidden = state.activeView !== "current";
+        bulkReturnedButton.disabled = !hasSelection;
+      }
+
+      if (bulkDonatedButton) {
+        bulkDonatedButton.hidden = state.activeView === "donated";
+        bulkDonatedButton.disabled = !hasSelection;
+      }
+
+      if (bulkRestoreButton) {
+        bulkRestoreButton.hidden = state.activeView === "current";
+        bulkRestoreButton.disabled = !hasSelection;
+      }
+
+      if (bulkClearButton) {
+        bulkClearButton.disabled = !hasSelection;
+      }
+    }
+
+    async function runBulkAction(operation, busyMessage, successMessage) {
+      if (!state.selectedRows.size) {
+        setStatus(appStatus, "Select at least one disc.", "error");
+        return;
+      }
+
+      await runWithBusy(busyMessage, async () => {
+        const response = await jsonp({
+          action: "bulkUpdate",
+          password: state.password,
+          operation,
+          rowNumbers: [...state.selectedRows].join(","),
+        });
+
+        if (!response?.ok) {
+          throw new Error(response?.error || "Unable to update discs.");
+        }
+
+        state.selectedRows.clear();
+        await refreshLoadedViews();
+      });
+
+      setStatus(appStatus, successMessage, "success");
+    }
+
     function renderTable() {
       const rows = sortRows(state.records[state.activeView] || [], state.activeView);
 
@@ -972,16 +1116,19 @@ const messageText =
 
         tableBody.innerHTML = `
           <tr>
-            <td class="lfm-empty" colspan="5">${emptyText}</td>
+            <td class="lfm-empty" colspan="6">${emptyText}</td>
           </tr>
         `;
         updateSortIndicators();
         updateFilterButtons();
+        updateBulkUi(rows);
         return;
       }
 
       tableBody.innerHTML = rows
         .map((row) => {
+          const rowNumber = Number(row.rowNumber);
+          const checked = state.selectedRows.has(rowNumber) ? "checked" : "";
           const hasPhone = String(row.phone ?? "").trim() !== "";
           const phoneHtml = hasPhone
             ? `<a class="lfm-phone-link" href="${escapeHtml(getSmsHref(row.phone))}">${escapeHtml(formatPhone(row.phone))}</a>`
@@ -989,13 +1136,16 @@ const messageText =
 
           return `
             <tr>
+              <td class="lfm-select-cell">
+                <input type="checkbox" class="lfm-row-check" data-select-row="${rowNumber}" ${checked} />
+              </td>
               <td>${escapeHtml(row.name || "") || "&nbsp;"}</td>
               <td>${escapeHtml(row.disc || "") || "&nbsp;"}</td>
               <td>${escapeHtml(row.color || "") || "&nbsp;"}</td>
               <td>${phoneHtml}</td>
               <td>
                 <div class="lfm-row-actions">
-                  <button class="lfm-button" type="button" data-edit-row="${Number(row.rowNumber)}">Edit</button>
+                  <button class="lfm-button" type="button" data-edit-row="${rowNumber}">Edit</button>
                 </div>
               </td>
             </tr>
@@ -1005,6 +1155,7 @@ const messageText =
 
       updateSortIndicators();
       updateFilterButtons();
+      updateBulkUi(rows);
     }
 
     function handleSort(index) {
@@ -1289,6 +1440,34 @@ const messageText =
       openEditModal(row);
     });
 
+    selectAllCheckbox?.addEventListener("change", () => {
+      const rows = getVisibleRows();
+
+      if (selectAllCheckbox.checked) {
+        rows.forEach((row) => state.selectedRows.add(Number(row.rowNumber)));
+      } else {
+        rows.forEach((row) => state.selectedRows.delete(Number(row.rowNumber)));
+      }
+
+      renderTable();
+    });
+
+    tableBody?.addEventListener("change", (event) => {
+      const checkbox = event.target.closest("[data-select-row]");
+      if (!checkbox) return;
+
+      const rowNumber = Number(checkbox.getAttribute("data-select-row"));
+      if (!rowNumber) return;
+
+      if (checkbox.checked) {
+        state.selectedRows.add(rowNumber);
+      } else {
+        state.selectedRows.delete(rowNumber);
+      }
+
+      updateBulkUi();
+    });
+
     document.addEventListener("click", async (event) => {
       const sortButton = event.target.closest("[data-sort-index]");
       if (sortButton && sortButton.closest(".lfm-table")) {
@@ -1305,6 +1484,7 @@ const messageText =
         try {
           await runWithBusy(`Loading ${view} discs…`, async () => {
             state.activeView = view;
+            state.selectedRows.clear();
             await ensureViewLoaded(view);
             renderTable();
           });
@@ -1374,6 +1554,48 @@ const messageText =
       } catch (error) {
         setStatus(appStatus, error?.message || "Unable to mark disc donated.", "error");
       }
+    });
+
+    bulkReturnedButton?.addEventListener("click", async () => {
+      try {
+        await runBulkAction(
+          "returned",
+          "Marking discs returned…",
+          "Discs marked returned."
+        );
+      } catch (error) {
+        setStatus(appStatus, error?.message || "Unable to mark discs returned.", "error");
+      }
+    });
+
+    bulkRestoreButton?.addEventListener("click", async () => {
+      try {
+        await runBulkAction(
+          "restore",
+          "Restoring discs…",
+          "Discs restored to current inventory."
+        );
+      } catch (error) {
+        setStatus(appStatus, error?.message || "Unable to restore discs.", "error");
+      }
+    });
+
+    bulkDonatedButton?.addEventListener("click", async () => {
+      try {
+        await runBulkAction(
+          "donated",
+          "Marking discs donated…",
+          "Discs marked donated."
+        );
+      } catch (error) {
+        setStatus(appStatus, error?.message || "Unable to mark discs donated.", "error");
+      }
+    });
+
+    bulkClearButton?.addEventListener("click", () => {
+      state.selectedRows.clear();
+      renderTable();
+      setStatus(appStatus, "");
     });
 
     modalClose?.addEventListener("click", closeEditModal);
