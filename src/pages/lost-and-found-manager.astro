@@ -738,10 +738,10 @@ const messageText =
             <h2 id="lfmTableHeading">Current inventory</h2>
 
             <div class="lfm-filter-wrap" role="tablist" aria-label="Inventory filters">
-              <button id="lfmFilterCurrent" class="lfm-filter-button is-active" type="button" data-view="current">Current</button>
-              <button id="lfmFilterReturned" class="lfm-filter-button" type="button" data-view="returned">Returned</button>
-              <button id="lfmFilterDonated" class="lfm-filter-button" type="button" data-view="donated">Donated</button>
-              <button id="lfmFilterSold" class="lfm-filter-button" type="button" data-view="sold">Sold</button>
+              <button id="lfmFilterCurrent" class="lfm-filter-button is-active" type="button" data-view="current">Current (0)</button>
+              <button id="lfmFilterReturned" class="lfm-filter-button" type="button" data-view="returned">Returned (0)</button>
+              <button id="lfmFilterDonated" class="lfm-filter-button" type="button" data-view="donated">Donated (0)</button>
+              <button id="lfmFilterSold" class="lfm-filter-button" type="button" data-view="sold">Sold (0)</button>
             </div>
           </div>
 
@@ -1038,38 +1038,36 @@ const messageText =
       });
     }
 function getViewCount(view) {
-  return Array.isArray(state.records[view]) ? state.records[view].length : 0;
-}
+      return Array.isArray(state.records[view]) ? state.records[view].length : 0;
+    }
 
-function getViewHeading(view) {
-  const count = getViewCount(view);
+    function getViewHeading(view) {
+      if (view === "current") return "Current inventory";
+      if (view === "returned") return "Returned discs";
+      if (view === "donated") return "Donated discs";
+      return "Sold discs";
+    }
 
-  if (view === "current") return `Current inventory (${count})`;
-  if (view === "returned") return `Returned discs (${count})`;
-  if (view === "donated") return `Donated discs (${count})`;
-  return `Sold discs (${count})`;
-}
-   function updateFilterButtons() {
-  Object.entries(filterButtons).forEach(([view, button]) => {
-    if (!button) return;
-    button.classList.toggle("is-active", state.activeView === view);
-  });
+    function getViewButtonLabel(view) {
+      const count = getViewCount(view);
 
-  if (tableHeading) {
-    tableHeading.textContent = getViewHeading(state.activeView);
-  }
+      if (view === "current") return `Current (${count})`;
+      if (view === "returned") return `Returned (${count})`;
+      if (view === "donated") return `Donated (${count})`;
+      return `Sold (${count})`;
+    }
 
-  if (tableHeading) {
-    tableHeading.textContent =
-      state.activeView === "current"
-        ? "Current inventory"
-        : state.activeView === "returned"
-          ? "Returned discs"
-          : state.activeView === "donated"
-            ? "Donated discs"
-            : "Sold archive";
-  }
-}
+    function updateFilterButtons() {
+      Object.entries(filterButtons).forEach(([view, button]) => {
+        if (!button) return;
+        button.classList.toggle("is-active", state.activeView === view);
+        button.textContent = getViewButtonLabel(view);
+      });
+
+      if (tableHeading) {
+        tableHeading.textContent = getViewHeading(state.activeView);
+      }
+    }
 
     function getVisibleRows() {
       return sortRows(state.records[state.activeView] || [], state.activeView);
@@ -1281,9 +1279,7 @@ function getViewHeading(view) {
     }
 
     async function refreshLoadedViews() {
-      const views = ["current", "returned", "donated", "sold"].filter(
-        (view) => state.loaded[view] || view === state.activeView || view === "current"
-      );
+      const views = ["current", "returned", "donated", "sold"];
 
       for (const view of views) {
         await loadView(view);
@@ -1297,8 +1293,8 @@ function getViewHeading(view) {
       }
 
       state.password = trimmed;
-      await loadView("current");
       state.activeView = "current";
+      await refreshLoadedViews();
       renderTable();
 
       if (remember) {
