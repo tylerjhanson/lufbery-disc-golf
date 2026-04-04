@@ -1049,7 +1049,7 @@ function getViewHeading(view) {
   if (view === "donated") return `Donated discs (${count})`;
   return `Sold discs (${count})`;
 }
-    function updateFilterButtons() {
+   function updateFilterButtons() {
   Object.entries(filterButtons).forEach(([view, button]) => {
     if (!button) return;
     button.classList.toggle("is-active", state.activeView === view);
@@ -1059,18 +1059,17 @@ function getViewHeading(view) {
     tableHeading.textContent = getViewHeading(state.activeView);
   }
 
-
-      if (tableHeading) {
-        tableHeading.textContent =
-          state.activeView === "current"
-            ? "Current inventory"
-            : state.activeView === "returned"
-              ? "Returned discs"
-              : state.activeView === "donated"
-                ? "Donated discs"
-                : "Sold archive";
-      }
-    }
+  if (tableHeading) {
+    tableHeading.textContent =
+      state.activeView === "current"
+        ? "Current inventory"
+        : state.activeView === "returned"
+          ? "Returned discs"
+          : state.activeView === "donated"
+            ? "Donated discs"
+            : "Sold archive";
+  }
+}
 
     function getVisibleRows() {
       return sortRows(state.records[state.activeView] || [], state.activeView);
