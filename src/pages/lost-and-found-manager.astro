@@ -741,7 +741,7 @@ const messageText =
               <button id="lfmFilterCurrent" class="lfm-filter-button is-active" type="button" data-view="current">Current</button>
               <button id="lfmFilterReturned" class="lfm-filter-button" type="button" data-view="returned">Returned</button>
               <button id="lfmFilterDonated" class="lfm-filter-button" type="button" data-view="donated">Donated</button>
-              <button id="lfmFilterSold" class="lfm-filter-button" type="button" data-view="sold">Archive</button>
+              <button id="lfmFilterSold" class="lfm-filter-button" type="button" data-view="sold">Sold</button>
             </div>
           </div>
 
@@ -1037,12 +1037,28 @@ const messageText =
         el.textContent = activeSort.dir === "asc" ? "▲" : "▼";
       });
     }
+function getViewCount(view) {
+  return Array.isArray(state.records[view]) ? state.records[view].length : 0;
+}
 
+function getViewHeading(view) {
+  const count = getViewCount(view);
+
+  if (view === "current") return `Current inventory (${count})`;
+  if (view === "returned") return `Returned discs (${count})`;
+  if (view === "donated") return `Donated discs (${count})`;
+  return `Sold discs (${count})`;
+}
     function updateFilterButtons() {
-      Object.entries(filterButtons).forEach(([view, button]) => {
-        if (!button) return;
-        button.classList.toggle("is-active", state.activeView === view);
-      });
+  Object.entries(filterButtons).forEach(([view, button]) => {
+    if (!button) return;
+    button.classList.toggle("is-active", state.activeView === view);
+  });
+
+  if (tableHeading) {
+    tableHeading.textContent = getViewHeading(state.activeView);
+  }
+
 
       if (tableHeading) {
         tableHeading.textContent =
