@@ -1259,7 +1259,7 @@ export function getPlayerProfiles() {
         kind: "doubles",
         hole: String(row.hole || ""),
         date: row.date,
-        href: row.detailsHref || row.url || "",
+        href: row.url || row.detailsHref || "",
         label: "Doubles",
       });
     }
