@@ -71,33 +71,6 @@ const doublesLinks = [
     </script>
 
     <style is:global>
-      .site-go-top {
-        position: fixed;
-        right: 18px;
-        bottom: 18px;
-        z-index: 90;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 44px;
-        height: 44px;
-        border-radius: 999px;
-        border: 1px solid var(--line-soft);
-        background: var(--card);
-        color: var(--accent);
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
-        text-decoration: none;
-        font-size: 1.2rem;
-        font-weight: 800;
-        line-height: 1;
-      }
-
-      .site-go-top:hover,
-      .site-go-top:focus-visible {
-        background: var(--button-bg-hover);
-        color: var(--text);
-        text-decoration: none;
-      }
       :root {
         --bg: #f5f7fb;
         --bg-strong: #eef3f8;
@@ -540,15 +513,44 @@ const doublesLinks = [
 
       .site-menu-group.open .site-chev { transform: rotate(90deg); }
 
+      .site-go-top {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        z-index: 90;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 999px;
+        border: 1px solid var(--line-soft);
+        background: var(--card);
+        color: var(--accent);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
+        text-decoration: none;
+        font-size: 1.2rem;
+        font-weight: 800;
+        line-height: 1;
+      }
+
+      .site-go-top:hover,
+      .site-go-top:focus-visible {
+        background: var(--button-bg-hover);
+        color: var(--text);
+        text-decoration: none;
+      }
+
       @media (max-width: 700px) {
-                .site-go-top {
+        .site-go-top {
           right: 12px;
           bottom: 12px;
           width: 40px;
           height: 40px;
           font-size: 1.05rem;
         }
-.site-header-inner {
+
+        .site-header-inner {
           padding: 12px 10px;
         }
 
@@ -599,7 +601,8 @@ const doublesLinks = [
 
   <body>
     <div id="site-page-top"></div>
-{showBrandBar && (
+
+    {showBrandBar && (
       <header class="site-header">
         <div class="site-header-inner">
           <a class="site-brand" href="/" aria-label="Home">
@@ -669,9 +672,11 @@ const doublesLinks = [
         <a class="site-menu-link" href="https://udisc.com/leagues/lufbery-league" target="_blank" rel="noopener">Lufbery on UDisc</a>
       </div>
     </aside>
-<a class="site-go-top" href="#site-page-top" aria-label="Go to top" title="Go to top">↑</a>
+
+    <a class="site-go-top" href="#site-page-top" aria-label="Go to top" title="Go to top">↑</a>
+
     <script>
-           function decorateExternalLink(link) {
+      function decorateExternalLink(link) {
         if (!(link instanceof HTMLAnchorElement)) return;
 
         const href = (link.getAttribute("href") || "").trim();
@@ -719,7 +724,8 @@ const doublesLinks = [
           decorateExternalLink(link);
         });
       }
-const html = document.documentElement;
+
+      const html = document.documentElement;
       const themeToggle = document.getElementById("themeToggle");
       const themeModes = ["system", "light", "dark"];
 
@@ -822,6 +828,7 @@ const html = document.documentElement;
           if (!isOpen) group.classList.add("open");
         });
       });
+
       decorateExternalLinks(document);
 
       const externalLinksObserver = new MutationObserver((mutations) => {
@@ -840,6 +847,7 @@ const html = document.documentElement;
           subtree: true,
         });
       }
+
       document.addEventListener("keydown", (event) => {
         if (event.key === "Escape") closeMenu();
       });
