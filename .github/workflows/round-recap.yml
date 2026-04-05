@@ -1,0 +1,42 @@
+name: Round recap
+
+on:
+  push:
+    paths:
+      - "src/data/wkres.csv"
+      - "src/data/hcp.csv"
+      - "scripts/generate-round-recap.mjs"
+      - ".github/workflows/round-recap.yml"
+  workflow_dispatch:
+
+jobs:
+  recap:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate recap
+        run: node scripts/generate-round-recap.mjs > round-recap.txt
+
+      - name: Add recap to job summary
+        run: |
+          echo '```text' >> "$GITHUB_STEP_SUMMARY"
+          cat round-recap.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload recap artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: round-recap
+          path: round-recap.txt
