@@ -521,6 +521,34 @@ const defaultRoundType = "all";
       font-weight: 400 !important;
     }
 
+    .go-top-link {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 30;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      border: 1px solid var(--line-soft);
+      background: var(--card);
+      color: var(--accent);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
+      text-decoration: none;
+      font-size: 1.2rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .go-top-link:hover,
+    .go-top-link:focus-visible {
+      background: var(--header);
+      color: #1d4ed8;
+      text-decoration: none;
+    }
+
     @media (max-width: 700px) {
       body {
         padding: 8px;
@@ -636,6 +664,14 @@ const defaultRoundType = "all";
         font-size: 0.84rem !important;
         padding: 8px 4px !important;
       }
+
+      .go-top-link {
+        right: 12px;
+        bottom: 12px;
+        width: 40px;
+        height: 40px;
+        font-size: 1.05rem;
+      }
     }
 
     @media (max-width: 420px) {
@@ -659,7 +695,7 @@ const defaultRoundType = "all";
     }
   </style>
 
-  <div class="wrap weekly-results-page">
+  <div id="top" class="wrap weekly-results-page">
     <div class="page-header">
       <h1>Weekly Results</h1>
     </div>
@@ -1082,5 +1118,6 @@ const defaultRoundType = "all";
     applyFilters();
     updateSearchClear();
   </script>
+  <a class="go-top-link" href="#top" aria-label="Go to top" title="Go to top">↑</a>
   <PlayerModal profiles={playerProfiles} />
 </SiteLayout>
