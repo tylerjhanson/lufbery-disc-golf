@@ -1,6 +1,8 @@
 ---
 import SiteLayout from "../layouts/SiteLayout.astro";
-import { getWeeklyResults } from "../lib/data";
+import PlayerLink from "../components/PlayerLink.astro";
+import PlayerModal from "../components/PlayerModal.astro";
+import { getPlayerProfiles, getWeeklyResults } from "../lib/data";
 
 const singlesLinks = [
   { href: "/singles/handicaps-tags", label: "Handicaps & Tags" },
@@ -27,6 +29,7 @@ type WeeklyResultItem = Record<string, unknown> & {
 };
 
 const weeklyResults = getWeeklyResults() as WeeklyResultItem[];
+const playerProfiles = getPlayerProfiles();
 
 function getEventDateParts(title: string) {
   const match = String(title || "").match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
@@ -159,6 +162,10 @@ function resolveColumns(rows: LooseRow[], defs: { label: string; aliases: string
 
 const latestResultMainColumns = resolveColumns(latestResultMainRows, MAIN_COLUMN_DEFS).slice(0, 5);
 const latestResultWorkingColumns = resolveColumns(latestResultWorkingRows, WORKING_COLUMN_DEFS);
+
+function isPlayerColumn(column: ResolvedColumn) {
+  return normalizeKey(column.label) === "name";
+}
 
 function getCellText(row: LooseRow, key: string) {
   const value = row[key];
@@ -822,7 +829,7 @@ const hasLatestResultTable =
                             {latestResultMainRows.map((row) => (
                               <tr>
                                 {latestResultMainColumns.map((column) => (
-                                  <td>{getCellText(row, column.key)}</td>
+                                  <td>{isPlayerColumn(column) ? <PlayerLink name={getCellText(row, column.key)} /> : getCellText(row, column.key)}</td>
                                 ))}
                               </tr>
                             ))}
@@ -848,7 +855,7 @@ const hasLatestResultTable =
                             {latestResultWorkingRows.map((row) => (
                               <tr>
                                 {latestResultWorkingColumns.map((column) => (
-                                  <td>{getCellText(row, column.key)}</td>
+                                  <td>{isPlayerColumn(column) ? <PlayerLink name={getCellText(row, column.key)} /> : getCellText(row, column.key)}</td>
                                 ))}
                               </tr>
                             ))}
@@ -1144,4 +1151,5 @@ const hasLatestResultTable =
       loadEvents();
     })();
   </script>
+  <PlayerModal profiles={playerProfiles} />
 </SiteLayout>
