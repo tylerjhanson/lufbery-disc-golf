@@ -521,15 +521,6 @@ const defaultRoundType = "all";
       font-weight: 400 !important;
     }
 
-   
-
-    .go-top-link:hover,
-    .go-top-link:focus-visible {
-      background: var(--header);
-      color: #1d4ed8;
-      text-decoration: none;
-    }
-
     @media (max-width: 700px) {
       body {
         padding: 8px;
@@ -644,14 +635,6 @@ const defaultRoundType = "all";
       .weekly-results-page table.pool-table tbody td {
         font-size: 0.84rem !important;
         padding: 8px 4px !important;
-      }
-
-      .go-top-link {
-        right: 12px;
-        bottom: 12px;
-        width: 40px;
-        height: 40px;
-        font-size: 1.05rem;
       }
     }
 
@@ -1099,5 +1082,6 @@ const defaultRoundType = "all";
     applyFilters();
     updateSearchClear();
   </script>
-    <PlayerModal profiles={playerProfiles} />
+
+  <PlayerModal profiles={playerProfiles} />
 </SiteLayout>
