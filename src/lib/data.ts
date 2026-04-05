@@ -4,7 +4,7 @@ import { parse } from "csv-parse/sync";
 
 type CsvRow = string[];
 
-const HANDICAP_HISTORY_START_COLUMN = 56; // BE
+const LEGACY_HANDICAP_HISTORY_START_COLUMN = 56; // BE
 const SINGLES_PAR = 56;
 const WEEKLY_RESULTS_PAGE_PATH = "/singles/weekly-results";
 const DOUBLES_ACES_PAGE_PATH = "/doubles/aces";
@@ -399,6 +399,23 @@ function normalizeSummaryValue(value: string) {
   return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
 }
 
+function getHandicapHistoryStartColumn(rows: CsvRow[]) {
+  const header = rows[0] || [];
+  const udiscIndex = header.findIndex(
+    (cell) => normalizeSummaryValue(cell) === "udisc"
+  );
+
+  if (udiscIndex !== -1 && udiscIndex + 1 < header.length) {
+    return udiscIndex + 1;
+  }
+
+  if (LEGACY_HANDICAP_HISTORY_START_COLUMN < header.length) {
+    return LEGACY_HANDICAP_HISTORY_START_COLUMN;
+  }
+
+  return Math.max(0, Math.min(header.length - 1, 0));
+}
+
 function splitAwardSegments(value: string) {
   const text = cleanSummaryText(value);
   if (!text) return [];
@@ -520,8 +537,9 @@ function sortWeeklySummary(summary: WeeklySummary) {
 
 function getLastActiveHandicapColumn(rows: CsvRow[]) {
   const header = rows[0] || [];
+  const startColumn = getHandicapHistoryStartColumn(rows);
 
-  for (let i = header.length - 1; i >= HANDICAP_HISTORY_START_COLUMN; i -= 1) {
+  for (let i = header.length - 1; i >= startColumn; i -= 1) {
     if (!parseMonthDay(header[i])) continue;
 
     const hasAnyScore = rows
@@ -531,25 +549,26 @@ function getLastActiveHandicapColumn(rows: CsvRow[]) {
     if (hasAnyScore) return i;
   }
 
-  return HANDICAP_HISTORY_START_COLUMN - 1;
+  return startColumn - 1;
 }
 
 function buildHandicapDateMap(rows: CsvRow[]) {
   const header = rows[0] || [];
+  const startColumn = getHandicapHistoryStartColumn(rows);
   const lastActiveColumn = getLastActiveHandicapColumn(rows);
 
-  if (lastActiveColumn < HANDICAP_HISTORY_START_COLUMN) {
+  if (lastActiveColumn < startColumn) {
     return new Map<number, string>();
   }
 
   const dateColumns = header
-    .slice(HANDICAP_HISTORY_START_COLUMN, lastActiveColumn + 1)
+    .slice(startColumn, lastActiveColumn + 1)
     .map((label, offset) => {
       const parts = parseMonthDay(label);
       if (!parts) return null;
 
       return {
-        index: HANDICAP_HISTORY_START_COLUMN + offset,
+        index: startColumn + offset,
         month: parts.month,
         day: parts.day,
       };
@@ -693,6 +712,13 @@ function normalizeRecordRawKey(value: string) {
 
 function isExcludedSinglesRecordLayout(value: string) {
   return /\b(sticks|stones)\b/i.test(String(value || ""));
+}
+
+function getHrefPriority(href: string) {
+  if (!href) return 0;
+  if (href.startsWith(`${WEEKLY_RESULTS_PAGE_PATH}#`)) return 3;
+  if (/^https?:\/\//i.test(href)) return 2;
+  return 1;
 }
 
 function getDerivedSinglesData() {
@@ -929,6 +955,18 @@ export function getHandicaps() {
 
       const averageDisplay = allRoundsAverage == null ? "" : allRoundsAverage.toFixed(1);
       const handicapValue = String(row[1] || "").trim();
+      const bestFromColumn = extractFirstNumber(String(row[4] || "").trim());
+      const bestRawScore =
+        bestFromColumn ??
+        (roundHistory.length
+          ? Math.min(...roundHistory.map((round) => round.score))
+          : null);
+      const bestDates =
+        bestRawScore == null
+          ? []
+          : roundHistory
+              .filter((round) => round.score === bestRawScore)
+              .map((round) => round.date);
 
       return {
         name: row[0] || "",
@@ -936,6 +974,8 @@ export function getHandicaps() {
         tag: row[2] || "",
         rounds: row[3] || "",
         best: row[4] || "",
+        bestRawScore,
+        bestDates,
         allRounds: roundHistory,
         recentRounds: recentRounds.map((round, index) => ({
           ...round,
@@ -1139,14 +1179,21 @@ function addPersonalBest(
   if (candidate.rawScore < currentBestScore) {
     profile.personalBests = [candidate];
   } else if (candidate.rawScore === currentBestScore) {
-    const exists = profile.personalBests.some(
+    const existingIndex = profile.personalBests.findIndex(
       (row) =>
         row.rawScore === candidate.rawScore &&
-        normalizeDateKey(row.date) === normalizeDateKey(candidate.date) &&
-        row.href === candidate.href
+        normalizeDateKey(row.date) === normalizeDateKey(candidate.date)
     );
 
-    if (!exists) {
+    if (existingIndex !== -1) {
+      const existing = profile.personalBests[existingIndex];
+      if (getHrefPriority(candidate.href) > getHrefPriority(existing.href)) {
+        profile.personalBests[existingIndex] = {
+          ...existing,
+          ...candidate,
+        };
+      }
+    } else {
       profile.personalBests.push(candidate);
     }
   } else {
@@ -1171,6 +1218,24 @@ export function getPlayerProfiles() {
     profile.average = String(row.recentRoundsAverage || "");
     profile.allRounds = Array.isArray(row.allRounds) ? row.allRounds : [];
     profile.recentRounds = Array.isArray(row.recentRounds) ? row.recentRounds : [];
+
+    const bestRawScore =
+      typeof row.bestRawScore === "number" && Number.isFinite(row.bestRawScore)
+        ? row.bestRawScore
+        : null;
+    const bestDates = Array.isArray(row.bestDates) ? row.bestDates : [];
+
+    if (bestRawScore != null && bestDates.length) {
+      bestDates.forEach((date) => {
+        addPersonalBest(profile, {
+          score: formatCourseRecordScore(bestRawScore, SINGLES_PAR),
+          rawScore: bestRawScore,
+          date,
+          href: getWeeklyResultsHrefForDate(date),
+          roundType: "handicap",
+        });
+      });
+    }
   }
 
   for (const row of getSinglesRecords()) {
