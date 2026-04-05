@@ -8,6 +8,17 @@ on:
       - "scripts/generate-round-recap.mjs"
       - ".github/workflows/round-recap.yml"
   workflow_dispatch:
+    inputs:
+      recap_type:
+        description: "Which recap to generate"
+        required: false
+        default: latest
+        type: choice
+        options:
+          - latest
+          - handicap
+          - monthly
+          - 2-rounds
 
 jobs:
   recap:
@@ -27,16 +38,18 @@ jobs:
         run: npm ci
 
       - name: Generate recap
-        run: node scripts/generate-round-recap.mjs > round-recap.txt
+        run: |
+          if [ -z "${{ github.event.inputs.recap_type }}" ] || [ "${{ github.event.inputs.recap_type }}" = "latest" ]; then
+            node scripts/generate-round-recap.mjs
+          else
+            node scripts/generate-round-recap.mjs --type "${{ github.event.inputs.recap_type }}"
+          fi
 
       - name: Add recap to job summary
-        run: |
-          echo '```text' >> "$GITHUB_STEP_SUMMARY"
-          cat round-recap.txt >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+        run: cat round-recap.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload recap artifact
         uses: actions/upload-artifact@v4
         with:
           name: round-recap
-          path: round-recap.txt
+          path: round-recap.md
