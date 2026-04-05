@@ -1,7 +1,10 @@
 ---
-import { getSinglesAces } from "../../lib/data";
+import { getPlayerProfiles, getSinglesAces } from "../../lib/data";
+import PlayerLink from "../../components/PlayerLink.astro";
+import PlayerModal from "../../components/PlayerModal.astro";
 
 const rows = getSinglesAces();
+const playerProfiles = getPlayerProfiles();
 import SiteLayout from "../../layouts/SiteLayout.astro";
 ---
 
@@ -259,11 +262,11 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
             <tbody>
               {rows.map((row) => (
                 <tr>
-                  <td>{row.name}</td>
+                  <td><PlayerLink name={row.name} /></td>
                   <td>{row.hole}</td>
                   <td>
                     {row.url ? (
-                      <a class="date-link" href={row.url} target="_blank" rel="noopener">
+                      <a class="date-link" href={row.resultsHref || row.url}>
                         {row.date}
                       </a>
                     ) : (
@@ -369,4 +372,5 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
 
       sortTable(currentColumn, "date", currentDirection);
     </script>
+  <PlayerModal profiles={playerProfiles} />
 </SiteLayout>
