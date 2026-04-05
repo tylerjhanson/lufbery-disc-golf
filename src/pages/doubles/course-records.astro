@@ -1,17 +1,43 @@
 ---
 import { getDoublesRecords, getPlayerProfiles } from "../../lib/data";
-import PlayerLink from "../../components/PlayerLink.astro";
 import PlayerModal from "../../components/PlayerModal.astro";
 
 const sections = getDoublesRecords();
 const playerProfiles = getPlayerProfiles();
 import SiteLayout from "../../layouts/SiteLayout.astro";
 
-function splitTeamNames(value: string) {
+function cleanName(value: string) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function getPlayerKey(value: string) {
+  return cleanName(value).toLowerCase();
+}
+
+function cleanTeamModalName(value: string) {
+  return cleanName(value).replace(/\s*\((?:modified\s+)?cali\)\s*$/i, "").trim();
+}
+
+function splitTeamPlayers(value: string) {
   return String(value || "")
     .split(/\s*\/\s*/)
-    .map((part) => String(part || "").trim())
-    .filter(Boolean);
+    .map((part) => {
+      const label = cleanName(part);
+      const modalName = cleanTeamModalName(part);
+
+      return label && modalName
+        ? { label, modalName, key: getPlayerKey(modalName) }
+        : null;
+    })
+    .filter(
+      (
+        value
+      ): value is {
+        label: string;
+        modalName: string;
+        key: string;
+      } => Boolean(value)
+    );
 }
 
 function isUdiscUrl(value: string) {
@@ -278,7 +304,7 @@ function isUdiscUrl(value: string) {
           padding: 9px 4px;
         }
       }
-    
+
 </style>
 
 <div class="wrap">
@@ -320,8 +346,16 @@ function isUdiscUrl(value: string) {
                     <tr>
                       <td>
                         <div class="player-link-stack">
-                          {splitTeamNames(row.name).map((name) => (
-                            <PlayerLink name={name} />
+                          {splitTeamPlayers(row.name).map((player) => (
+                            <button
+                              type="button"
+                              class="player-button"
+                              data-player-key={player.key}
+                              data-player-name={player.modalName}
+                              aria-label={`View player details for ${player.modalName}`}
+                            >
+                              {player.label}
+                            </button>
                           ))}
                         </div>
                       </td>
