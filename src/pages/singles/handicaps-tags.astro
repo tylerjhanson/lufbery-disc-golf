@@ -572,7 +572,7 @@ const playerProfiles = getPlayerProfiles();
         </div>
       </div>
 
-      <div class="table-wrap">
+       <div id="handicapsTableWrap" class="table-wrap">
         <table id="sortable-table">
           <colgroup>
             <col class="name-col" />
@@ -620,6 +620,8 @@ const playerProfiles = getPlayerProfiles();
 
   
   <script>
+    const tableWrap = document.getElementById("handicapsTableWrap");
+    const siteGoTop = document.querySelector(".site-go-top");
     const table = document.getElementById("sortable-table");
     const tbody = table ? table.querySelector("tbody") : null;
     const headers = table ? table.querySelectorAll("thead th.sortable") : [];
@@ -778,7 +780,20 @@ const playerProfiles = getPlayerProfiles();
     const initialHeader = table
       ? table.querySelector(`thead th[data-column="${currentColumn}"]`)
       : null;
+if (siteGoTop) {
+      siteGoTop.addEventListener("click", (event) => {
+        if (tableWrap && "scrollTo" in tableWrap) {
+          event.preventDefault();
+          tableWrap.scrollTo({ top: 0, behavior: "smooth" });
+          window.scrollTo({ top: 0, behavior: "smooth" });
 
+          const pageTop = document.getElementById("site-page-top");
+          if (pageTop) {
+            pageTop.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }
+      });
+    }
     sortTable(
       currentColumn,
       initialHeader?.dataset.type || "text",
