@@ -72,7 +72,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   .player-details-modal-panel {
     position: relative;
     z-index: 1;
-    width: min(92vw, 520px);
+    width: min(92vw, 560px);
     margin: 6vh auto 0;
     background: var(--card, #ffffff);
     border: 1px solid var(--line-soft, #eef2f7);
@@ -154,21 +154,11 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     text-align: right;
   }
 
-  .player-details-summary {
-    display: grid;
-    gap: 6px;
-  }
-
-  .player-details-summary--after-table {
-    margin-top: 2px;
-    margin-bottom: 20px;
-  }
-
   .player-details-summary-grid {
     display: grid;
     gap: 10px 14px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin-top: 10px;
+    margin-top: 6px;
     margin-bottom: 18px;
   }
 
@@ -195,6 +185,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
 
   .player-details-chart-shell {
     margin-top: 0;
+    margin-bottom: 18px;
     padding: 12px 12px 10px;
     border: 1px solid var(--line-soft, #eef2f7);
     border-radius: 14px;
@@ -294,7 +285,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
 
   @media (max-width: 700px) {
     .player-details-modal-panel {
-      width: min(94vw, 520px);
+      width: min(94vw, 560px);
       margin-top: 4vh;
       padding: 16px 14px 14px;
       border-radius: 20px;
@@ -376,7 +367,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
-      .replace(/\"/g, "&quot;")
+      .replace(/\\"/g, "&quot;")
       .replace(/'/g, "&#39;");
   }
 
@@ -458,14 +449,14 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     return rounds.map((_, index) => intercept + slope * index);
   }
 
-  function buildRoundChart(rounds) {
-    if (!rounds || !rounds.length) return "";
+  function buildLineChart(values, ariaLabel) {
+    if (!values || !values.length) return "";
 
-    const values = rounds
-      .map((round) => Number(round.score))
+    const numericValues = values
+      .map((point) => Number(point.value))
       .filter((value) => !Number.isNaN(value));
 
-    if (!values.length) return "";
+    if (!numericValues.length) return "";
 
     const width = 640;
     const height = 200;
@@ -473,10 +464,19 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     const padRight = 8;
     const padBottom = 10;
     const padLeft = 34;
-    const step = 5;
+    const innerWidth = width - padLeft - padRight;
+    const innerHeight = height - padTop - padBottom;
 
-    let chartMin = Math.floor((Math.min(...values) - 2) / step) * step;
-    let chartMax = Math.ceil((Math.max(...values) + 2) / step) * step;
+    let chartMin = Math.min(...numericValues);
+    let chartMax = Math.max(...numericValues);
+
+    if (chartMin === chartMax) chartMax = chartMin + 1;
+
+    const range = chartMax - chartMin;
+    const step = range <= 10 ? 1 : range <= 30 ? 5 : 10;
+
+    chartMin = Math.max(1, Math.floor(chartMin / step) * step);
+    chartMax = Math.ceil(chartMax / step) * step;
 
     if (chartMin === chartMax) chartMax = chartMin + step;
 
@@ -485,22 +485,19 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       ticks.push(value);
     }
 
-    const innerWidth = width - padLeft - padRight;
-    const innerHeight = height - padTop - padBottom;
-
     const getX = (index) =>
-      rounds.length === 1
+      values.length === 1
         ? padLeft + innerWidth / 2
-        : padLeft + (index / (rounds.length - 1)) * innerWidth;
+        : padLeft + (index / (values.length - 1)) * innerWidth;
 
     const getY = (value) =>
-      padTop + ((chartMax - value) / (chartMax - chartMin)) * innerHeight;
+      padTop + ((value - chartMin) / (chartMax - chartMin)) * innerHeight;
 
-    const playerPoints = rounds
-      .map((round, index) => `${getX(index)},${getY(Number(round.score))}`)
+    const playerPoints = values
+      .map((point, index) => `${getX(index)},${getY(Number(point.value))}`)
       .join(" ");
 
-    const trendValues = buildTrendValues(rounds);
+    const trendValues = buildTrendValues(values.map((point) => ({ score: Number(point.value) })));
     const trendPoints = trendValues.length
       ? trendValues.map((value, index) => `${getX(index)},${getY(value)}`).join(" ")
       : "";
@@ -532,7 +529,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
           class="player-details-chart-svg"
           viewBox="0 0 ${width} ${height}"
           preserveAspectRatio="none"
-          aria-label="Handicap round trend chart"
+          aria-label="${escapeHtml(ariaLabel)}"
         >
           ${gridMarkup}
           ${trendPoints ? `<polyline class="player-details-chart-line-trend" points="${trendPoints}" />` : ""}
@@ -540,6 +537,28 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
         </svg>
       </div>
     `;
+  }
+
+  function buildRoundChart(rounds) {
+    if (!rounds || !rounds.length) return "";
+
+    return buildLineChart(
+      rounds.map((round) => ({ value: Number(round.score) })),
+      "Score history chart"
+    );
+  }
+
+  function buildTagChart(history) {
+    if (!history || !history.length) return "";
+
+    return buildLineChart(
+      history
+        .map((row) => ({
+          value: Number(row.tag),
+        }))
+        .filter((row) => !Number.isNaN(row.value)),
+      "Tag history chart"
+    );
   }
 
   function renderLinkList(items, formatter, emptyText) {
@@ -589,6 +608,12 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     const average = profile?.average ? String(profile.average) : "";
     const handicap = profile?.handicap ? String(profile.handicap) : "";
     const established = Boolean(profile?.handicapEstablished);
+    const currentTag = profile?.currentTag ? String(profile.currentTag) : "";
+    const bestTagEver = profile?.bestTagEver ? String(profile.bestTagEver) : "";
+    const averageTag = profile?.averageTag ? String(profile.averageTag) : "";
+    const weeksAtOne = Number(profile?.weeksAtOne || 0);
+    const hasTag = Boolean(profile?.hasTag);
+    const tagHistory = Array.isArray(profile?.tagHistory) ? profile.tagHistory : [];
     const personalBests = Array.isArray(profile?.personalBests) && profile.personalBests.length
       ? profile.personalBests
       : profile?.personalBest
@@ -618,10 +643,17 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
         </tr>
       `;
 
-    const chartMarkup = allRounds.length
+    const scoreChartMarkup = allRounds.length
       ? `
-          <p class="player-details-section-label">Round history</p>
+          <p class="player-details-section-label">Score history</p>
           ${buildRoundChart(allRounds)}
+        `
+      : "";
+
+    const tagChartMarkup = tagHistory.length
+      ? `
+          <p class="player-details-section-label">Tag history</p>
+          ${buildTagChart(tagHistory)}
         `
       : "";
 
@@ -651,6 +683,16 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     );
 
     playerDetailsModalBody.innerHTML = `
+      <div class="player-details-summary-grid">
+        <div class="player-details-summary-row">Handicap: <strong>${handicap ? escapeHtml(handicap) : "—"}</strong></div>
+        <div class="player-details-summary-row">Current tag: <strong>${hasTag ? escapeHtml(currentTag || "TBD") : "—"}</strong></div>
+        <div class="player-details-summary-row">Average score: <strong>${average ? escapeHtml(average) : "—"}</strong></div>
+        <div class="player-details-summary-row">Best tag ever: <strong>${bestTagEver ? escapeHtml(bestTagEver) : "—"}</strong></div>
+        <div class="player-details-summary-row">Average tag: <strong>${averageTag ? escapeHtml(averageTag) : "—"}</strong></div>
+        <div class="player-details-summary-row">Weeks at #1: <strong>${hasTag ? escapeHtml(String(weeksAtOne)) : "0"}</strong></div>
+        <div class="player-details-summary-row" style="grid-column: 1 / -1;">Personal best: ${renderPersonalBestMarkup(personalBests)}</div>
+      </div>
+
       <p class="player-details-section-label">Rounds counting towards handicap</p>
 
       <table class="player-details-history-table">
@@ -665,17 +707,8 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
         </tbody>
       </table>
 
-      <div class="player-details-summary player-details-summary--after-table">
-        <div class="player-details-summary-row">Handicap: <strong>${handicap ? escapeHtml(handicap) : "—"}</strong></div>
-      </div>
-
-      ${chartMarkup}
-
-      <div class="player-details-summary-grid">
-        <div class="player-details-summary-row">Average: <strong>${average ? escapeHtml(average) : "—"}</strong></div>
-        <div class="player-details-summary-row">Personal best: ${renderPersonalBestMarkup(personalBests)}</div>
-      </div>
-
+      ${scoreChartMarkup}
+      ${tagChartMarkup}
       ${establishmentNote}
 
       <p class="player-details-section-label">Weekly wins</p>
