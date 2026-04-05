@@ -35,6 +35,10 @@ function getScoreSortValue(value: string) {
   return match ? match[0] : "";
 }
 
+function isUdiscUrl(value: string) {
+  return /(^https?:\/\/)?(www\.)?udisc\.com\b/i.test(String(value || "").trim());
+}
+
 const recordYears = [...new Set(rows.map((row) => getRowYear(row.date)).filter(Boolean))].sort(
   (a, b) => Number(b) - Number(a)
 );
@@ -220,6 +224,51 @@ const recordYears = [...new Set(rows.map((row) => getRowYear(row.date)).filter(B
       text-decoration: underline;
     }
 
+    .date-link-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .udisc-icon {
+      height: 0.82em;
+      width: auto;
+      display: inline-block;
+      vertical-align: middle;
+      flex: 0 0 auto;
+      opacity: 0.98;
+      transform: translateY(-0.11em);
+    }
+
+    .udisc-icon--dark {
+      display: none;
+    }
+
+    :global(html.dark) .udisc-icon--light,
+    :global(html[data-theme="dark"]) .udisc-icon--light,
+    :global(body.dark) .udisc-icon--light,
+    :global(body[data-theme="dark"]) .udisc-icon--light {
+      display: none;
+    }
+
+    :global(html.dark) .udisc-icon--dark,
+    :global(html[data-theme="dark"]) .udisc-icon--dark,
+    :global(body.dark) .udisc-icon--dark,
+    :global(body[data-theme="dark"]) .udisc-icon--dark {
+      display: inline-block;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .udisc-icon--light {
+        display: none;
+      }
+
+      .udisc-icon--dark {
+        display: inline-block;
+      }
+    }
+
     .footer-link {
       padding: 18px 28px 26px;
     }
@@ -320,9 +369,36 @@ const recordYears = [...new Set(rows.map((row) => getRowYear(row.date)).filter(B
                 <td><PlayerLink name={row.name} /></td>
                 <td data-sort={getScoreSortValue(row.score)}>{row.score}</td>
                 <td>
-                  {row.url ? (
-                    <a class="date-link" href={row.resultsHref || row.url}>
+                  {row.resultsHref ? (
+                    <a class="date-link" href={row.resultsHref}>
                       {row.date}
+                    </a>
+                  ) : row.url ? (
+                    <a
+                      class={`date-link${isUdiscUrl(row.url) ? " date-link-inline" : ""}`}
+                      href={row.url}
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      <span>{row.date}</span>
+                      {isUdiscUrl(row.url) && (
+                        <>
+                          <img
+                            class="udisc-icon udisc-icon--light"
+                            src="https://lufberydiscgolf.com/udisc-icon.png"
+                            alt="UDisc"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                          <img
+                            class="udisc-icon udisc-icon--dark"
+                            src="https://lufberydiscgolf.com/udisc-icon-white.png"
+                            alt="UDisc"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        </>
+                      )}
                     </a>
                   ) : (
                     row.date
