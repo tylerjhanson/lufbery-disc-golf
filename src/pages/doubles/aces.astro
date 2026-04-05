@@ -13,6 +13,10 @@ function splitTeamNames(value: string) {
     .map((part) => String(part || "").trim())
     .filter(Boolean);
 }
+
+function isUdiscUrl(value: string) {
+  return /(^https?:\/\/)?(www\.)?udisc\.com\b/i.test(String(value || "").trim());
+}
 ---
 
 <SiteLayout title="Doubles Aces" showBrandBar={true}>
@@ -321,7 +325,7 @@ function splitTeamNames(value: string) {
                   <td><div class="player-link-stack">{splitTeamNames(row.name).map((name) => <PlayerLink name={name} />)}</div></td>
                   <td>{row.hole}</td>
                   <td>
-                    {row.url ? (
+                    {isUdiscUrl(row.url) ? (
                       <a
                         class="date-link date-link-inline"
                         href={row.url}
@@ -343,10 +347,6 @@ function splitTeamNames(value: string) {
                           loading="lazy"
                           decoding="async"
                         />
-                      </a>
-                    ) : row.detailsHref ? (
-                      <a class="date-link" href={row.detailsHref}>
-                        {row.date}
                       </a>
                     ) : (
                       row.date
