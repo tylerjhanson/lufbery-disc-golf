@@ -1,5 +1,7 @@
 ---
-import { getWeeklyWinners } from "../../lib/data";
+import { getPlayerProfiles, getWeeklyWinners } from "../../lib/data";
+import PlayerLink from "../../components/PlayerLink.astro";
+import PlayerModal from "../../components/PlayerModal.astro";
 import SiteLayout from "../../layouts/SiteLayout.astro";
 
 type WinnerRow = {
@@ -7,9 +9,12 @@ type WinnerRow = {
   score: string;
   date: string;
   url?: string;
+  resultsHref?: string;
+  roundType?: "handicap" | "monthly" | "2-rounds";
 };
 
 const rows = getWeeklyWinners() as WinnerRow[];
+const playerProfiles = getPlayerProfiles();
 
 function getDateParts(value: string) {
   const match = String(value || "").match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
@@ -35,8 +40,8 @@ function getRowYear(value: string) {
   return parts ? String(parts.year) : "";
 }
 
-function getWinnerRoundType(row: WinnerRow) {
-  const dateText = String(row.date || "").toLowerCase();
+function getWinnerRoundTypeFromDate(value: string) {
+  const dateText = String(value || "").toLowerCase();
 
   const hasTwoRounds =
     dateText.includes("27 holes") ||
@@ -52,6 +57,23 @@ function getWinnerRoundType(row: WinnerRow) {
   if (hasTwoRounds) return "2-rounds";
   if (hasPool) return "monthly";
   return "handicap";
+}
+
+function formatRoundTypeLabel(value?: string) {
+  if (value === "2-rounds") return "2-Round";
+  if (value === "monthly") return "Monthly";
+  return "Handicap";
+}
+
+function splitWinnerNames(value: string) {
+  return String(value || "")
+    .split(/\r?\n/)
+    .map((part) => String(part || "").replace(/\s*\(tie\)\s*$/i, "").trim())
+    .filter(Boolean);
+}
+
+function getWinnerRoundType(row: WinnerRow) {
+  return row.roundType || getWinnerRoundTypeFromDate(row.date);
 }
 
 function splitDateLines(value: string) {
@@ -156,9 +178,10 @@ const defaultRoundType = "all";
       table-layout: fixed;
     }
 
-    col.name-col { width: 44%; }
-    col.score-col { width: 24%; }
-    col.date-col { width: 32%; }
+    col.name-col { width: 34%; }
+    col.score-col { width: 22%; }
+    col.type-col { width: 18%; }
+    col.date-col { width: 26%; }
 
     thead th {
       background: var(--header);
@@ -272,9 +295,10 @@ const defaultRoundType = "all";
       h1 { font-size: 2.1rem; }
       .table-wrap { padding: 0 8px 8px; }
 
-      col.name-col { width: 44%; }
-      col.score-col { width: 24%; }
-      col.date-col { width: 32%; }
+      col.name-col { width: 34%; }
+      col.score-col { width: 22%; }
+      col.type-col { width: 18%; }
+      col.date-col { width: 26%; }
 
       thead th {
         font-size: 0.72rem;
@@ -340,6 +364,7 @@ const defaultRoundType = "all";
           <colgroup>
             <col class="name-col" />
             <col class="score-col" />
+            <col class="type-col" />
             <col class="date-col" />
           </colgroup>
 
@@ -351,7 +376,10 @@ const defaultRoundType = "all";
               <th class="sortable" data-column="1" data-type="text">
                 <span class="th-inner">Score <span class="sort-indicator"></span></span>
               </th>
-              <th class="sortable" data-column="2" data-type="date">
+              <th class="sortable" data-column="2" data-type="text">
+                <span class="th-inner">Type <span class="sort-indicator"></span></span>
+              </th>
+              <th class="sortable" data-column="3" data-type="date">
                 <span class="th-inner">Date <span class="sort-indicator"></span></span>
               </th>
             </tr>
@@ -365,22 +393,20 @@ const defaultRoundType = "all";
                 data-sort-date={String(getRowTimestamp(row.date))}
               >
                 <td>
-                  {row.name.split("(tie)").map((part, i, arr) =>
-                    i < arr.length - 1 ? (
-                      <>
-                        {part}(tie)<br />
-                      </>
-                    ) : (
-                      part
-                    )
-                  )}
+                  <div class="player-link-stack">
+                    {splitWinnerNames(row.name).map((name) => (
+                      <PlayerLink name={name} />
+                    ))}
+                  </div>
                 </td>
 
                 <td>{row.score}</td>
 
+                <td>{formatRoundTypeLabel(row.roundType || getWinnerRoundType(row))}</td>
+
                 <td>
-                  {row.url ? (
-                    <a class="date-link" href={row.url} target="_blank" rel="noopener">
+                  {row.resultsHref || row.url ? (
+                    <a class="date-link" href={row.resultsHref || row.url}>
                       {splitDateLines(row.date).map((part, i) => (
                         <>
                           {i > 0 && <br />}
@@ -417,7 +443,7 @@ const defaultRoundType = "all";
     const roundTypeFilter = document.getElementById("roundTypeFilter");
     const emptyState = document.getElementById("winnersEmpty");
 
-    let currentColumn = 2;
+    let currentColumn = 3;
     let currentDirection = "desc";
 
     function getCellValue(row, columnIndex) {
@@ -533,4 +559,5 @@ const defaultRoundType = "all";
     sortTable(currentColumn, "date", currentDirection);
     applyFilters();
   </script>
+  <PlayerModal profiles={playerProfiles} />
 </SiteLayout>
