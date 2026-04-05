@@ -258,22 +258,13 @@ const defaultRoundType = "all";
       line-height: 1.35;
     }
 
-    .date-link {
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .date-link:hover {
-      text-decoration: underline;
-    }
-
-    .round-link {
+    .round-link,
+    .round-link:visited {
       display: inline-flex;
       flex-direction: column;
       align-items: center;
       gap: 2px;
-      color: var(--accent);
+      color: #2563eb !important;
       text-decoration: none;
       font-weight: 600;
       line-height: 1.25;
@@ -289,31 +280,23 @@ const defaultRoundType = "all";
     }
 
     .round-link-label {
-      color: var(--muted);
+      color: #2563eb !important;
+      opacity: 0.9;
       font-size: 0.84rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.02em;
     }
 
+    .round-link--static .round-link-label {
+      color: var(--muted) !important;
+      opacity: 1;
+    }
+
     .empty-state {
       display: none;
       padding: 14px 20px 18px;
       color: var(--muted);
-    }
-
-    .footer-link {
-      padding: 18px 28px 26px;
-    }
-
-    .footer-link a {
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .footer-link a:hover {
-      text-decoration: underline;
     }
 
     @media (max-width: 700px) {
@@ -335,10 +318,6 @@ const defaultRoundType = "all";
       tbody td {
         font-size: 0.9rem;
         padding: 10px 6px;
-      }
-
-      .footer-link {
-        padding: 14px 16px 18px;
       }
     }
 
@@ -462,8 +441,6 @@ const defaultRoundType = "all";
       </div>
 
       <div id="winnersEmpty" class="empty-state">No winners found for the selected filters.</div>
-
-      
     </div>
   </div>
 
