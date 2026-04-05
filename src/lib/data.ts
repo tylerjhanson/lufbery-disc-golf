@@ -91,6 +91,7 @@ type PlayerProfile = {
   allRounds: { date: string; score: number }[];
   recentRounds: ({ date: string; score: number } & { dropped?: boolean })[];
   personalBest: PersonalBestRow | null;
+  personalBests: PersonalBestRow[];
   weeklyWins: PlayerWinRow[];
   aces: PlayerAceRow[];
 };
@@ -920,8 +921,6 @@ export function getHandicaps() {
             }, 0)
           : -1;
 
-      const keptRounds = recentRounds.filter((_, index) => index !== droppedIndex);
-
       const allRoundsAverage =
         roundHistory.length > 0
           ? roundHistory.reduce((sum, round) => sum + round.score, 0) /
@@ -1121,6 +1120,7 @@ function ensurePlayerProfile(
       allRounds: [],
       recentRounds: [],
       personalBest: null,
+      personalBests: [],
       weeklyWins: [],
       aces: [],
     });
@@ -1129,28 +1129,32 @@ function ensurePlayerProfile(
   return map.get(key) || null;
 }
 
-function setPersonalBest(
+function addPersonalBest(
   profile: PlayerProfile,
   candidate: PersonalBestRow
 ) {
-  if (!profile.personalBest) {
-    profile.personalBest = candidate;
-    return;
-  }
+  const currentBestScore =
+    profile.personalBests.length > 0 ? profile.personalBests[0].rawScore : Infinity;
 
-  if (candidate.rawScore < profile.personalBest.rawScore) {
-    profile.personalBest = candidate;
-    return;
-  }
+  if (candidate.rawScore < currentBestScore) {
+    profile.personalBests = [candidate];
+  } else if (candidate.rawScore === currentBestScore) {
+    const exists = profile.personalBests.some(
+      (row) =>
+        row.rawScore === candidate.rawScore &&
+        normalizeDateKey(row.date) === normalizeDateKey(candidate.date) &&
+        row.href === candidate.href
+    );
 
-  if (candidate.rawScore === profile.personalBest.rawScore) {
-    const candidateTime = parseUsDate(candidate.date).getTime();
-    const existingTime = parseUsDate(profile.personalBest.date).getTime();
-
-    if (candidateTime > existingTime) {
-      profile.personalBest = candidate;
+    if (!exists) {
+      profile.personalBests.push(candidate);
     }
+  } else {
+    return;
   }
+
+  sortByDateDesc(profile.personalBests);
+  profile.personalBest = profile.personalBests[0] || null;
 }
 
 export function getPlayerProfiles() {
@@ -1173,6 +1177,9 @@ export function getPlayerProfiles() {
     const fullDate = toFullYearUsDate(extractEventDate(event.title));
     const href = getWeeklyResultsHrefForDate(fullDate) || event.url || "";
     const eventRoundType = getEventRoundType(event);
+    const excludeFromPersonalBest = isExcludedSinglesRecordLayout(event.title);
+
+    if (excludeFromPersonalBest) continue;
 
     if (event.kind === "handicap") {
       for (const row of event.rows || []) {
@@ -1182,7 +1189,7 @@ export function getPlayerProfiles() {
 
         if (!profile || rawValue == null) continue;
 
-        setPersonalBest(profile, {
+        addPersonalBest(profile, {
           score: formatCourseRecordScore(rawValue, SINGLES_PAR),
           rawScore: rawValue,
           date: fullDate,
@@ -1208,7 +1215,7 @@ export function getPlayerProfiles() {
 
         if (!profile || rawValue == null) continue;
 
-        setPersonalBest(profile, {
+        addPersonalBest(profile, {
           score: formatCourseRecordScore(rawValue, SINGLES_PAR),
           rawScore: rawValue,
           date: fullDate,
@@ -1266,6 +1273,8 @@ export function getPlayerProfiles() {
   }
 
   for (const profile of profiles.values()) {
+    sortByDateDesc(profile.personalBests);
+    profile.personalBest = profile.personalBests[0] || null;
     sortByDateDesc(profile.weeklyWins);
     sortByDateDesc(profile.aces);
   }
