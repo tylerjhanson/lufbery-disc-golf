@@ -1,0 +1,32 @@
+---
+interface Props {
+  name: string;
+  class?: string;
+}
+
+const { name, class: className = "" } = Astro.props;
+
+function cleanName(value: string) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function getPlayerKey(value: string) {
+  return cleanName(value).toLowerCase();
+}
+
+const displayName = cleanName(name);
+const playerKey = getPlayerKey(displayName);
+const buttonClass = ["player-button", className].filter(Boolean).join(" ");
+---
+
+{displayName && (
+  <button
+    type="button"
+    class={buttonClass}
+    data-player-key={playerKey}
+    data-player-name={displayName}
+    aria-label={`View player details for ${displayName}`}
+  >
+    {displayName}
+  </button>
+)}

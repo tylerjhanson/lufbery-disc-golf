@@ -1,0 +1,646 @@
+---
+interface Props {
+  profiles: Record<string, unknown>;
+}
+
+const { profiles = {} } = Astro.props;
+const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
+---
+
+<style is:global>
+  .player-button {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-weight: inherit;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    text-align: left;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 2px;
+    transition: color 0.15s ease, text-decoration-color 0.15s ease;
+  }
+
+  .player-button:hover,
+  .player-button:focus-visible {
+    color: var(--accent, #2563eb);
+    text-decoration-color: currentColor;
+    outline: none;
+  }
+
+  .player-link-stack {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .player-link-inline {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0;
+  }
+
+  .player-link-inline .player-button {
+    display: inline;
+  }
+
+  .player-details-modal[hidden] {
+    display: none;
+  }
+
+  .player-details-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+  }
+
+  .player-details-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(2px);
+  }
+
+  .player-details-modal-panel {
+    position: relative;
+    z-index: 1;
+    width: min(92vw, 520px);
+    margin: 6vh auto 0;
+    background: var(--card, #ffffff);
+    border: 1px solid var(--line-soft, #eef2f7);
+    border-radius: 22px;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+    padding: 18px 18px 16px;
+    max-height: 88vh;
+    overflow-y: auto;
+  }
+
+  .player-details-modal-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--line-soft, #eef2f7);
+    border-radius: 999px;
+    background: var(--card, #ffffff);
+    color: var(--muted, #6b7280);
+    font-size: 1.15rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .player-details-modal-close:hover {
+    color: var(--text, #111827);
+    background: var(--header, #f8fafc);
+  }
+
+  .player-details-modal-title {
+    margin: 0 42px 12px 0;
+    font-size: 1.12rem;
+    line-height: 1.2;
+    font-weight: 800;
+  }
+
+  .player-details-section-label {
+    margin: 0 0 8px;
+    font-size: 0.84rem;
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--muted, #6b7280);
+  }
+
+  .player-details-history-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 12px;
+  }
+
+  .player-details-history-table th,
+  .player-details-history-table td {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line-soft, #eef2f7);
+    font-size: 0.98rem;
+    text-align: left;
+  }
+
+  .player-details-history-table thead th {
+    position: static;
+    background: transparent;
+    border-bottom: 1px solid var(--line-soft, #eef2f7);
+    color: var(--text, #111827);
+    font-size: 0.82rem;
+    text-transform: none;
+    letter-spacing: 0;
+    padding-top: 0;
+    padding-bottom: 8px;
+  }
+
+  .player-details-history-table th:last-child,
+  .player-details-history-table td:last-child {
+    text-align: right;
+  }
+
+  .player-details-summary {
+    display: grid;
+    gap: 6px;
+  }
+
+  .player-details-summary--after-table {
+    margin-top: 2px;
+    margin-bottom: 20px;
+  }
+
+  .player-details-summary-grid {
+    display: grid;
+    gap: 10px 14px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 10px;
+    margin-bottom: 18px;
+  }
+
+  .player-details-summary-row {
+    font-size: 0.98rem;
+    line-height: 1.35;
+    color: var(--text, #111827);
+  }
+
+  .player-details-summary-row strong {
+    font-weight: 800;
+  }
+
+  .player-details-chart-shell {
+    margin-top: 0;
+    padding: 12px 12px 10px;
+    border: 1px solid var(--line-soft, #eef2f7);
+    border-radius: 14px;
+    background: var(--header, #f8fafc);
+  }
+
+  .player-details-chart-svg {
+    display: block;
+    width: 100%;
+    height: 180px;
+    overflow: visible;
+  }
+
+  .player-details-chart-grid {
+    stroke: var(--line, #e5e7eb);
+    stroke-width: 1;
+    opacity: 0.8;
+  }
+
+  .player-details-chart-axis-label {
+    fill: var(--muted, #6b7280);
+    font-size: 10px;
+    font-family: Inter, Arial, Helvetica, sans-serif;
+  }
+
+  .player-details-chart-line-player {
+    fill: none;
+    stroke: var(--accent, #2563eb);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .player-details-chart-line-trend {
+    fill: none;
+    stroke: var(--muted, #6b7280);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 5 5;
+    opacity: 0.5;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .player-details-muted {
+    color: var(--muted, #6b7280);
+    font-weight: 600;
+  }
+
+  .player-details-note {
+    margin: 12px 0 0;
+    color: var(--muted, #6b7280);
+    font-size: 0.83rem;
+    line-height: 1.35;
+  }
+
+  .player-details-list {
+    list-style: none;
+    margin: 0 0 18px;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+  }
+
+  .player-details-list-item {
+    font-size: 0.95rem;
+    line-height: 1.35;
+  }
+
+  .player-details-link {
+    color: var(--accent, #2563eb);
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .player-details-link:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 700px) {
+    .player-details-modal-panel {
+      width: min(94vw, 520px);
+      margin-top: 4vh;
+      padding: 16px 14px 14px;
+      border-radius: 20px;
+    }
+
+    .player-details-modal-title {
+      font-size: 1.05rem;
+      margin-bottom: 10px;
+    }
+
+    .player-details-chart-svg {
+      height: 150px;
+    }
+
+    .player-details-history-table th,
+    .player-details-history-table td {
+      font-size: 0.92rem;
+      padding: 9px 0;
+    }
+
+    .player-details-summary-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div id="playerDetailsModal" class="player-details-modal" hidden>
+  <div class="player-details-modal-backdrop" data-close-player-modal></div>
+
+  <div
+    class="player-details-modal-panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="playerDetailsModalTitle"
+  >
+    <button
+      id="playerDetailsModalClose"
+      class="player-details-modal-close"
+      type="button"
+      aria-label="Close player details popup"
+    >
+      ×
+    </button>
+
+    <h2 id="playerDetailsModalTitle" class="player-details-modal-title">Player details</h2>
+
+    <div id="playerDetailsModalBody"></div>
+  </div>
+</div>
+
+<script is:inline>
+  const PLAYER_PROFILES = JSON.parse({JSON.stringify(profileJson)});
+  const HANDICAP_PAR = 56;
+
+  const playerDetailsModal = document.getElementById("playerDetailsModal");
+  const playerDetailsModalTitle = document.getElementById("playerDetailsModalTitle");
+  const playerDetailsModalBody = document.getElementById("playerDetailsModalBody");
+  const playerDetailsModalClose = document.getElementById("playerDetailsModalClose");
+
+  let lastPlayerTrigger = null;
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function parseUsDate(value) {
+    const match = String(value || "").match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+    if (!match) return new Date(0).getTime();
+
+    const month = Number(match[1]);
+    const day = Number(match[2]);
+    let year = Number(match[3]);
+
+    if (year < 100) year += 2000;
+
+    return new Date(year, month - 1, day).getTime();
+  }
+
+  function formatScoreWithPar(score) {
+    const numericScore = Number(score);
+    const diff = numericScore - HANDICAP_PAR;
+
+    let diffText = "E";
+    if (diff > 0) diffText = `+${diff}`;
+    if (diff < 0) diffText = `${diff}`;
+
+    return `${numericScore} (${diffText})`;
+  }
+
+  function buildTrendValues(rounds) {
+    if (!rounds || rounds.length < 2) return [];
+
+    const n = rounds.length;
+    let sumX = 0;
+    let sumY = 0;
+    let sumXY = 0;
+    let sumXX = 0;
+
+    rounds.forEach((round, index) => {
+      const y = Number(round.score);
+      sumX += index;
+      sumY += y;
+      sumXY += index * y;
+      sumXX += index * index;
+    });
+
+    const denominator = n * sumXX - sumX * sumX;
+    if (!denominator) return [];
+
+    const slope = (n * sumXY - sumX * sumY) / denominator;
+    const intercept = (sumY - slope * sumX) / n;
+
+    return rounds.map((_, index) => intercept + slope * index);
+  }
+
+  function buildRoundChart(rounds) {
+    if (!rounds || !rounds.length) return "";
+
+    const values = rounds
+      .map((round) => Number(round.score))
+      .filter((value) => !Number.isNaN(value));
+
+    if (!values.length) return "";
+
+    const width = 640;
+    const height = 200;
+    const padTop = 10;
+    const padRight = 8;
+    const padBottom = 10;
+    const padLeft = 34;
+    const step = 5;
+
+    let chartMin = Math.floor((Math.min(...values) - 2) / step) * step;
+    let chartMax = Math.ceil((Math.max(...values) + 2) / step) * step;
+
+    if (chartMin === chartMax) chartMax = chartMin + step;
+
+    const ticks = [];
+    for (let value = chartMin; value <= chartMax; value += step) {
+      ticks.push(value);
+    }
+
+    const innerWidth = width - padLeft - padRight;
+    const innerHeight = height - padTop - padBottom;
+
+    const getX = (index) =>
+      rounds.length === 1
+        ? padLeft + innerWidth / 2
+        : padLeft + (index / (rounds.length - 1)) * innerWidth;
+
+    const getY = (value) =>
+      padTop + ((chartMax - value) / (chartMax - chartMin)) * innerHeight;
+
+    const playerPoints = rounds
+      .map((round, index) => `${getX(index)},${getY(Number(round.score))}`)
+      .join(" ");
+
+    const trendValues = buildTrendValues(rounds);
+    const trendPoints = trendValues.length
+      ? trendValues.map((value, index) => `${getX(index)},${getY(value)}`).join(" ")
+      : "";
+
+    const gridMarkup = ticks
+      .map((tick) => {
+        const y = getY(tick);
+        return `
+          <line
+            class="player-details-chart-grid"
+            x1="${padLeft}"
+            y1="${y}"
+            x2="${width - padRight}"
+            y2="${y}"
+          />
+          <text
+            class="player-details-chart-axis-label"
+            x="${padLeft - 6}"
+            y="${y + 3}"
+            text-anchor="end"
+          >${Math.round(tick)}</text>
+        `;
+      })
+      .join("");
+
+    return `
+      <div class="player-details-chart-shell">
+        <svg
+          class="player-details-chart-svg"
+          viewBox="0 0 ${width} ${height}"
+          preserveAspectRatio="none"
+          aria-label="Handicap round trend chart"
+        >
+          ${gridMarkup}
+          ${trendPoints ? `<polyline class="player-details-chart-line-trend" points="${trendPoints}" />` : ""}
+          <polyline class="player-details-chart-line-player" points="${playerPoints}" />
+        </svg>
+      </div>
+    `;
+  }
+
+  function renderLinkList(items, formatter, emptyText) {
+    if (!items || !items.length) {
+      return `<p class="player-details-note">${escapeHtml(emptyText)}</p>`;
+    }
+
+    return `
+      <ul class="player-details-list">
+        ${items
+          .map((item) => `<li class="player-details-list-item">${formatter(item)}</li>`)
+          .join("")}
+      </ul>
+    `;
+  }
+
+  function renderPlayerDetailsModal(profile, fallbackName) {
+    if (!playerDetailsModalTitle || !playerDetailsModalBody) return;
+
+    const name = profile?.name || fallbackName || "Player details";
+    const recentRounds = Array.isArray(profile?.recentRounds) ? profile.recentRounds : [];
+    const allRounds = Array.isArray(profile?.allRounds) ? profile.allRounds : [];
+    const weeklyWins = Array.isArray(profile?.weeklyWins) ? profile.weeklyWins : [];
+    const aces = Array.isArray(profile?.aces) ? profile.aces : [];
+    const average = profile?.average ? String(profile.average) : "";
+    const handicap = profile?.handicap ? String(profile.handicap) : "";
+    const established = Boolean(profile?.handicapEstablished);
+    const personalBest = profile?.personalBest || null;
+
+    playerDetailsModalTitle.textContent = name;
+
+    const rowsHtml = recentRounds.length
+      ? recentRounds
+          .map((round) => {
+            const droppedStyle = round.dropped
+              ? 'style="text-decoration: line-through; text-decoration-thickness: 1.5px; color: var(--muted, #6b7280);"'
+              : "";
+
+            return `
+              <tr>
+                <td><span ${droppedStyle}>${escapeHtml(round.date)}</span></td>
+                <td><span ${droppedStyle}>${escapeHtml(formatScoreWithPar(round.score))}</span></td>
+              </tr>
+            `;
+          })
+          .join("")
+      : `
+        <tr>
+          <td colspan="2" class="player-details-muted">No handicap rounds found.</td>
+        </tr>
+      `;
+
+    const chartMarkup = allRounds.length
+      ? `
+          <p class="player-details-section-label">Round history</p>
+          ${buildRoundChart(allRounds)}
+        `
+      : "";
+
+    const establishmentNote =
+      recentRounds.length > 0 && !established && recentRounds.length < 3
+        ? `<p class="player-details-note">3 rounds are required to establish a handicap.</p>`
+        : "";
+
+    const personalBestMarkup = personalBest
+      ? personalBest.href
+        ? `<a class="player-details-link" href="${escapeHtml(personalBest.href)}">${escapeHtml(personalBest.score)}</a> <span class="player-details-muted">on ${escapeHtml(personalBest.date)}</span>`
+        : `<strong>${escapeHtml(personalBest.score)}</strong> <span class="player-details-muted">on ${escapeHtml(personalBest.date)}</span>`
+      : `<span class="player-details-muted">—</span>`;
+
+    const weeklyWinsMarkup = renderLinkList(
+      weeklyWins,
+      (item) => {
+        const linkedDate = item.href
+          ? `<a class="player-details-link" href="${escapeHtml(item.href)}">${escapeHtml(item.date)}</a>`
+          : escapeHtml(item.date);
+        return `${linkedDate} — ${escapeHtml(item.label)} • ${escapeHtml(item.score)}`;
+      },
+      "No weekly wins recorded."
+    );
+
+    const acesMarkup = renderLinkList(
+      aces,
+      (item) => {
+        const linkedDate = item.href
+          ? `<a class="player-details-link" href="${escapeHtml(item.href)}">${escapeHtml(item.date)}</a>`
+          : escapeHtml(item.date);
+        const holeLabel = item.hole ? `Hole ${escapeHtml(item.hole)}` : "Ace";
+        const kindLabel = item.label ? `${escapeHtml(item.label)} • ` : "";
+        return `${linkedDate} — ${kindLabel}${holeLabel}`;
+      },
+      "No aces recorded."
+    );
+
+    playerDetailsModalBody.innerHTML = `
+      <p class="player-details-section-label">Rounds counting towards handicap</p>
+
+      <table class="player-details-history-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+
+      <div class="player-details-summary player-details-summary--after-table">
+        <div class="player-details-summary-row">Handicap: <strong>${handicap ? escapeHtml(handicap) : "—"}</strong></div>
+      </div>
+
+      ${chartMarkup}
+
+      <div class="player-details-summary-grid">
+        <div class="player-details-summary-row">Average: <strong>${average ? escapeHtml(average) : "—"}</strong></div>
+        <div class="player-details-summary-row">Personal best: ${personalBestMarkup}</div>
+      </div>
+
+      ${establishmentNote}
+
+      <p class="player-details-section-label">Weekly wins</p>
+      ${weeklyWinsMarkup}
+
+      <p class="player-details-section-label">Aces</p>
+      ${acesMarkup}
+    `;
+  }
+
+  function openPlayerDetailsModal(button) {
+    if (!button || !playerDetailsModal) return;
+
+    const playerKey = String(button.dataset.playerKey || "").trim().toLowerCase();
+    const fallbackName = String(button.dataset.playerName || button.textContent || "").trim();
+    const profile = PLAYER_PROFILES[playerKey] || null;
+
+    lastPlayerTrigger = button;
+    renderPlayerDetailsModal(profile, fallbackName);
+
+    playerDetailsModal.removeAttribute("hidden");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closePlayerDetailsModal() {
+    if (!playerDetailsModal) return;
+
+    playerDetailsModal.setAttribute("hidden", "");
+    document.body.style.overflow = "";
+
+    if (lastPlayerTrigger && typeof lastPlayerTrigger.focus === "function") {
+      lastPlayerTrigger.focus();
+    }
+  }
+
+  document.addEventListener("click", (event) => {
+    const button = event.target instanceof Element
+      ? event.target.closest("[data-player-key]")
+      : null;
+
+    if (button) {
+      openPlayerDetailsModal(button);
+      return;
+    }
+
+    const closeTarget = event.target instanceof Element
+      ? event.target.closest("[data-close-player-modal]")
+      : null;
+
+    if (closeTarget) {
+      closePlayerDetailsModal();
+    }
+  });
+
+  playerDetailsModalClose?.addEventListener("click", closePlayerDetailsModal);
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && playerDetailsModal && !playerDetailsModal.hasAttribute("hidden")) {
+      closePlayerDetailsModal();
+    }
+  });
+</script>
