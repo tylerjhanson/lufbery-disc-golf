@@ -1,8 +1,11 @@
 ---
-import { getSinglesRecords } from "../../lib/data";
+import { getPlayerProfiles, getSinglesRecords } from "../../lib/data";
+import PlayerLink from "../../components/PlayerLink.astro";
+import PlayerModal from "../../components/PlayerModal.astro";
 import SiteLayout from "../../layouts/SiteLayout.astro";
 
 const rows = getSinglesRecords();
+const playerProfiles = getPlayerProfiles();
 
 function getDateParts(value: string) {
   const match = String(value || "").match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
@@ -314,11 +317,11 @@ const recordYears = [...new Set(rows.map((row) => getRowYear(row.date)).filter(B
           <tbody>
             {rows.map((row) => (
               <tr data-year={getRowYear(row.date)}>
-                <td>{row.name}</td>
+                <td><PlayerLink name={row.name} /></td>
                 <td data-sort={getScoreSortValue(row.score)}>{row.score}</td>
                 <td>
                   {row.url ? (
-                    <a class="date-link" href={row.url} target="_blank" rel="noopener">
+                    <a class="date-link" href={row.resultsHref || row.url}>
                       {row.date}
                     </a>
                   ) : (
@@ -464,4 +467,5 @@ const recordYears = [...new Set(rows.map((row) => getRowYear(row.date)).filter(B
     sortTable(currentColumn, "score", currentDirection);
     applyYearFilter();
   </script>
+  <PlayerModal profiles={playerProfiles} />
 </SiteLayout>
