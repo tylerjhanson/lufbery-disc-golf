@@ -347,15 +347,20 @@ function formatAceHoleDisplay(value: string) {
 
   const layoutMatch = text.match(/\b(sticks|stones)\b/i);
   const numberMatch = text.match(/\b(\d{1,2})\b/);
+  const basketMatch = text.match(/\(([A-Z])\)/i);
+
+  const basketSuffix = basketMatch
+    ? ` (${basketMatch[1].toUpperCase()})`
+    : "";
 
   if (layoutMatch && numberMatch) {
     const layout =
       layoutMatch[1].charAt(0).toUpperCase() +
       layoutMatch[1].slice(1).toLowerCase();
-    return `${layout} ${numberMatch[1]}`;
+    return `${layout} ${numberMatch[1]}${basketSuffix}`;
   }
 
-  if (numberMatch) return numberMatch[1];
+  if (numberMatch) return `${numberMatch[1]}${basketSuffix}`;
 
   return "";
 }
