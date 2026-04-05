@@ -22,7 +22,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     text-decoration-line: underline !important;
     text-decoration-style: dotted !important;
     text-decoration-thickness: 1px !important;
-    text-decoration-color: color-mix(in srgb, currentColor 22%, transparent) !important;
+    text-decoration-color: color-mix(in srgb, currentColor 24%, transparent) !important;
     text-underline-offset: 2px;
     transition: color 0.15s ease, text-decoration-color 0.15s ease;
   }
@@ -30,7 +30,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   .player-button:hover,
   .player-button:focus-visible {
     color: var(--accent, #2563eb);
-    text-decoration-color: color-mix(in srgb, currentColor 38%, transparent) !important;
+    text-decoration-color: color-mix(in srgb, currentColor 42%, transparent) !important;
     outline: none;
   }
 
@@ -94,15 +94,18 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     background: var(--card, #ffffff);
     color: var(--text, #111827);
     font-size: 1.35rem;
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease;
+    padding: 0;
   }
 
   .player-details-modal-close:hover {
     color: var(--text, #111827);
-    background: rgba(127, 127, 127, 0.08);
+    background: var(--button-bg-hover, #eceff4);
   }
 
   .player-details-modal-title {
@@ -373,7 +376,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
-      .replace(/\\"/g, "&quot;")
+      .replace(/\"/g, "&quot;")
       .replace(/'/g, "&#39;");
   }
 
@@ -381,22 +384,28 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     return /(^https?:\/\/)?(www\.)?udisc\.com\b/i.test(String(value || "").trim());
   }
 
-  function getActiveThemeMode() {
+  function getResolvedThemeMode() {
     const mode = document.documentElement.getAttribute("data-theme") || "system";
+
     if (mode === "dark") return "dark";
     if (mode === "light") return "light";
+
     return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
       ? "dark"
       : "light";
   }
 
+  function getUdiscIconSrc() {
+    return getResolvedThemeMode() === "dark" ? "/udisc-icon-white.png" : "/udisc-icon.png";
+  }
+
   function renderUdiscIconMarkup(href) {
     if (!isUdiscUrl(href)) return "";
-    const src = getActiveThemeMode() === "dark" ? "/udisc-icon-white.png" : "/udisc-icon.png";
+
     return `
       <img
         class="player-details-udisc-icon"
-        src="${src}"
+        src="${getUdiscIconSrc()}"
         alt="UDisc"
         loading="lazy"
         decoding="async"
