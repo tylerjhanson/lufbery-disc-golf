@@ -13,6 +13,10 @@ function splitTeamNames(value: string) {
     .map((part) => String(part || "").trim())
     .filter(Boolean);
 }
+
+function isUdiscUrl(value: string) {
+  return /(^https?:\/\/)?(www\.)?udisc\.com\b/i.test(String(value || "").trim());
+}
 ---
 
 <SiteLayout title="Doubles Records" showBrandBar={true}>
@@ -168,13 +172,12 @@ function splitTeamNames(value: string) {
       }
 
       tbody td:first-child {
-  text-align: left;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  line-height: 1.3;
-}
-
+        text-align: left;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        line-height: 1.3;
+      }
 
       .date-link {
         color: var(--accent);
@@ -186,19 +189,49 @@ function splitTeamNames(value: string) {
         text-decoration: underline;
       }
 
-      .footer-link {
-        margin-top: 20px;
-        padding: 0 2px;
+      .date-link-inline {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
       }
 
-      .footer-link a {
-        color: var(--accent);
-        text-decoration: none;
-        font-weight: 600;
+      .udisc-icon {
+        height: 0.82em;
+        width: auto;
+        display: inline-block;
+        vertical-align: middle;
+        flex: 0 0 auto;
+        opacity: 0.98;
+        transform: translateY(-0.11em);
       }
 
-      .footer-link a:hover {
-        text-decoration: underline;
+      .udisc-icon--dark {
+        display: none;
+      }
+
+      :global(html.dark) .udisc-icon--light,
+      :global(html[data-theme="dark"]) .udisc-icon--light,
+      :global(body.dark) .udisc-icon--light,
+      :global(body[data-theme="dark"]) .udisc-icon--light {
+        display: none;
+      }
+
+      :global(html.dark) .udisc-icon--dark,
+      :global(html[data-theme="dark"]) .udisc-icon--dark,
+      :global(body.dark) .udisc-icon--dark,
+      :global(body[data-theme="dark"]) .udisc-icon--dark {
+        display: inline-block;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .udisc-icon--light {
+          display: none;
+        }
+
+        .udisc-icon--dark {
+          display: inline-block;
+        }
       }
 
       @media (max-width: 700px) {
@@ -254,7 +287,7 @@ function splitTeamNames(value: string) {
       </div>
 
       <div class="sections">
-        {sections.map((section, index) => (
+        {sections.map((section) => (
           <section class="card">
             <div class="card-header">
               <h2 class="card-title">{section.title}</h2>
@@ -286,17 +319,40 @@ function splitTeamNames(value: string) {
                   {section.rows.map((row) => (
                     <tr>
                       <td>
-  <div class="player-link-stack">
-    {splitTeamNames(row.name).map((name) => (
-      <PlayerLink name={name} />
-    ))}
-  </div>
-</td>
+                        <div class="player-link-stack">
+                          {splitTeamNames(row.name).map((name) => (
+                            <PlayerLink name={name} />
+                          ))}
+                        </div>
+                      </td>
                       <td>{row.score}</td>
                       <td>
                         {row.url ? (
-                          <a class="date-link" href={row.url}>
-                            {row.date}
+                          <a
+                            class={`date-link${isUdiscUrl(row.url) ? " date-link-inline" : ""}`}
+                            href={row.url}
+                            target="_blank"
+                            rel="noopener"
+                          >
+                            <span>{row.date}</span>
+                            {isUdiscUrl(row.url) && (
+                              <>
+                                <img
+                                  class="udisc-icon udisc-icon--light"
+                                  src="https://lufberydiscgolf.com/udisc-icon.png"
+                                  alt="UDisc"
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                                <img
+                                  class="udisc-icon udisc-icon--dark"
+                                  src="https://lufberydiscgolf.com/udisc-icon-white.png"
+                                  alt="UDisc"
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                              </>
+                            )}
                           </a>
                         ) : (
                           row.date
