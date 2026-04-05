@@ -1173,15 +1173,28 @@ export function getPlayerProfiles() {
     profile.recentRounds = Array.isArray(row.recentRounds) ? row.recentRounds : [];
   }
 
+  for (const row of getSinglesRecords()) {
+    const profile = ensurePlayerProfile(profiles, row.name);
+    const rawValue = parseCourseRecordRawScore(row.score || "", SINGLES_PAR);
+
+    if (!profile || rawValue == null) continue;
+
+    addPersonalBest(profile, {
+      score: row.score,
+      rawScore: rawValue,
+      date: row.date,
+      href: row.resultsHref || row.url || "",
+      roundType: row.roundType || "handicap",
+    });
+  }
+
   for (const event of getWeeklyResults()) {
     const fullDate = toFullYearUsDate(extractEventDate(event.title));
     const href = getWeeklyResultsHrefForDate(fullDate) || event.url || "";
     const eventRoundType = getEventRoundType(event);
-    const excludeFromPersonalBest = isExcludedSinglesRecordLayout(event.title);
+    const excludePersonalBest = isExcludedSinglesRecordLayout(event.title);
 
-    if (excludeFromPersonalBest) continue;
-
-    if (event.kind === "handicap") {
+    if (event.kind === "handicap" && !excludePersonalBest) {
       for (const row of event.rows || []) {
         const name = cleanSummaryText(row.name || "");
         const rawValue = extractFirstNumber(row.raw || "");
@@ -1199,29 +1212,31 @@ export function getPlayerProfiles() {
       }
     }
 
-    for (const pool of event.pools || []) {
-      const headers = (pool.headers || []).map((header: string) => String(header || "").trim());
-      const rawIndex = findHeaderIndex(headers, "raw");
-      const r1Index = findHeaderIndex(headers, "r1");
-      const scoreIndex = r1Index !== -1 ? r1Index : rawIndex;
-      const poolRoundType: RoundType = r1Index !== -1 ? "2-rounds" : "monthly";
+    if (!excludePersonalBest) {
+      for (const pool of event.pools || []) {
+        const headers = (pool.headers || []).map((header: string) => String(header || "").trim());
+        const rawIndex = findHeaderIndex(headers, "raw");
+        const r1Index = findHeaderIndex(headers, "r1");
+        const scoreIndex = r1Index !== -1 ? r1Index : rawIndex;
+        const poolRoundType: RoundType = r1Index !== -1 ? "2-rounds" : "monthly";
 
-      if (scoreIndex === -1) continue;
+        if (scoreIndex === -1) continue;
 
-      for (const cells of pool.rows || []) {
-        const name = cleanSummaryText(cells[0] || "");
-        const rawValue = extractFirstNumber(cells[scoreIndex] || "");
-        const profile = ensurePlayerProfile(profiles, name);
+        for (const cells of pool.rows || []) {
+          const name = cleanSummaryText(cells[0] || "");
+          const rawValue = extractFirstNumber(cells[scoreIndex] || "");
+          const profile = ensurePlayerProfile(profiles, name);
 
-        if (!profile || rawValue == null) continue;
+          if (!profile || rawValue == null) continue;
 
-        addPersonalBest(profile, {
-          score: formatCourseRecordScore(rawValue, SINGLES_PAR),
-          rawScore: rawValue,
-          date: fullDate,
-          href,
-          roundType: poolRoundType,
-        });
+          addPersonalBest(profile, {
+            score: formatCourseRecordScore(rawValue, SINGLES_PAR),
+            rawScore: rawValue,
+            date: fullDate,
+            href,
+            roundType: poolRoundType,
+          });
+        }
       }
     }
   }
