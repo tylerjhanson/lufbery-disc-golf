@@ -3,7 +3,6 @@ import path from "node:path";
 import { parse } from "csv-parse/sync";
 
 const SITE_URL = "https://lufberydiscgolf.com";
-const WEEKLY_RESULTS_PAGE_PATH = "/singles/weekly-results";
 const LEGACY_HANDICAP_HISTORY_START_COLUMN = 56;
 
 function readCsv(filename) {
@@ -23,6 +22,7 @@ function normalizeSummaryValue(value) {
 function extractFirstNumber(value) {
   const match = String(value || "").match(/-?\d+(?:\.\d+)?/);
   if (!match) return null;
+
   const n = Number(match[0]);
   return Number.isNaN(n) ? null : n;
 }
@@ -30,6 +30,7 @@ function extractFirstNumber(value) {
 function parseCurrency(value) {
   const match = String(value || "").match(/\$\s*(\d+(?:\.\d{1,2})?)/);
   if (!match) return null;
+
   const amount = Number(match[1]);
   return Number.isFinite(amount) ? amount : null;
 }
@@ -42,9 +43,11 @@ function formatCurrency(amount) {
 function parseUsDate(value) {
   const match = String(value || "").trim().match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
   if (!match) return new Date(0);
+
   const month = Number(match[1]);
   const day = Number(match[2]);
   let year = Number(match[3]);
+
   if (year < 100) year += 2000;
   return new Date(year, month - 1, day);
 }
@@ -52,6 +55,7 @@ function parseUsDate(value) {
 function parseMonthDay(value) {
   const match = String(value || "").trim().match(/^(\d{1,2})\/(\d{1,2})$/);
   if (!match) return null;
+
   return { month: Number(match[1]), day: Number(match[2]) };
 }
 
@@ -63,9 +67,11 @@ function extractEventDate(value) {
 function toFullYearUsDate(value) {
   const match = String(value || "").trim().match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
   if (!match) return String(value || "").trim();
+
   const month = Number(match[1]);
   const day = Number(match[2]);
   let year = Number(match[3]);
+
   if (year < 100) year += 2000;
   return `${month}/${day}/${year}`;
 }
@@ -76,11 +82,6 @@ function slugifyForId(value) {
     .replace(/&/g, " and ")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-}
-
-function getWeeklyResultsAnchorId(value) {
-  const slug = slugifyForId(value);
-  return `event-${slug || "result"}`;
 }
 
 function getRoundTypeFromText(value) {
@@ -196,8 +197,11 @@ function addAwardSummary(summary, name, rawValue) {
     const parsed = parseAwardEntry(name, segment);
     if (!parsed) return;
 
-    if (parsed.kind === "ace") summary.aces.push(parsed.line);
-    else summary.ctps.push(parsed.line);
+    if (parsed.kind === "ace") {
+      summary.aces.push(parsed.line);
+    } else {
+      summary.ctps.push(parsed.line);
+    }
   });
 }
 
@@ -219,8 +223,8 @@ function sortWeeklySummary(summary) {
 }
 
 function isWorkingTitle(value) {
-  const v = normalizeSummaryValue(value);
-  return v === "working to a handicap" || v === "working towards a handicap";
+  const normalized = normalizeSummaryValue(value);
+  return normalized === "working to a handicap" || normalized === "working towards a handicap";
 }
 
 function getWeeklyResults() {
@@ -353,8 +357,8 @@ function getWeeklyResults() {
           );
 
           const overallIndex = workingHeaders.findIndex((header) => {
-            const h = normalizeSummaryValue(header);
-            return h === "overall" || h === "ovr";
+            const normalized = normalizeSummaryValue(header);
+            return normalized === "overall" || normalized === "ovr";
           });
 
           const ctpIndex = workingHeaders.findIndex(
@@ -424,7 +428,6 @@ function getWeeklyResults() {
 
       const sectionTitle = cells[0] || "";
       const sectionHeaders = ["Name", ...cells.slice(1).filter(Boolean)];
-
       const isPoolSection = /pool/i.test(sectionTitle) || isWorkingTitle(sectionTitle);
 
       if (!isPoolSection) {
@@ -435,12 +438,10 @@ function getWeeklyResults() {
       i += 1;
 
       const sectionRows = [];
-
       const overallIndex = sectionHeaders.findIndex((header) => {
-        const h = normalizeSummaryValue(header);
-        return h === "overall" || h === "ovr";
+        const normalized = normalizeSummaryValue(header);
+        return normalized === "overall" || normalized === "ovr";
       });
-
       const ctpIndex = sectionHeaders.findIndex(
         (header) => normalizeSummaryValue(header) === "ctp"
       );
@@ -463,13 +464,12 @@ function getWeeklyResults() {
         if (nextIsPoolSection) break;
 
         const rowValues = sectionHeaders.map((_, idx) => sub[idx] || "");
-
         const playerName = rowValues[0] || "";
+
         if (playerName) {
           if (overallIndex !== -1) {
             addOverallSummary(event.summary, playerName, rowValues[overallIndex] || "");
           }
-
           if (ctpIndex !== -1) {
             addAwardSummary(event.summary, playerName, rowValues[ctpIndex] || "");
           }
@@ -565,7 +565,6 @@ function buildHandicapDateMap(rows) {
   }
 
   const dateMap = new Map();
-
   let nextMonth = 0;
   let nextDay = 0;
   let hasNext = false;
@@ -621,15 +620,12 @@ function getHandicapPlayerMap() {
     const handicapValue = String(row[1] || "").trim();
     const tagValue = String(row[2] || "").trim();
 
-    const latestEntry =
-      roundHistory.find((entry) => entry.index === lastActiveColumn) || null;
-
+    const latestEntry = roundHistory.find((entry) => entry.index === lastActiveColumn) || null;
     const priorScores = roundHistory
       .filter((entry) => entry.index < lastActiveColumn)
       .map((entry) => entry.score);
 
     const priorBest = priorScores.length ? Math.min(...priorScores) : null;
-
     const handicapEstablished = handicapValue !== "" && recentRounds.length >= 3;
 
     players.set(name.toLowerCase(), {
@@ -647,9 +643,7 @@ function getHandicapPlayerMap() {
 }
 
 function findHeaderIndex(headers, wanted) {
-  return headers.findIndex(
-    (header) => normalizeSummaryValue(header) === wanted
-  );
+  return headers.findIndex((header) => normalizeSummaryValue(header) === wanted);
 }
 
 function getLayoutLabel(title) {
@@ -685,6 +679,10 @@ function ordinal(value) {
   return `${value}th`;
 }
 
+function bold(value) {
+  return `**${value}**`;
+}
+
 function formatMoneyHeader(label, amounts, namesCount) {
   const unique = [
     ...new Set(
@@ -693,8 +691,13 @@ function formatMoneyHeader(label, amounts, namesCount) {
         .map((amount) => amount.toFixed(2))
     ),
   ];
-function bold(value) {
-  return `**${value}**`;
+
+  if (unique.length === 1) {
+    const eachSuffix = namesCount > 1 ? " each" : "";
+    return `${label} (${formatCurrency(Number(unique[0]))}${eachSuffix})`;
+  }
+
+  return label;
 }
 
 function buildPersonalBestSentence(names) {
@@ -703,6 +706,63 @@ function buildPersonalBestSentence(names) {
   return names.length === 1
     ? `Personal best round tonight for ${formatNameList(names)}.`
     : `Personal best rounds tonight for ${formatNameList(names)}.`;
+}
+
+function parseSummaryLine(line) {
+  const text = cleanSummaryText(line.text || "");
+  const match = text.match(
+    /^(.*?)\s*(?:\(([^)]+)\))?:\s*(\$\s*\d+(?:\.\d{1,2})?)$/
+  );
+
+  if (!match) {
+    return { name: line.name || "", hole: "", amount: parseCurrency(text) };
+  }
+
+  return {
+    name: cleanSummaryText(match[1]) || line.name || "",
+    hole: cleanSummaryText(match[2] || ""),
+    amount: parseCurrency(match[3]),
+  };
+}
+
+function uniquePreserveOrder(values) {
+  const seen = new Set();
+  const result = [];
+
+  values.forEach((value) => {
+    if (!value || seen.has(value)) return;
+    seen.add(value);
+    result.push(value);
+  });
+
+  return result;
+}
+
+function getParticipants(event) {
+  const mainNames = (event.rows || [])
+    .map((row) => cleanSummaryText(row.name || ""))
+    .filter(Boolean);
+
+  const workingNames = event.working?.rows
+    ? event.working.rows
+        .map((row) => cleanSummaryText(row[0] || ""))
+        .filter(Boolean)
+    : [];
+
+  const poolNames = (event.pools || []).flatMap((pool) =>
+    (pool.rows || [])
+      .map((row) => cleanSummaryText(row[0] || ""))
+      .filter(Boolean)
+  );
+
+  return uniquePreserveOrder([...mainNames, ...workingNames, ...poolNames]);
+}
+
+function getNumberOneTag(playerMap) {
+  for (const player of playerMap.values()) {
+    if (String(player.tag || "").trim() === "1") return player.name;
+  }
+  return "TBD";
 }
 
 function getNumberOneTagSummary(playerMap, participants) {
@@ -718,20 +778,58 @@ function getNumberOneTagSummary(playerMap, participants) {
     : `Still with ${holder}`;
 }
 
+function buildPersonalBestNames(event, playerMap) {
+  const eventDate = toFullYearUsDate(extractEventDate(event.title));
+  const names = [];
+  const seen = new Set();
+
+  const addCandidate = (name, rawValue) => {
+    const cleanName = cleanSummaryText(name);
+    if (!cleanName || seen.has(cleanName.toLowerCase()) || rawValue == null) return;
+
+    const player = playerMap.get(cleanName.toLowerCase());
+    if (!player || !player.handicapEstablished) return;
+    if (player.latestDate !== eventDate) return;
+    if (player.latestScore == null || player.latestScore !== rawValue) return;
+    if (player.priorBest == null) return;
+
+    if (rawValue < player.priorBest) {
+      seen.add(cleanName.toLowerCase());
+      names.push(cleanName);
+    }
+  };
+
+  if (event.kind === "handicap") {
+    (event.rows || []).forEach((row) => {
+      addCandidate(row.name, extractFirstNumber(row.raw || ""));
+    });
+  }
+
+  (event.pools || []).forEach((pool) => {
+    const headers = (pool.headers || []).map((header) => String(header || "").trim());
+    const rawIndex = findHeaderIndex(headers, "raw");
+    const r1Index = findHeaderIndex(headers, "r1");
+    const scoreIndex = r1Index !== -1 ? r1Index : rawIndex;
+
+    if (scoreIndex === -1) return;
+
+    (pool.rows || []).forEach((cells) => {
+      addCandidate(cells[0], extractFirstNumber(cells[scoreIndex] || ""));
+    });
+  });
+
+  return names;
+}
+
 function getPoolSections(event) {
   return ["A Pool", "B Pool", "C Pool"].map((poolName) => {
     const pool = (event.pools || []).find((candidate) =>
-      normalizeSummaryValue(candidate.title).startsWith(
-        normalizeSummaryValue(poolName)
-      )
+      normalizeSummaryValue(candidate.title).startsWith(normalizeSummaryValue(poolName))
     );
 
     if (!pool) return { title: poolName, winners: [], amounts: [] };
 
-    const headers = (pool.headers || []).map((header) =>
-      String(header || "").trim()
-    );
-
+    const headers = (pool.headers || []).map((header) => String(header || "").trim());
     const totalIndex = findHeaderIndex(headers, "total");
     const rawIndex = findHeaderIndex(headers, "raw");
     const scoreIndex = totalIndex !== -1 ? totalIndex : rawIndex;
@@ -815,115 +913,6 @@ function pickEvent(events, args) {
 
   return match;
 }
-  if (unique.length === 1) {
-    const eachSuffix = namesCount > 1 ? " each" : "";
-    return `${label} (${formatCurrency(Number(unique[0]))}${eachSuffix})`;
-  }
-
-  return label;
-}
-
-function parseSummaryLine(line) {
-  const text = cleanSummaryText(line.text || "");
-  const match = text.match(
-    /^(.*?)\s*(?:\(([^)]+)\))?:\s*(\$\s*\d+(?:\.\d{1,2})?)$/
-  );
-
-  if (!match) {
-    return { name: line.name || "", hole: "", amount: parseCurrency(text) };
-  }
-
-  return {
-    name: cleanSummaryText(match[1]) || line.name || "",
-    hole: cleanSummaryText(match[2] || ""),
-    amount: parseCurrency(match[3]),
-  };
-}
-
-function uniquePreserveOrder(values) {
-  const seen = new Set();
-  const result = [];
-
-  values.forEach((value) => {
-    if (!value || seen.has(value)) return;
-    seen.add(value);
-    result.push(value);
-  });
-
-  return result;
-}
-
-function getParticipants(event) {
-  const mainNames = (event.rows || [])
-    .map((row) => cleanSummaryText(row.name || ""))
-    .filter(Boolean);
-
-  const workingNames = event.working?.rows
-    ? event.working.rows
-        .map((row) => cleanSummaryText(row[0] || ""))
-        .filter(Boolean)
-    : [];
-
-  const poolNames = (event.pools || []).flatMap((pool) =>
-    (pool.rows || [])
-      .map((row) => cleanSummaryText(row[0] || ""))
-      .filter(Boolean)
-  );
-
-  return uniquePreserveOrder([...mainNames, ...workingNames, ...poolNames]);
-}
-
-function buildPersonalBestNames(event, playerMap) {
-  const eventDate = toFullYearUsDate(extractEventDate(event.title));
-  const names = [];
-  const seen = new Set();
-
-  const addCandidate = (name, rawValue) => {
-    const cleanName = cleanSummaryText(name);
-    if (!cleanName || seen.has(cleanName.toLowerCase()) || rawValue == null) return;
-
-    const player = playerMap.get(cleanName.toLowerCase());
-    if (!player || !player.handicapEstablished) return;
-    if (player.latestDate !== eventDate) return;
-    if (player.latestScore == null || player.latestScore !== rawValue) return;
-    if (player.priorBest == null) return;
-
-    if (rawValue < player.priorBest) {
-      seen.add(cleanName.toLowerCase());
-      names.push(cleanName);
-    }
-  };
-
-  if (event.kind === "handicap") {
-    (event.rows || []).forEach((row) =>
-      addCandidate(row.name, extractFirstNumber(row.raw || ""))
-    );
-  }
-
-  (event.pools || []).forEach((pool) => {
-    const headers = (pool.headers || []).map((header) =>
-      String(header || "").trim()
-    );
-    const rawIndex = findHeaderIndex(headers, "raw");
-    const r1Index = findHeaderIndex(headers, "r1");
-    const scoreIndex = r1Index !== -1 ? r1Index : rawIndex;
-
-    if (scoreIndex === -1) return;
-
-    (pool.rows || []).forEach((cells) =>
-      addCandidate(cells[0], extractFirstNumber(cells[scoreIndex] || ""))
-    );
-  });
-
-  return names;
-}
-
-function getNumberOneTag(playerMap) {
-  for (const player of playerMap.values()) {
-    if (String(player.tag || "").trim() === "1") return player.name;
-  }
-  return "TBD";
-}
 
 function buildHandicapRecap(event, playerMap) {
   const fullDate = toFullYearUsDate(extractEventDate(event.title));
@@ -956,10 +945,7 @@ function buildHandicapRecap(event, playerMap) {
   const ctpRows = (event.summary?.ctps || [])
     .map(parseSummaryLine)
     .filter((row) => row.name);
-
-  const ctpAmounts = ctpRows
-    .map((row) => row.amount)
-    .filter((value) => value != null);
+  const ctpAmounts = ctpRows.map((row) => row.amount).filter((value) => value != null);
 
   const aceRows = (event.summary?.aces || [])
     .map(parseSummaryLine)
@@ -968,7 +954,6 @@ function buildHandicapRecap(event, playerMap) {
   const overallRows = (event.summary?.overall || [])
     .map(parseSummaryLine)
     .filter((row) => row.name);
-
   const overallAmounts = overallRows
     .map((row) => row.amount)
     .filter((value) => value != null);
@@ -1030,22 +1015,17 @@ function buildMonthlyRecap(event, playerMap, allEvents) {
   const eventDate = parseUsDate(fullDate);
   const eventYear = eventDate.getFullYear();
   const monthName = eventDate.toLocaleString("en-US", { month: "long" });
-  const eventHref = `${SITE_URL}${WEEKLY_RESULTS_PAGE_PATH}#${getWeeklyResultsAnchorId(
-    event.title
-  )}`;
+  const roundType = getRoundTypeFromText(event.title);
+  const isTwoRound = roundType === "2-rounds";
 
   const participants = getParticipants(event);
-
   const personalBestNames = buildPersonalBestNames(event, playerMap);
-  const personalBestSentence = personalBestNames.length
-    ? `Personal best rounds tonight for ${formatNameList(personalBestNames)}.`
-    : "No personal best rounds tonight.";
+  const personalBestSentence = buildPersonalBestSentence(personalBestNames);
 
   const monthlyEventsThisYear = allEvents.filter(
     (candidate) =>
       getRoundTypeFromText(candidate.title) === "monthly" &&
-      parseUsDate(toFullYearUsDate(extractEventDate(candidate.title))).getFullYear() ===
-        eventYear
+      parseUsDate(toFullYearUsDate(extractEventDate(candidate.title))).getFullYear() === eventYear
   );
 
   monthlyEventsThisYear.sort(
@@ -1059,72 +1039,39 @@ function buildMonthlyRecap(event, playerMap, allEvents) {
     monthlyEventsThisYear.findIndex((candidate) => candidate.title === event.title) + 1
   );
 
-  const poolSections = ["A Pool", "B Pool", "C Pool"].map((poolName) => {
-    const pool = (event.pools || []).find(
-      (candidate) =>
-        normalizeSummaryValue(candidate.title) === normalizeSummaryValue(poolName)
-    );
-
-    if (!pool) return { title: poolName, winners: [], amounts: [] };
-
-    const headers = (pool.headers || []).map((header) =>
-      String(header || "").trim()
-    );
-    const rawIndex = findHeaderIndex(headers, "raw");
-    const payoutIndex = findHeaderIndex(headers, "payout");
-
-    if (rawIndex === -1) return { title: poolName, winners: [], amounts: [] };
-
-    const parsedRows = (pool.rows || [])
-      .map((cells) => ({
-        name: cleanSummaryText(cells[0] || ""),
-        raw: extractFirstNumber(cells[rawIndex] || ""),
-        payout: payoutIndex !== -1 ? parseCurrency(cells[payoutIndex] || "") : null,
-      }))
-      .filter((row) => row.name && row.raw != null);
-
-    const bestRaw = parsedRows.length
-      ? Math.min(...parsedRows.map((row) => row.raw))
-      : null;
-
-    const winners =
-      bestRaw == null ? [] : parsedRows.filter((row) => row.raw === bestRaw);
-
-    return {
-      title: poolName,
-      winners,
-      amounts: winners.map((row) => row.payout),
-    };
-  });
-
+  const poolSections = getPoolSections(event);
   const ctpRows = (event.summary?.ctps || [])
     .map(parseSummaryLine)
     .filter((row) => row.name);
-
   const aceRows = (event.summary?.aces || [])
     .map(parseSummaryLine)
     .filter((row) => row.name);
+  const tagSummary = getNumberOneTagSummary(playerMap, participants);
 
   const lines = [
-    `${monthName} Lufbery Monthly Recap`,
+    isTwoRound
+      ? bold(`Lufbery 2-Round Recap for ${fullDate}`)
+      : bold(`${monthName} Lufbery Monthly Recap`),
     "",
     `Full results and updated tags/handicaps: ${SITE_URL}`,
     "",
-    `${participants.length} joined us tonight for the ${ordinal(
-      monthlyNumber
-    )} monthly of the season.`,
+    isTwoRound
+      ? `${participants.length} joined us tonight for a 2-round event.`
+      : `${participants.length} joined us tonight for the ${ordinal(monthlyNumber)} monthly of the season.`,
     "",
     personalBestSentence,
     "",
-    `#1 tag goes to ${getNumberOneTag(playerMap)}.`,
+    tagSummary.startsWith("Still with ")
+      ? `#1 tag ${tagSummary.toLowerCase()}.`
+      : `#1 tag goes to ${tagSummary}.`,
   ];
 
   poolSections.forEach((section) => {
-    lines.push("", formatMoneyHeader(section.title, section.amounts, section.winners.length));
+    lines.push("", bold(formatMoneyHeader(section.title, section.amounts, section.winners.length)));
     if (section.winners.length) {
-      section.winners.forEach((winner) =>
-        lines.push(`${winner.name} (${winner.raw})`)
-      );
+      section.winners.forEach((winner) => {
+        lines.push(`${winner.name} (${winner.score})`);
+      });
     } else {
       lines.push("None");
     }
@@ -1132,10 +1079,12 @@ function buildMonthlyRecap(event, playerMap, allEvents) {
 
   lines.push(
     "",
-    formatMoneyHeader(
-      "CTP's",
-      ctpRows.map((row) => row.amount),
-      ctpRows.length
+    bold(
+      formatMoneyHeader(
+        "CTP's",
+        ctpRows.map((row) => row.amount),
+        ctpRows.length
+      )
     ),
     ...(ctpRows.length
       ? ctpRows.map((row) => `${row.hole || "Hole ?"}: ${row.name}`)
@@ -1145,16 +1094,18 @@ function buildMonthlyRecap(event, playerMap, allEvents) {
   if (aceRows.length) {
     lines.push(
       "",
-      formatMoneyHeader(
-        "Aces",
-        aceRows.map((row) => row.amount),
-        aceRows.length
+      bold(
+        formatMoneyHeader(
+          "Aces",
+          aceRows.map((row) => row.amount),
+          aceRows.length
+        )
       ),
       ...aceRows.map((row) => `${row.hole || "Hole ?"}: ${row.name}`)
     );
   }
 
-  lines.push("", "#1 tag", getNumberOneTag(playerMap), "", `Event results link: ${eventHref}`);
+  lines.push("", bold("#1 tag"), tagSummary);
 
   return lines.join("\n");
 }
