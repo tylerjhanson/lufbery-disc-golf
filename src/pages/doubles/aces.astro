@@ -1,8 +1,18 @@
 ---
-import { getDoublesAces } from "../../lib/data";
+import { getDoublesAceRowAnchorId, getDoublesAces, getPlayerProfiles } from "../../lib/data";
+import PlayerLink from "../../components/PlayerLink.astro";
+import PlayerModal from "../../components/PlayerModal.astro";
 
 const rows = getDoublesAces();
+const playerProfiles = getPlayerProfiles();
 import SiteLayout from "../../layouts/SiteLayout.astro";
+
+function splitTeamNames(value: string) {
+  return String(value || "")
+    .split(/\s*\/\s*/)
+    .map((part) => String(part || "").trim())
+    .filter(Boolean);
+}
 ---
 
 <SiteLayout title="Doubles Aces" showBrandBar={true}>
@@ -262,12 +272,12 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
 
             <tbody>
               {rows.map((row) => (
-                <tr>
-                  <td>{row.name}</td>
+                <tr id={getDoublesAceRowAnchorId(row)}>
+                  <td><div class="player-link-stack">{splitTeamNames(row.name).map((name) => <PlayerLink name={name} />)}</div></td>
                   <td>{row.hole}</td>
                   <td>
-                    {row.url ? (
-                      <a class="date-link" href={row.url} target="_blank" rel="noopener">
+                    {row.detailsHref || row.url ? (
+                      <a class="date-link" href={row.detailsHref || row.url}>
                         {row.date}
                       </a>
                     ) : (
@@ -373,4 +383,5 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
 
       sortTable(currentColumn, "date", currentDirection);
     </script>
+  <PlayerModal profiles={playerProfiles} />
 </SiteLayout>
