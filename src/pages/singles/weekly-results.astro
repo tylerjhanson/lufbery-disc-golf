@@ -1,8 +1,11 @@
 ---
 import SiteLayout from "../../layouts/SiteLayout.astro";
-import { getWeeklyResults } from "../../lib/data";
+import PlayerLink from "../../components/PlayerLink.astro";
+import PlayerModal from "../../components/PlayerModal.astro";
+import { getPlayerProfiles, getWeeklyResults, getWeeklyResultsAnchorId } from "../../lib/data";
 
 const events = getWeeklyResults();
+const playerProfiles = getPlayerProfiles();
 
 function getEventDateParts(title: string) {
   const match = String(title || "").match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
@@ -86,6 +89,18 @@ function getHeaderLabelByHeaders(headers: unknown[], headerNames: string[], fall
   }
 
   return fallback;
+}
+
+function splitSummaryItem(value: string) {
+  const text = String(value || "").trim();
+  const match = text.match(/^([^:(]+?)(\s*(?:\(|:).*)$/);
+
+  if (!match) return { name: text, rest: "" };
+
+  return {
+    name: cleanPlayerName(match[1]),
+    rest: match[2] || "",
+  };
 }
 
 function getVisibleColumnIndexes(headers: unknown[], hiddenHeaders: string[]) {
@@ -240,6 +255,7 @@ const defaultRoundType = "all";
     }
 
     .card {
+      scroll-margin-top: 96px;
       background: var(--card);
       border: 1px solid var(--line-soft);
       border-radius: 10px;
@@ -697,6 +713,7 @@ const defaultRoundType = "all";
     <div id="resultsEvents" class="events">
       {sortedEvents.map((event) => (
         <section
+          id={getWeeklyResultsAnchorId(event.title)}
           class="card"
           data-year={getEventYear(event.title) || ""}
           data-round-type={getRoundType(event)}
@@ -734,18 +751,30 @@ const defaultRoundType = "all";
                 {event.summary?.overall?.length > 0 && (
                   <div class="summary-group">
                     <div class="summary-label">Best Overall</div>
-                    {event.summary.overall.map((item: any) => (
-                      <div class="summary-item">{item.text}</div>
-                    ))}
+                    {event.summary.overall.map((item: any) => {
+                      const parsed = splitSummaryItem(item.text);
+                      return (
+                        <div class="summary-item">
+                          <PlayerLink name={parsed.name} />
+                          {parsed.rest}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 
                 {event.summary?.ctps?.length > 0 && (
                   <div class="summary-group">
                     <div class="summary-label">CTP&apos;s</div>
-                    {event.summary.ctps.map((item: any) => (
-                      <div class="summary-item">{item.text}</div>
-                    ))}
+                    {event.summary.ctps.map((item: any) => {
+                      const parsed = splitSummaryItem(item.text);
+                      return (
+                        <div class="summary-item">
+                          <PlayerLink name={parsed.name} />
+                          {parsed.rest}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 
@@ -754,9 +783,15 @@ const defaultRoundType = "all";
                     <div class="summary-label">
                       {event.summary.aces.length === 1 ? "Ace" : "Aces"}
                     </div>
-                    {event.summary.aces.map((item: any) => (
-                      <div class="summary-item">{item.text}</div>
-                    ))}
+                    {event.summary.aces.map((item: any) => {
+                      const parsed = splitSummaryItem(item.text);
+                      return (
+                        <div class="summary-item">
+                          <PlayerLink name={parsed.name} />
+                          {parsed.rest}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -788,7 +823,7 @@ const defaultRoundType = "all";
                           data-player-name={cleanPlayerName(row.name)}
                           data-raw-score={String(row.raw ?? "")}
                         >
-                          <td data-label="Name" class="player-name-cell">{row.name}</td>
+                          <td data-label="Name" class="player-name-cell"><PlayerLink name={row.name} /></td>
                           <td data-label="Raw">{row.raw}</td>
                           <td data-label="Hcp.">{row.hcp}</td>
                           <td data-label="Net">{row.net}</td>
@@ -842,7 +877,7 @@ const defaultRoundType = "all";
                               )}
                               class="player-name-cell"
                             >
-                              {row?.[0] || ""}
+                              <PlayerLink name={row?.[0] || ""} />
                             </td>
                             <td data-label="Raw">
                               {getCellValueByHeaders(
@@ -905,7 +940,7 @@ const defaultRoundType = "all";
                                 data-label={pool.headers[idx] || ""}
                                 class={idx === 0 ? "player-name-cell" : undefined}
                               >
-                                {row[idx]}
+                                {idx === 0 ? <PlayerLink name={row[idx] || ""} /> : row[idx]}
                               </td>
                             )
                           )}
@@ -1047,4 +1082,5 @@ const defaultRoundType = "all";
     applyFilters();
     updateSearchClear();
   </script>
+  <PlayerModal profiles={playerProfiles} />
 </SiteLayout>
