@@ -84,9 +84,12 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   }
 
   .player-details-modal-close {
-    position: absolute;
+    position: sticky;
     top: 12px;
-    right: 12px;
+    z-index: 5;
+    margin-left: auto;
+    margin-bottom: 8px;
+    display: inline-flex;
     width: 40px;
     height: 40px;
     border: 1px solid var(--line-soft, #e6edf5);
@@ -96,7 +99,6 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     font-size: 1.35rem;
     font-weight: 600;
     line-height: 1;
-    display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
@@ -109,10 +111,11 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   }
 
   .player-details-modal-title {
-    margin: 0 52px 12px 0;
+    margin: 0 0 12px 0;
     font-size: 1.12rem;
     line-height: 1.2;
     font-weight: 800;
+    clear: both;
   }
 
   .player-details-section-label {
@@ -120,7 +123,9 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     font-size: 0.84rem;
     font-weight: 800;
     line-height: 1.2;
-    color: var(--muted, #6b7280);
+    color: var(--text, #111827);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
   }
 
   .player-details-history-table {
@@ -159,7 +164,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     gap: 10px 14px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     margin-top: 6px;
-    margin-bottom: 18px;
+    margin-bottom: 8px;
   }
 
   .player-details-summary-row {
@@ -180,6 +185,13 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
 
   .player-details-summary-item {
     font-size: 0.94rem;
+    line-height: 1.35;
+  }
+
+  .player-details-summary-footnote {
+    margin: 0 0 18px;
+    color: var(--muted, #6b7280);
+    font-size: 0.82rem;
     line-height: 1.35;
   }
 
@@ -308,6 +320,10 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
 
     .player-details-summary-grid {
       grid-template-columns: 1fr;
+    }
+
+    .player-details-modal-close {
+      top: 8px;
     }
   }
 </style>
@@ -449,7 +465,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     return rounds.map((_, index) => intercept + slope * index);
   }
 
-  function buildLineChart(values, ariaLabel) {
+  function buildLineChart(values, ariaLabel, reverseY = false) {
     if (!values || !values.length) return "";
 
     const numericValues = values
@@ -491,7 +507,9 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
         : padLeft + (index / (values.length - 1)) * innerWidth;
 
     const getY = (value) =>
-      padTop + ((value - chartMin) / (chartMax - chartMin)) * innerHeight;
+      reverseY
+        ? padTop + ((chartMax - value) / (chartMax - chartMin)) * innerHeight
+        : padTop + ((value - chartMin) / (chartMax - chartMin)) * innerHeight;
 
     const playerPoints = values
       .map((point, index) => `${getX(index)},${getY(Number(point.value))}`)
@@ -544,7 +562,8 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
 
     return buildLineChart(
       rounds.map((round) => ({ value: Number(round.score) })),
-      "Score history chart"
+      "Score history chart",
+      true
     );
   }
 
@@ -557,7 +576,8 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
           value: Number(row.tag),
         }))
         .filter((row) => !Number.isNaN(row.value)),
-      "Tag history chart"
+      "Tag history chart",
+      false
     );
   }
 
@@ -611,7 +631,6 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     const currentTag = profile?.currentTag ? String(profile.currentTag) : "";
     const bestTagEver = profile?.bestTagEver ? String(profile.bestTagEver) : "";
     const averageTag = profile?.averageTag ? String(profile.averageTag) : "";
-    const weeksAtOne = Number(profile?.weeksAtOne || 0);
     const hasTag = Boolean(profile?.hasTag);
     const tagHistory = Array.isArray(profile?.tagHistory) ? profile.tagHistory : [];
     const personalBests = Array.isArray(profile?.personalBests) && profile.personalBests.length
@@ -645,14 +664,14 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
 
     const scoreChartMarkup = allRounds.length
       ? `
-          <p class="player-details-section-label">Score history</p>
+          <p class="player-details-section-label">SCORE HISTORY (SINCE 2021)</p>
           ${buildRoundChart(allRounds)}
         `
       : "";
 
     const tagChartMarkup = tagHistory.length
       ? `
-          <p class="player-details-section-label">Tag history</p>
+          <p class="player-details-section-label">TAG HISTORY SINCE 2025</p>
           ${buildTagChart(tagHistory)}
         `
       : "";
@@ -684,16 +703,17 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
 
     playerDetailsModalBody.innerHTML = `
       <div class="player-details-summary-grid">
-        <div class="player-details-summary-row">Handicap: <strong>${handicap ? escapeHtml(handicap) : "—"}</strong></div>
+        <div class="player-details-summary-row">Current Handicap: <strong>${handicap ? escapeHtml(handicap) : "—"}</strong></div>
         <div class="player-details-summary-row">Current tag: <strong>${hasTag ? escapeHtml(currentTag || "TBD") : "—"}</strong></div>
         <div class="player-details-summary-row">Average score: <strong>${average ? escapeHtml(average) : "—"}</strong></div>
-        <div class="player-details-summary-row">Best tag ever (since 2025): <strong>${bestTagEver ? escapeHtml(bestTagEver) : "—"}</strong></div>
-        <div class="player-details-summary-row">Average tag (since 2025): <strong>${averageTag ? escapeHtml(averageTag) : "—"}</strong></div>
-        <div class="player-details-summary-row">Weeks at #1: <strong>${hasTag ? escapeHtml(String(weeksAtOne)) : "0"}</strong></div>
+        <div class="player-details-summary-row">Best tag*: <strong>${bestTagEver ? escapeHtml(bestTagEver) : "—"}</strong></div>
+        <div class="player-details-summary-row">Average tag*: <strong>${averageTag ? escapeHtml(averageTag) : "—"}</strong></div>
         <div class="player-details-summary-row" style="grid-column: 1 / -1;">Personal best: ${renderPersonalBestMarkup(personalBests)}</div>
       </div>
 
-      <p class="player-details-section-label">Rounds counting towards handicap</p>
+      <p class="player-details-summary-footnote">*Since 2025</p>
+
+      <p class="player-details-section-label">ROUNDS COUNTING TOWARDS HANDICAP</p>
 
       <table class="player-details-history-table">
         <thead>
@@ -711,10 +731,10 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       ${tagChartMarkup}
       ${establishmentNote}
 
-      <p class="player-details-section-label">Weekly wins</p>
+      <p class="player-details-section-label">WEEKLY WINS</p>
       ${weeklyWinsMarkup}
 
-      <p class="player-details-section-label">Aces</p>
+      <p class="player-details-section-label">ACES</p>
       ${acesMarkup}
     `;
   }
