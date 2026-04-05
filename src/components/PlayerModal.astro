@@ -592,11 +592,21 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     `;
   }
 
+  function normalizePlayerKey(value) {
+    return String(value || "").replace(/\s+/g, " ").trim().toLowerCase();
+  }
+
   function openPlayerDetailsModal(button) {
     if (!button || !playerDetailsModal) return;
 
-    const playerKey = String(button.dataset.playerKey || "").trim().toLowerCase();
-    const fallbackName = String(button.dataset.playerName || button.textContent || "").trim();
+    const fallbackName = String(
+      button.dataset.playerName || button.dataset.player || button.textContent || ""
+    ).trim();
+
+    const playerKey = normalizePlayerKey(
+      button.dataset.playerKey || button.dataset.player || fallbackName
+    );
+
     const profile = PLAYER_PROFILES[playerKey] || null;
 
     lastPlayerTrigger = button;
@@ -619,7 +629,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
 
   document.addEventListener("click", (event) => {
     const button = event.target instanceof Element
-      ? event.target.closest("[data-player-key]")
+      ? event.target.closest("[data-player-key], [data-player]")
       : null;
 
     if (button) {
