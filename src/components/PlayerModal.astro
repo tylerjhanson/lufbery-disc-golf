@@ -687,8 +687,8 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
         <div class="player-details-summary-row">Handicap: <strong>${handicap ? escapeHtml(handicap) : "—"}</strong></div>
         <div class="player-details-summary-row">Current tag: <strong>${hasTag ? escapeHtml(currentTag || "TBD") : "—"}</strong></div>
         <div class="player-details-summary-row">Average score: <strong>${average ? escapeHtml(average) : "—"}</strong></div>
-        <div class="player-details-summary-row">Best tag (since 2025): <strong>${bestTagEver ? escapeHtml(bestTagEver) : "—"}</strong></div>
-        <div class="player-details-summary-row">Average tag (since 2025):<strong>${averageTag ? escapeHtml(averageTag) : "—"}</strong></div>
+        <div class="player-details-summary-row">Best tag ever (since 2025): <strong>${bestTagEver ? escapeHtml(bestTagEver) : "—"}</strong></div>
+        <div class="player-details-summary-row">Average tag (since 2025): <strong>${averageTag ? escapeHtml(averageTag) : "—"}</strong></div>
         <div class="player-details-summary-row">Weeks at #1: <strong>${hasTag ? escapeHtml(String(weeksAtOne)) : "0"}</strong></div>
         <div class="player-details-summary-row" style="grid-column: 1 / -1;">Personal best: ${renderPersonalBestMarkup(personalBests)}</div>
       </div>
