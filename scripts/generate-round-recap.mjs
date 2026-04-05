@@ -35,7 +35,8 @@ function parseCurrency(value) {
 }
 
 function formatCurrency(amount) {
-  return Number.isFinite(amount) ? `$${amount.toFixed(2)}` : "$0.00";
+  if (!Number.isFinite(amount)) return "$0";
+  return Number.isInteger(amount) ? `$${amount}` : `$${amount.toFixed(2)}`;
 }
 
 function parseUsDate(value) {
@@ -692,7 +693,128 @@ function formatMoneyHeader(label, amounts, namesCount) {
         .map((amount) => amount.toFixed(2))
     ),
   ];
+function bold(value) {
+  return `**${value}**`;
+}
 
+function buildPersonalBestSentence(names) {
+  if (!names.length) return "No personal best rounds tonight.";
+
+  return names.length === 1
+    ? `Personal best round tonight for ${formatNameList(names)}.`
+    : `Personal best rounds tonight for ${formatNameList(names)}.`;
+}
+
+function getNumberOneTagSummary(playerMap, participants) {
+  const holder = getNumberOneTag(playerMap);
+  if (!holder || holder === "TBD") return holder || "TBD";
+
+  const participantKeys = new Set(
+    participants.map((name) => cleanSummaryText(name).toLowerCase())
+  );
+
+  return participantKeys.has(cleanSummaryText(holder).toLowerCase())
+    ? holder
+    : `Still with ${holder}`;
+}
+
+function getPoolSections(event) {
+  return ["A Pool", "B Pool", "C Pool"].map((poolName) => {
+    const pool = (event.pools || []).find((candidate) =>
+      normalizeSummaryValue(candidate.title).startsWith(
+        normalizeSummaryValue(poolName)
+      )
+    );
+
+    if (!pool) return { title: poolName, winners: [], amounts: [] };
+
+    const headers = (pool.headers || []).map((header) =>
+      String(header || "").trim()
+    );
+
+    const totalIndex = findHeaderIndex(headers, "total");
+    const rawIndex = findHeaderIndex(headers, "raw");
+    const scoreIndex = totalIndex !== -1 ? totalIndex : rawIndex;
+    const payoutIndex = findHeaderIndex(headers, "payout");
+
+    if (scoreIndex === -1) {
+      return { title: poolName, winners: [], amounts: [] };
+    }
+
+    const parsedRows = (pool.rows || [])
+      .map((cells) => ({
+        name: cleanSummaryText(cells[0] || ""),
+        score: extractFirstNumber(cells[scoreIndex] || ""),
+        payout: payoutIndex !== -1 ? parseCurrency(cells[payoutIndex] || "") : null,
+      }))
+      .filter((row) => row.name && row.score != null);
+
+    const bestScore = parsedRows.length
+      ? Math.min(...parsedRows.map((row) => row.score))
+      : null;
+
+    const winners =
+      bestScore == null ? [] : parsedRows.filter((row) => row.score === bestScore);
+
+    return {
+      title: poolName,
+      winners,
+      amounts: winners.map((row) => row.payout),
+    };
+  });
+}
+
+function parseArgs(argv) {
+  const args = {
+    type: "latest",
+    title: "",
+  };
+
+  for (let i = 0; i < argv.length; i += 1) {
+    const value = argv[i];
+
+    if (value === "--type" && argv[i + 1]) {
+      args.type = argv[i + 1];
+      i += 1;
+      continue;
+    }
+
+    if (value === "--title" && argv[i + 1]) {
+      args.title = argv[i + 1];
+      i += 1;
+    }
+  }
+
+  return args;
+}
+
+function pickEvent(events, args) {
+  if (args.title) {
+    const match = events.find(
+      (event) => cleanSummaryText(event.title) === cleanSummaryText(args.title)
+    );
+
+    if (!match) {
+      throw new Error(`No event found with title: ${args.title}`);
+    }
+
+    return match;
+  }
+
+  if (!args.type || args.type === "latest") {
+    return events[0];
+  }
+
+  const match = events.find(
+    (event) => getRoundTypeFromText(event.title) === args.type
+  );
+
+  if (!match) {
+    throw new Error(`No event found for type: ${args.type}`);
+  }
+
+  return match;
+}
   if (unique.length === 1) {
     const eachSuffix = namesCount > 1 ? " each" : "";
     return `${label} (${formatCurrency(Number(unique[0]))}${eachSuffix})`;
@@ -805,10 +927,6 @@ function getNumberOneTag(playerMap) {
 
 function buildHandicapRecap(event, playerMap) {
   const fullDate = toFullYearUsDate(extractEventDate(event.title));
-  const eventHref = `${SITE_URL}${WEEKLY_RESULTS_PAGE_PATH}#${getWeeklyResultsAnchorId(
-    event.title
-  )}`;
-
   const participants = getParticipants(event);
   const handicapCount = (event.rows || []).length;
   const tagCount = participants.filter((name) => {
@@ -817,9 +935,7 @@ function buildHandicapRecap(event, playerMap) {
   }).length;
 
   const personalBestNames = buildPersonalBestNames(event, playerMap);
-  const personalBestSentence = personalBestNames.length
-    ? `Personal best rounds tonight for ${formatNameList(personalBestNames)}.`
-    : "No personal best rounds tonight.";
+  const personalBestSentence = buildPersonalBestSentence(personalBestNames);
 
   const scoringRows = (event.rows || [])
     .map((row) => ({
@@ -835,9 +951,7 @@ function buildHandicapRecap(event, playerMap) {
     : null;
 
   const handicapWinners =
-    bestNet == null
-      ? []
-      : scoringRows.filter((row) => row.net === bestNet);
+    bestNet == null ? [] : scoringRows.filter((row) => row.net === bestNet);
 
   const ctpRows = (event.summary?.ctps || [])
     .map(parseSummaryLine)
@@ -860,7 +974,7 @@ function buildHandicapRecap(event, playerMap) {
     .filter((value) => value != null);
 
   const lines = [
-    `${fullDate} Lufbery Handicap Recap`,
+    bold(`Lufbery Handicap Results for ${fullDate}`),
     "",
     `Full results and updated tags/handicaps: ${SITE_URL}`,
     "",
@@ -870,14 +984,16 @@ function buildHandicapRecap(event, playerMap) {
       event.title
     )}. Ace pot starts at [fill in] next week.`,
     "",
-    formatMoneyHeader(
-      "Handicap winner",
-      handicapWinners.map((row) => row.payout),
-      handicapWinners.length
+    bold(
+      formatMoneyHeader(
+        "Handicap winner",
+        handicapWinners.map((row) => row.payout),
+        handicapWinners.length
+      )
     ),
     ...handicapWinners.map((row) => `${row.name} (${row.raw}=${row.net})`),
     "",
-    formatMoneyHeader("CTP's", ctpAmounts, ctpRows.length),
+    bold(formatMoneyHeader("CTP's", ctpAmounts, ctpRows.length)),
     ...(ctpRows.length
       ? ctpRows.map((row) => `${row.hole || "Hole ?"}: ${row.name}`)
       : ["None"]),
@@ -886,10 +1002,12 @@ function buildHandicapRecap(event, playerMap) {
   if (aceRows.length) {
     lines.push(
       "",
-      formatMoneyHeader(
-        "Aces",
-        aceRows.map((row) => row.amount),
-        aceRows.length
+      bold(
+        formatMoneyHeader(
+          "Aces",
+          aceRows.map((row) => row.amount),
+          aceRows.length
+        )
       ),
       ...aceRows.map((row) => `${row.hole || "Hole ?"}: ${row.name}`)
     );
@@ -897,13 +1015,11 @@ function buildHandicapRecap(event, playerMap) {
 
   lines.push(
     "",
-    formatMoneyHeader("Best overall", overallAmounts, overallRows.length),
+    bold(formatMoneyHeader("Best overall", overallAmounts, overallRows.length)),
     ...(overallRows.length ? overallRows.map((row) => row.name) : ["None"]),
     "",
-    "#1 tag",
-    getNumberOneTag(playerMap),
-    "",
-    `Event results link: ${eventHref}`
+    bold("#1 tag"),
+    getNumberOneTagSummary(playerMap, participants)
   );
 
   return lines.join("\n");
@@ -1043,27 +1159,25 @@ function buildMonthlyRecap(event, playerMap, allEvents) {
   return lines.join("\n");
 }
 
-function buildRecap() {
+function buildRecap(args = {}) {
   const events = getWeeklyResults();
   if (!events.length) {
     throw new Error("No weekly results found in wkres.csv.");
   }
 
-  const latestEvent = events[0];
+  const selectedEvent = pickEvent(events, args);
   const { players } = getHandicapPlayerMap();
-  const roundType = getRoundTypeFromText(latestEvent.title);
+  const roundType = getRoundTypeFromText(selectedEvent.title);
 
   if (roundType === "handicap") {
-    return buildHandicapRecap(latestEvent, players);
+    return buildHandicapRecap(selectedEvent, players);
   }
 
-  if (roundType === "monthly") {
-    return buildMonthlyRecap(latestEvent, players, events);
-  }
-
-  return buildMonthlyRecap(latestEvent, players, events);
+  return buildMonthlyRecap(selectedEvent, players, events);
 }
 
-const recap = buildRecap();
-fs.writeFileSync(path.join(process.cwd(), "round-recap.txt"), `${recap}\n`, "utf8");
+const args = parseArgs(process.argv.slice(2));
+const recap = buildRecap(args);
+
+fs.writeFileSync(path.join(process.cwd(), "round-recap.md"), `${recap}\n`, "utf8");
 process.stdout.write(`${recap}\n`);
