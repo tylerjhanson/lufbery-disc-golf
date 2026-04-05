@@ -1,43 +1,23 @@
 ---
 import { getDoublesRecords, getPlayerProfiles } from "../../lib/data";
 import PlayerModal from "../../components/PlayerModal.astro";
+import SiteLayout from "../../layouts/SiteLayout.astro";
 
 const sections = getDoublesRecords();
 const playerProfiles = getPlayerProfiles();
-import SiteLayout from "../../layouts/SiteLayout.astro";
 
-function cleanName(value: string) {
-  return String(value || "").replace(/\s+/g, " ").trim();
-}
-
-function getPlayerKey(value: string) {
-  return cleanName(value).toLowerCase();
-}
-
-function cleanTeamModalName(value: string) {
-  return cleanName(value).replace(/\s*\((?:modified\s+)?cali\)\s*$/i, "").trim();
-}
-
-function splitTeamPlayers(value: string) {
+function splitTeamNames(value: string) {
   return String(value || "")
     .split(/\s*\/\s*/)
-    .map((part) => {
-      const label = cleanName(part);
-      const modalName = cleanTeamModalName(part);
+    .map((part) => String(part || "").trim())
+    .filter(Boolean);
+}
 
-      return label && modalName
-        ? { label, modalName, key: getPlayerKey(modalName) }
-        : null;
-    })
-    .filter(
-      (
-        value
-      ): value is {
-        label: string;
-        modalName: string;
-        key: string;
-      } => Boolean(value)
-    );
+function getModalName(value: string) {
+  return String(value || "")
+    .replace(/\s*\((?:modified\s+)?cali\)\s*$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function isUdiscUrl(value: string) {
@@ -47,7 +27,6 @@ function isUdiscUrl(value: string) {
 
 <SiteLayout title="Doubles Records" showBrandBar={true}>
 <style>
-
       :root {
         --bg: #f5f7fb;
         --card: #ffffff;
@@ -62,9 +41,7 @@ function isUdiscUrl(value: string) {
         --radius: 22px;
       }
 
-      * {
-        box-sizing: border-box;
-      }
+      * { box-sizing: border-box; }
 
       body {
         margin: 0;
@@ -80,9 +57,7 @@ function isUdiscUrl(value: string) {
         margin: 0;
       }
 
-      .page-header {
-        margin-bottom: 18px;
-      }
+      .page-header { margin-bottom: 18px; }
 
       h1 {
         margin: 0;
@@ -104,9 +79,7 @@ function isUdiscUrl(value: string) {
         overflow: hidden;
       }
 
-      .card-header {
-        padding: 22px 24px 12px;
-      }
+      .card-header { padding: 22px 24px 12px; }
 
       .card-title {
         margin: 0;
@@ -114,9 +87,7 @@ function isUdiscUrl(value: string) {
         line-height: 1.25;
       }
 
-      .table-wrap {
-        padding: 0 16px 10px;
-      }
+      .table-wrap { padding: 0 16px 10px; }
 
       table {
         width: 100%;
@@ -189,13 +160,8 @@ function isUdiscUrl(value: string) {
         vertical-align: middle;
       }
 
-      tbody tr:nth-child(even) td {
-        background: #fcfdff;
-      }
-
-      tbody tr:hover td {
-        background: var(--hover);
-      }
+      tbody tr:nth-child(even) td { background: #fcfdff; }
+      tbody tr:hover td { background: var(--hover); }
 
       tbody td:first-child {
         text-align: left;
@@ -211,9 +177,7 @@ function isUdiscUrl(value: string) {
         font-weight: 600;
       }
 
-      .date-link:hover {
-        text-decoration: underline;
-      }
+      .date-link:hover { text-decoration: underline; }
 
       .date-link-inline {
         display: inline-flex;
@@ -232,50 +196,11 @@ function isUdiscUrl(value: string) {
         transform: translateY(-0.11em);
       }
 
-      .udisc-icon--dark {
-        display: none;
-      }
-
-      :global(html.dark) .udisc-icon--light,
-      :global(html[data-theme="dark"]) .udisc-icon--light,
-      :global(body.dark) .udisc-icon--light,
-      :global(body[data-theme="dark"]) .udisc-icon--light {
-        display: none;
-      }
-
-      :global(html.dark) .udisc-icon--dark,
-      :global(html[data-theme="dark"]) .udisc-icon--dark,
-      :global(body.dark) .udisc-icon--dark,
-      :global(body[data-theme="dark"]) .udisc-icon--dark {
-        display: inline-block;
-      }
-
-      @media (prefers-color-scheme: dark) {
-        .udisc-icon--light {
-          display: none;
-        }
-
-        .udisc-icon--dark {
-          display: inline-block;
-        }
-      }
-
       @media (max-width: 700px) {
-        body {
-          padding: 10px;
-        }
-
-        .card-header {
-          padding: 18px 16px 10px;
-        }
-
-        .card-title {
-          font-size: 1.02rem;
-        }
-
-        .table-wrap {
-          padding: 0 8px 8px;
-        }
+        body { padding: 10px; }
+        .card-header { padding: 18px 16px 10px; }
+        .card-title { font-size: 1.02rem; }
+        .table-wrap { padding: 0 8px 8px; }
 
         col.name-col { width: 42%; }
         col.score-col { width: 22%; }
@@ -304,205 +229,197 @@ function isUdiscUrl(value: string) {
           padding: 9px 4px;
         }
       }
-
 </style>
 
 <div class="wrap">
-      <div class="page-header">
-        <h1>Doubles Records</h1>
-      </div>
+  <div class="page-header">
+    <h1>Doubles Records</h1>
+  </div>
 
-      <div class="sections">
-        {sections.map((section) => (
-          <section class="card">
-            <div class="card-header">
-              <h2 class="card-title">{section.title}</h2>
-            </div>
+  <div class="sections">
+    {sections.map((section) => (
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">{section.title}</h2>
+        </div>
 
-            <div class="table-wrap">
-              <table class="sortable-table" data-default-column="1" data-default-direction="asc">
-                <colgroup>
-                  <col class="name-col" />
-                  <col class="score-col" />
-                  <col class="date-col" />
-                </colgroup>
+        <div class="table-wrap">
+          <table class="sortable-table" data-default-column="1" data-default-direction="asc">
+            <colgroup>
+              <col class="name-col" />
+              <col class="score-col" />
+              <col class="date-col" />
+            </colgroup>
 
-                <thead>
-                  <tr>
-                    <th class="sortable" data-column="0" data-type="text">
-                      <span class="th-inner">Name <span class="sort-indicator"></span></span>
-                    </th>
-                    <th class="sortable" data-column="1" data-type="score">
-                      <span class="th-inner">Score <span class="sort-indicator"></span></span>
-                    </th>
-                    <th class="sortable" data-column="2" data-type="date">
-                      <span class="th-inner">Date <span class="sort-indicator"></span></span>
-                    </th>
-                  </tr>
-                </thead>
+            <thead>
+              <tr>
+                <th class="sortable" data-column="0" data-type="text">
+                  <span class="th-inner">Name <span class="sort-indicator"></span></span>
+                </th>
+                <th class="sortable" data-column="1" data-type="score">
+                  <span class="th-inner">Score <span class="sort-indicator"></span></span>
+                </th>
+                <th class="sortable" data-column="2" data-type="date">
+                  <span class="th-inner">Date <span class="sort-indicator"></span></span>
+                </th>
+              </tr>
+            </thead>
 
-                <tbody>
-                  {section.rows.map((row) => (
-                    <tr>
-                      <td>
-                        <div class="player-link-stack">
-                          {splitTeamPlayers(row.name).map((player) => (
-                            <button
-                              type="button"
-                              class="player-button"
-                              data-player-key={player.key}
-                              data-player-name={player.modalName}
-                              aria-label={`View player details for ${player.modalName}`}
-                            >
-                              {player.label}
-                            </button>
-                          ))}
-                        </div>
-                      </td>
-                      <td>{row.score}</td>
-                      <td>
-                        {row.url ? (
-                          <a
-                            class={`date-link${isUdiscUrl(row.url) ? " date-link-inline" : ""}`}
-                            href={row.url}
-                            target="_blank"
-                            rel="noopener"
+            <tbody>
+              {section.rows.map((row) => (
+                <tr>
+                  <td>
+                    <div class="player-link-stack">
+                      {splitTeamNames(row.name).map((name) => {
+                        const modalName = getModalName(name);
+                        return (
+                          <button
+                            type="button"
+                            class="player-button"
+                            data-player-key={modalName.toLowerCase()}
+                            data-player-name={modalName}
+                            aria-label={`View player details for ${modalName}`}
                           >
-                            <span>{row.date}</span>
-                            {isUdiscUrl(row.url) && (
-                              <>
-                                <img
-                                  class="udisc-icon udisc-icon--light"
-                                  src="https://lufberydiscgolf.com/udisc-icon.png"
-                                  alt="UDisc"
-                                  loading="lazy"
-                                  decoding="async"
-                                />
-                                <img
-                                  class="udisc-icon udisc-icon--dark"
-                                  src="https://lufberydiscgolf.com/udisc-icon-white.png"
-                                  alt="UDisc"
-                                  loading="lazy"
-                                  decoding="async"
-                                />
-                              </>
-                            )}
-                          </a>
-                        ) : (
-                          row.date
+                            {name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </td>
+                  <td>{row.score}</td>
+                  <td>
+                    {row.url ? (
+                      <a
+                        class={`date-link${isUdiscUrl(row.url) ? " date-link-inline" : ""}`}
+                        href={row.url}
+                        target="_blank"
+                        rel="noopener"
+                      >
+                        <span>{row.date}</span>
+                        {isUdiscUrl(row.url) && (
+                          <img
+                            class="udisc-icon"
+                            src="/udisc-icon.png"
+                            alt="UDisc"
+                            loading="lazy"
+                            decoding="async"
+                          />
                         )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        ))}
-      </div>
+                      </a>
+                    ) : (
+                      row.date
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    ))}
+  </div>
+</div>
 
-    </div>
+<script>
+  const tables = document.querySelectorAll(".sortable-table");
 
-    <script>
-      const tables = document.querySelectorAll(".sortable-table");
+  function getCellValue(row, columnIndex) {
+    return row.children[columnIndex]?.textContent?.trim() ?? "";
+  }
 
-      function getCellValue(row, columnIndex) {
-        return row.children[columnIndex]?.textContent?.trim() ?? "";
-      }
+  function parseUsDate(value) {
+    const parts = value.split("/");
+    if (parts.length !== 3) return new Date(0).getTime();
 
-      function parseUsDate(value) {
-        const parts = value.split("/");
-        if (parts.length !== 3) return new Date(0).getTime();
+    let month = Number(parts[0]);
+    let day = Number(parts[1]);
+    let year = Number(parts[2]);
 
-        let month = Number(parts[0]);
-        let day = Number(parts[1]);
-        let year = Number(parts[2]);
+    if (year < 100) year += 2000;
 
-        if (year < 100) year += 2000;
+    return new Date(year, month - 1, day).getTime();
+  }
 
-        return new Date(year, month - 1, day).getTime();
-      }
+  function parseScore(value) {
+    const match = value.match(/-?\d+(\.\d+)?/);
+    if (!match) return 9999;
+    return Number(match[0]);
+  }
 
-      function parseScore(value) {
-        const match = value.match(/-?\d+(\.\d+)?/);
-        if (!match) return 9999;
-        return Number(match[0]);
-      }
+  function compareValues(a, b, type, direction) {
+    const emptyA = a === "";
+    const emptyB = b === "";
 
-      function compareValues(a, b, type, direction) {
-        const emptyA = a === "";
-        const emptyB = b === "";
+    if (emptyA && emptyB) return 0;
+    if (emptyA) return 1;
+    if (emptyB) return -1;
 
-        if (emptyA && emptyB) return 0;
-        if (emptyA) return 1;
-        if (emptyB) return -1;
+    let result = 0;
 
-        let result = 0;
+    if (type === "date") {
+      result = parseUsDate(a) - parseUsDate(b);
+    } else if (type === "score") {
+      result = parseScore(a) - parseScore(b);
+    } else {
+      result = a.localeCompare(b, undefined, { sensitivity: "base", numeric: true });
+    }
 
-        if (type === "date") {
-          result = parseUsDate(a) - parseUsDate(b);
-        } else if (type === "score") {
-          result = parseScore(a) - parseScore(b);
+    return direction === "asc" ? result : -result;
+  }
+
+  tables.forEach((table) => {
+    const tbody = table.querySelector("tbody");
+    const headers = table.querySelectorAll("thead th.sortable");
+
+    let currentColumn = Number(table.dataset.defaultColumn || 1);
+    let currentDirection = table.dataset.defaultDirection || "asc";
+
+    function updateIndicators(activeColumn, direction) {
+      headers.forEach((header) => {
+        const indicator = header.querySelector(".sort-indicator");
+        const col = Number(header.dataset.column);
+
+        if (!indicator) return;
+
+        if (col === activeColumn) {
+          indicator.textContent = direction === "asc" ? "▲" : "▼";
+          indicator.style.color = "#2563eb";
         } else {
-          result = a.localeCompare(b, undefined, { sensitivity: "base", numeric: true });
+          indicator.textContent = "";
+          indicator.style.color = "#94a3b8";
         }
-
-        return direction === "asc" ? result : -result;
-      }
-
-      tables.forEach((table) => {
-        const tbody = table.querySelector("tbody");
-        const headers = table.querySelectorAll("thead th.sortable");
-
-        let currentColumn = Number(table.dataset.defaultColumn || 1);
-        let currentDirection = table.dataset.defaultDirection || "asc";
-
-        function updateIndicators(activeColumn, direction) {
-          headers.forEach((header) => {
-            const indicator = header.querySelector(".sort-indicator");
-            const col = Number(header.dataset.column);
-
-            if (!indicator) return;
-
-            if (col === activeColumn) {
-              indicator.textContent = direction === "asc" ? "▲" : "▼";
-              indicator.style.color = "#2563eb";
-            } else {
-              indicator.textContent = "";
-              indicator.style.color = "#94a3b8";
-            }
-          });
-        }
-
-        function sortTable(columnIndex, type, direction) {
-          const sortedRows = Array.from(tbody.querySelectorAll("tr")).sort((rowA, rowB) => {
-            const valueA = getCellValue(rowA, columnIndex);
-            const valueB = getCellValue(rowB, columnIndex);
-            return compareValues(valueA, valueB, type, direction);
-          });
-
-          tbody.append(...sortedRows);
-          updateIndicators(columnIndex, direction);
-        }
-
-        headers.forEach((header) => {
-          header.addEventListener("click", () => {
-            const columnIndex = Number(header.dataset.column);
-            const type = header.dataset.type || "text";
-
-            if (currentColumn === columnIndex) {
-              currentDirection = currentDirection === "asc" ? "desc" : "asc";
-            } else {
-              currentColumn = columnIndex;
-              currentDirection = columnIndex === 1 ? "asc" : columnIndex === 2 ? "desc" : "asc";
-            }
-
-            sortTable(columnIndex, type, currentDirection);
-          });
-        });
-
-        sortTable(currentColumn, "score", currentDirection);
       });
-    </script>
-  <PlayerModal profiles={playerProfiles} />
+    }
+
+    function sortTable(columnIndex, type, direction) {
+      const sortedRows = Array.from(tbody.querySelectorAll("tr")).sort((rowA, rowB) => {
+        const valueA = getCellValue(rowA, columnIndex);
+        const valueB = getCellValue(rowB, columnIndex);
+        return compareValues(valueA, valueB, type, direction);
+      });
+
+      tbody.append(...sortedRows);
+      updateIndicators(columnIndex, direction);
+    }
+
+    headers.forEach((header) => {
+      header.addEventListener("click", () => {
+        const columnIndex = Number(header.dataset.column);
+        const type = header.dataset.type || "text";
+
+        if (currentColumn === columnIndex) {
+          currentDirection = currentDirection === "asc" ? "desc" : "asc";
+        } else {
+          currentColumn = columnIndex;
+          currentDirection = columnIndex === 1 ? "asc" : columnIndex === 2 ? "desc" : "asc";
+        }
+
+        sortTable(columnIndex, type, currentDirection);
+      });
+    });
+
+    sortTable(currentColumn, "score", currentDirection);
+  });
+</script>
+<PlayerModal profiles={playerProfiles} />
 </SiteLayout>
