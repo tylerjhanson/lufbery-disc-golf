@@ -286,6 +286,12 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   }
 </style>
 
+<script
+  id="playerDetailsProfilesData"
+  type="application/json"
+  set:html={profileJson}
+></script>
+
 <div id="playerDetailsModal" class="player-details-modal" hidden>
   <div class="player-details-modal-backdrop" data-close-player-modal></div>
 
@@ -311,8 +317,17 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
 </div>
 
 <script is:inline>
-  const PLAYER_PROFILES = JSON.parse({JSON.stringify(profileJson)});
   const HANDICAP_PAR = 56;
+
+  const playerProfilesDataEl = document.getElementById("playerDetailsProfilesData");
+  let PLAYER_PROFILES = {};
+
+  try {
+    PLAYER_PROFILES = JSON.parse(playerProfilesDataEl?.textContent || "{}");
+  } catch (error) {
+    console.error("Failed to parse player profile data.", error);
+    PLAYER_PROFILES = {};
+  }
 
   const playerDetailsModal = document.getElementById("playerDetailsModal");
   const playerDetailsModalTitle = document.getElementById("playerDetailsModalTitle");
@@ -328,19 +343,6 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
-  }
-
-  function parseUsDate(value) {
-    const match = String(value || "").match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
-    if (!match) return new Date(0).getTime();
-
-    const month = Number(match[1]);
-    const day = Number(match[2]);
-    let year = Number(match[3]);
-
-    if (year < 100) year += 2000;
-
-    return new Date(year, month - 1, day).getTime();
   }
 
   function formatScoreWithPar(score) {
@@ -607,7 +609,10 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       button.dataset.playerKey || button.dataset.player || fallbackName
     );
 
-    const profile = PLAYER_PROFILES[playerKey] || null;
+    const profile =
+      PLAYER_PROFILES && typeof PLAYER_PROFILES === "object"
+        ? PLAYER_PROFILES[playerKey] || null
+        : null;
 
     lastPlayerTrigger = button;
     renderPlayerDetailsModal(profile, fallbackName);
@@ -633,6 +638,8 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       : null;
 
     if (button) {
+      event.preventDefault();
+      event.stopPropagation();
       openPlayerDetailsModal(button);
       return;
     }
@@ -642,11 +649,15 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       : null;
 
     if (closeTarget) {
+      event.preventDefault();
       closePlayerDetailsModal();
     }
   });
 
-  playerDetailsModalClose?.addEventListener("click", closePlayerDetailsModal);
+  playerDetailsModalClose?.addEventListener("click", (event) => {
+    event.preventDefault();
+    closePlayerDetailsModal();
+  });
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && playerDetailsModal && !playerDetailsModal.hasAttribute("hidden")) {
