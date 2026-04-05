@@ -65,7 +65,33 @@ type PersonalBestRow = {
   href: string;
   roundType: RoundType;
 };
+type TagHistoryPoint = {
+  date: string;
+  tag: number;
+};
 
+type TagSummary = {
+  name: string;
+  key: string;
+  hasTag: boolean;
+  currentTag: string;
+  history: TagHistoryPoint[];
+  bestTagEver: string;
+  averageTag: string;
+  weeksAtOne: number;
+};
+
+type TagEventParticipant = {
+  name: string;
+  key: string;
+  rawScore: number;
+};
+
+type TagEvent = {
+  date: string;
+  year: number;
+  participants: TagEventParticipant[];
+};
 type PlayerWinRow = {
   date: string;
   score: string;
@@ -94,6 +120,12 @@ type PlayerProfile = {
   personalBests: PersonalBestRow[];
   weeklyWins: PlayerWinRow[];
   aces: PlayerAceRow[];
+  currentTag: string;
+  hasTag: boolean;
+  tagHistory: TagHistoryPoint[];
+  bestTagEver: string;
+  averageTag: string;
+  weeksAtOne: number;
 };
 
 let derivedSinglesCache:
@@ -106,6 +138,7 @@ let derivedSinglesCache:
 
 let weeklyResultEventLookupCache: Map<string, ResultLinkInfo> | null = null;
 let playerProfilesCache: Record<string, PlayerProfile> | null = null;
+let tagSummaryCache: Map<string, TagSummary> | null = null;
 
 function readCsv(filename: string): CsvRow[] {
   const filePath = path.join(process.cwd(), "src", "data", filename);
@@ -633,7 +666,346 @@ function buildHandicapDateMap(rows: CsvRow[]) {
 
   return dateMap;
 }
+function parseNumericTagValue(value: string) {
+  const text = cleanSummaryText(value);
+  if (!text) return null;
 
+  const number = Number(text);
+  return Number.isInteger(number) && number > 0 ? number : null;
+}
+
+function hasCurrentTagValue(value: string) {
+  const text = cleanSummaryText(value);
+  return text !== "" && (parseNumericTagValue(text) != null || /^tbd$/i.test(text));
+}
+
+function formatAverageTagValue(value: number) {
+  const text = value.toFixed(1);
+  return text.endsWith(".0") ? text.slice(0, -2) : text;
+}
+
+function getCurrentTagEligibilityMap() {
+  const rows = readCsv("hcp.csv");
+  const map = new Map<
+    string,
+    { name: string; currentTagText: string; hasTag: boolean }
+  >();
+
+  rows
+    .slice(1)
+    .filter((row) => row[0]?.trim())
+    .forEach((row) => {
+      const name = cleanSummaryText(row[0] || "");
+      const key = normalizePlayerKey(name);
+      const currentTagText = cleanSummaryText(row[2] || "");
+
+      map.set(key, {
+        name,
+        currentTagText,
+        hasTag: hasCurrentTagValue(currentTagText),
+      });
+    });
+
+  return map;
+}
+
+function getTagHistoryData() {
+  const snapshots = new Map<string, Map<string, number>>();
+  const knownNames = new Map<string, string>();
+
+  let rows: CsvRow[] = [];
+  try {
+    rows = readCsv("tag-history.csv");
+  } catch {
+    return { snapshots, knownNames };
+  }
+
+  rows
+    .slice(1)
+    .filter((row) => row[0]?.trim() && row[2]?.trim())
+    .forEach((row) => {
+      const name = cleanSummaryText(row[0] || "");
+      const key = normalizePlayerKey(name);
+      const tag = parseNumericTagValue(row[1] || "");
+      const date = toFullYearUsDate(row[2] || "");
+
+      if (!name || !date || tag == null) return;
+
+      knownNames.set(key, name);
+
+      const dateKey = normalizeDateKey(date);
+      const existing = snapshots.get(dateKey) || new Map<string, number>();
+      existing.set(key, tag);
+      snapshots.set(dateKey, existing);
+    });
+
+  return { snapshots, knownNames };
+}
+
+function pushBestTagParticipant(
+  map: Map<string, TagEventParticipant>,
+  name: string,
+  rawScore: number | null
+) {
+  const cleanName = cleanSummaryText(name);
+  if (!cleanName || rawScore == null) return;
+
+  const key = normalizePlayerKey(cleanName);
+  const current = map.get(key);
+
+  if (!current || rawScore < current.rawScore) {
+    map.set(key, {
+      name: cleanName,
+      key,
+      rawScore,
+    });
+  }
+}
+
+function getTagEventParticipants(event: any) {
+  const roundType = getEventRoundType(event);
+  if (roundType === "2-rounds") return [];
+
+  const participantMap = new Map<string, TagEventParticipant>();
+
+  if (event.kind === "handicap") {
+    for (const row of event.rows || []) {
+      pushBestTagParticipant(
+        participantMap,
+        row.name || "",
+        extractFirstNumber(row.raw || "")
+      );
+    }
+
+    if (event.working?.rows?.length) {
+      const headers = (event.working.headers || []).map((header: string) =>
+        String(header || "").trim()
+      );
+      const rawIndex = findHeaderIndex(headers, "raw");
+      const r1Index = findHeaderIndex(headers, "r1");
+      const scoreIndex = r1Index !== -1 ? r1Index : rawIndex;
+
+      if (scoreIndex !== -1) {
+        for (const cells of event.working.rows || []) {
+          pushBestTagParticipant(
+            participantMap,
+            cells[0] || "",
+            extractFirstNumber(cells[scoreIndex] || "")
+          );
+        }
+      }
+    }
+  } else {
+    for (const pool of event.pools || []) {
+      const poolTitle = cleanSummaryText(pool.title || "");
+      if (!poolTitle || isWorkingTitle(poolTitle) || isNoHandicapPoolLabel(poolTitle)) {
+        continue;
+      }
+
+      const headers = (pool.headers || []).map((header: string) =>
+        String(header || "").trim()
+      );
+      const rawIndex = findHeaderIndex(headers, "raw");
+
+      if (rawIndex === -1) continue;
+
+      for (const cells of pool.rows || []) {
+        pushBestTagParticipant(
+          participantMap,
+          cells[0] || "",
+          extractFirstNumber(cells[rawIndex] || "")
+        );
+      }
+    }
+  }
+
+  return Array.from(participantMap.values());
+}
+
+function seedTagStateFromCurrentHandicaps() {
+  const eligibility = getCurrentTagEligibilityMap();
+  const numericRows = Array.from(eligibility.values())
+    .map((row) => ({
+      ...row,
+      numericTag: parseNumericTagValue(row.currentTagText),
+    }))
+    .filter((row) => row.numericTag != null)
+    .sort((a, b) => {
+      if ((a.numericTag as number) !== (b.numericTag as number)) {
+        return (a.numericTag as number) - (b.numericTag as number);
+      }
+
+      return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+    });
+
+  const seeded = new Map<string, number>();
+  numericRows.forEach((row) => {
+    seeded.set(normalizePlayerKey(row.name), row.numericTag as number);
+  });
+
+  return seeded;
+}
+
+function applyTagEvent(
+  previousTags: Map<string, number>,
+  event: TagEvent
+) {
+  const nextTags = new Map(previousTags);
+
+  const taggedParticipants = event.participants.filter((participant) =>
+    previousTags.has(participant.key)
+  );
+
+  if (!taggedParticipants.length) return nextTags;
+
+  const availableTags = taggedParticipants
+    .map((participant) => previousTags.get(participant.key) as number)
+    .sort((a, b) => a - b);
+
+  taggedParticipants.sort((a, b) => {
+    if (a.rawScore !== b.rawScore) return a.rawScore - b.rawScore;
+
+    const incomingTagA = previousTags.get(a.key) ?? Number.MAX_SAFE_INTEGER;
+    const incomingTagB = previousTags.get(b.key) ?? Number.MAX_SAFE_INTEGER;
+
+    if (incomingTagA !== incomingTagB) return incomingTagA - incomingTagB;
+
+    return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+  });
+
+  taggedParticipants.forEach((participant, index) => {
+    nextTags.set(participant.key, availableTags[index]);
+  });
+
+  return nextTags;
+}
+
+function buildTagSummaryMap() {
+  if (tagSummaryCache) return tagSummaryCache;
+
+  const { snapshots: historySnapshots, knownNames } = getTagHistoryData();
+  const currentEligibility = getCurrentTagEligibilityMap();
+
+  currentEligibility.forEach((value, key) => {
+    knownNames.set(key, value.name);
+  });
+
+  const tagEvents: TagEvent[] = getWeeklyResults()
+    .map((event) => {
+      const date = toFullYearUsDate(extractEventDate(event.title));
+      const participants = getTagEventParticipants(event);
+      participants.forEach((participant) => {
+        knownNames.set(participant.key, participant.name);
+      });
+
+      return {
+        date,
+        year: parseUsDate(date).getFullYear(),
+        participants,
+      };
+    })
+    .filter((event) => !!event.date && event.participants.length > 0)
+    .sort((a, b) => parseUsDate(a.date).getTime() - parseUsDate(b.date).getTime());
+
+  const calculatedSnapshots = new Map<string, Map<string, number>>();
+  let currentYear: number | null = null;
+  let currentTags = new Map<string, number>();
+
+  for (const event of tagEvents) {
+    const eventDateKey = normalizeDateKey(event.date);
+
+    if (currentYear !== event.year) {
+      currentYear = event.year;
+      currentTags = new Map<string, number>();
+    }
+
+    const authoritativeSnapshot = historySnapshots.get(eventDateKey);
+    if (authoritativeSnapshot) {
+      currentTags = new Map(authoritativeSnapshot);
+      calculatedSnapshots.set(eventDateKey, new Map(currentTags));
+      continue;
+    }
+
+    if (!currentTags.size) {
+      currentTags = seedTagStateFromCurrentHandicaps();
+      if (!currentTags.size) continue;
+    }
+
+    currentTags = applyTagEvent(currentTags, event);
+    calculatedSnapshots.set(eventDateKey, new Map(currentTags));
+  }
+
+  historySnapshots.forEach((snapshot, dateKey) => {
+    if (!calculatedSnapshots.has(dateKey)) {
+      calculatedSnapshots.set(dateKey, new Map(snapshot));
+    }
+  });
+
+  const sortedSnapshots = Array.from(calculatedSnapshots.entries()).sort(
+    (a, b) => parseUsDate(a[0]).getTime() - parseUsDate(b[0]).getTime()
+  );
+
+  const summaries = new Map<string, TagSummary>();
+
+  currentEligibility.forEach((info, key) => {
+    summaries.set(key, {
+      name: info.name,
+      key,
+      hasTag: info.hasTag,
+      currentTag: info.currentTagText,
+      history: [],
+      bestTagEver: "",
+      averageTag: "",
+      weeksAtOne: 0,
+    });
+  });
+
+  sortedSnapshots.forEach(([date, snapshot]) => {
+    snapshot.forEach((tag, key) => {
+      const existing = summaries.get(key) || {
+        name: knownNames.get(key) || key,
+        key,
+        hasTag: false,
+        currentTag: "",
+        history: [],
+        bestTagEver: "",
+        averageTag: "",
+        weeksAtOne: 0,
+      };
+
+      existing.history.push({ date, tag });
+      summaries.set(key, existing);
+    });
+  });
+
+  summaries.forEach((summary, key) => {
+    summary.history.sort(
+      (a, b) => parseUsDate(a.date).getTime() - parseUsDate(b.date).getTime()
+    );
+
+    const tags = summary.history.map((row) => row.tag);
+    const latestHistoryTag = tags.length ? tags[tags.length - 1] : null;
+    const currentInfo = currentEligibility.get(key);
+
+    if (currentInfo) {
+      summary.name = currentInfo.name;
+      summary.hasTag = currentInfo.hasTag;
+      summary.currentTag = currentInfo.currentTagText || "";
+    } else {
+      summary.currentTag = latestHistoryTag != null ? String(latestHistoryTag) : "";
+      summary.hasTag = latestHistoryTag != null;
+    }
+
+    summary.bestTagEver = tags.length ? String(Math.min(...tags)) : "";
+    summary.averageTag = tags.length
+      ? formatAverageTagValue(tags.reduce((sum, tag) => sum + tag, 0) / tags.length)
+      : "";
+    summary.weeksAtOne = tags.filter((tag) => tag === 1).length;
+  });
+
+  tagSummaryCache = summaries;
+  return tagSummaryCache;
+}
 function findHeaderIndex(headers: string[], wanted: string) {
   return headers.findIndex((header) => normalizeSummaryValue(header) === wanted);
 }
@@ -920,15 +1292,19 @@ export function getHandicapColumnsUsed() {
 export function getHandicaps() {
   const rows = readCsv("hcp.csv");
   const dateMap = buildHandicapDateMap(rows);
-
   const orderedDateEntries = Array.from(dateMap.entries()).sort(
     (a, b) => a[0] - b[0]
   );
+  const tagSummaries = buildTagSummaryMap();
 
   return rows
     .slice(1)
     .filter((row) => row[0]?.trim())
     .map((row) => {
+      const name = row[0] || "";
+      const key = normalizePlayerKey(name);
+      const tagSummary = tagSummaries.get(key);
+
       const roundHistory = orderedDateEntries
         .map(([index, date]) => {
           const raw = String(row[index] || "").trim();
@@ -958,7 +1334,8 @@ export function getHandicaps() {
             roundHistory.length
           : null;
 
-      const averageDisplay = allRoundsAverage == null ? "" : allRoundsAverage.toFixed(1);
+      const averageDisplay =
+        allRoundsAverage == null ? "" : allRoundsAverage.toFixed(1);
       const handicapValue = String(row[1] || "").trim();
       const bestFromColumn = extractFirstNumber(String(row[4] || "").trim());
       const bestRawScore =
@@ -974,9 +1351,9 @@ export function getHandicaps() {
               .map((round) => round.date);
 
       return {
-        name: row[0] || "",
+        name,
         hcp: handicapValue,
-        tag: row[2] || "",
+        tag: tagSummary?.currentTag ?? String(row[2] || ""),
         rounds: row[3] || "",
         best: row[4] || "",
         bestRawScore,
@@ -988,6 +1365,12 @@ export function getHandicaps() {
         })),
         recentRoundsAverage: averageDisplay,
         handicapEstablished: handicapValue !== "" && recentRounds.length >= 3,
+        currentTag: tagSummary?.currentTag ?? String(row[2] || ""),
+        hasTag: tagSummary?.hasTag ?? hasCurrentTagValue(String(row[2] || "")),
+        tagHistory: tagSummary?.history || [],
+        bestTagEver: tagSummary?.bestTagEver || "",
+        averageTag: tagSummary?.averageTag || "",
+        weeksAtOne: tagSummary?.weeksAtOne || 0,
       };
     });
 }
@@ -1223,6 +1606,12 @@ export function getPlayerProfiles() {
     profile.average = String(row.recentRoundsAverage || "");
     profile.allRounds = Array.isArray(row.allRounds) ? row.allRounds : [];
     profile.recentRounds = Array.isArray(row.recentRounds) ? row.recentRounds : [];
+    profile.currentTag = String(row.currentTag || row.tag || "");
+    profile.hasTag = Boolean(row.hasTag);
+    profile.tagHistory = Array.isArray(row.tagHistory) ? row.tagHistory : [];
+    profile.bestTagEver = String(row.bestTagEver || "");
+    profile.averageTag = String(row.averageTag || "");
+    profile.weeksAtOne = Number(row.weeksAtOne || 0);
 
     const bestRawScore =
       typeof row.bestRawScore === "number" && Number.isFinite(row.bestRawScore)
@@ -1284,7 +1673,9 @@ export function getPlayerProfiles() {
 
     if (!excludePersonalBest) {
       for (const pool of event.pools || []) {
-        const headers = (pool.headers || []).map((header: string) => String(header || "").trim());
+        const headers = (pool.headers || []).map((header: string) =>
+          String(header || "").trim()
+        );
         const rawIndex = findHeaderIndex(headers, "raw");
         const r1Index = findHeaderIndex(headers, "r1");
         const scoreIndex = r1Index !== -1 ? r1Index : rawIndex;
@@ -1341,6 +1732,42 @@ export function getPlayerProfiles() {
       label: "Singles",
     });
   }
+
+  for (const row of getDoublesAces()) {
+    for (const name of splitTeamPlayerNames(row.name)) {
+      const profile = ensurePlayerProfile(profiles, name);
+      if (!profile) continue;
+
+      profile.aces.push({
+        kind: "doubles",
+        hole: String(row.hole || ""),
+        date: row.date,
+        href: row.url || row.detailsHref || "",
+        label: "Doubles",
+      });
+    }
+  }
+
+  for (const profile of profiles.values()) {
+    sortByDateDesc(profile.personalBests);
+    profile.personalBest = profile.personalBests[0] || null;
+    sortByDateDesc(profile.weeklyWins);
+    sortByDateDesc(profile.aces);
+    profile.tagHistory.sort(
+      (a, b) => parseUsDate(a.date).getTime() - parseUsDate(b.date).getTime()
+    );
+  }
+
+  playerProfilesCache = Object.fromEntries(
+    Array.from(profiles.values())
+      .sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+      )
+      .map((profile) => [profile.key, profile])
+  );
+
+  return playerProfilesCache;
+}
 
   for (const row of getDoublesAces()) {
     for (const name of splitTeamPlayerNames(row.name)) {
