@@ -178,10 +178,9 @@ const defaultRoundType = "all";
       table-layout: fixed;
     }
 
-    col.name-col { width: 34%; }
-    col.score-col { width: 22%; }
-    col.type-col { width: 18%; }
-    col.date-col { width: 26%; }
+    col.name-col { width: 36%; }
+    col.score-col { width: 24%; }
+    col.round-col { width: 40%; }
 
     thead th {
       background: var(--header);
@@ -269,6 +268,34 @@ const defaultRoundType = "all";
       text-decoration: underline;
     }
 
+    .round-link {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    .round-link:hover {
+      text-decoration: underline;
+    }
+
+    .round-link--static {
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .round-link-label {
+      color: var(--muted);
+      font-size: 0.84rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
     .empty-state {
       display: none;
       padding: 14px 20px 18px;
@@ -297,8 +324,7 @@ const defaultRoundType = "all";
 
       col.name-col { width: 34%; }
       col.score-col { width: 22%; }
-      col.type-col { width: 18%; }
-      col.date-col { width: 26%; }
+      col.round-col { width: 44%; }
 
       thead th {
         font-size: 0.72rem;
@@ -364,8 +390,7 @@ const defaultRoundType = "all";
           <colgroup>
             <col class="name-col" />
             <col class="score-col" />
-            <col class="type-col" />
-            <col class="date-col" />
+            <col class="round-col" />
           </colgroup>
 
           <thead>
@@ -376,11 +401,8 @@ const defaultRoundType = "all";
               <th class="sortable" data-column="1" data-type="text">
                 <span class="th-inner">Score <span class="sort-indicator"></span></span>
               </th>
-              <th class="sortable" data-column="2" data-type="text">
-                <span class="th-inner">Type <span class="sort-indicator"></span></span>
-              </th>
-              <th class="sortable" data-column="3" data-type="date">
-                <span class="th-inner">Date <span class="sort-indicator"></span></span>
+              <th class="sortable" data-column="2" data-type="number">
+                <span class="th-inner">Round <span class="sort-indicator"></span></span>
               </th>
             </tr>
           </thead>
@@ -402,25 +424,35 @@ const defaultRoundType = "all";
 
                 <td>{row.score}</td>
 
-                <td>{formatRoundTypeLabel(row.roundType || getWinnerRoundType(row))}</td>
-
                 <td>
                   {row.resultsHref || row.url ? (
-                    <a class="date-link" href={row.resultsHref || row.url}>
-                      {splitDateLines(row.date).map((part, i) => (
-                        <>
-                          {i > 0 && <br />}
-                          {part}
-                        </>
-                      ))}
+                    <a class="round-link" href={row.resultsHref || row.url}>
+                      <span>
+                        {splitDateLines(row.date).map((part, i) => (
+                          <>
+                            {i > 0 && <br />}
+                            {part}
+                          </>
+                        ))}
+                      </span>
+                      <span class="round-link-label">
+                        {formatRoundTypeLabel(row.roundType || getWinnerRoundType(row))}
+                      </span>
                     </a>
                   ) : (
-                    splitDateLines(row.date).map((part, i) => (
-                      <>
-                        {i > 0 && <br />}
-                        {part}
-                      </>
-                    ))
+                    <div class="round-link round-link--static">
+                      <span>
+                        {splitDateLines(row.date).map((part, i) => (
+                          <>
+                            {i > 0 && <br />}
+                            {part}
+                          </>
+                        ))}
+                      </span>
+                      <span class="round-link-label">
+                        {formatRoundTypeLabel(row.roundType || getWinnerRoundType(row))}
+                      </span>
+                    </div>
                   )}
                 </td>
               </tr>
@@ -443,10 +475,14 @@ const defaultRoundType = "all";
     const roundTypeFilter = document.getElementById("roundTypeFilter");
     const emptyState = document.getElementById("winnersEmpty");
 
-    let currentColumn = 3;
+    let currentColumn = 2;
     let currentDirection = "desc";
 
     function getCellValue(row, columnIndex) {
+      if (columnIndex === 2) {
+        return row.getAttribute("data-sort-date") || "0";
+      }
+
       return row.children[columnIndex]?.textContent?.trim() ?? "";
     }
 
@@ -473,7 +509,9 @@ const defaultRoundType = "all";
 
       let result = 0;
 
-      if (type === "date") {
+      if (type === "number") {
+        result = Number(a) - Number(b);
+      } else if (type === "date") {
         result = parseUsDate(a) - parseUsDate(b);
       } else {
         result = a.localeCompare(b, undefined, { sensitivity: "base", numeric: true });
@@ -556,7 +594,7 @@ const defaultRoundType = "all";
     yearFilter?.addEventListener("change", applyFilters);
     roundTypeFilter?.addEventListener("change", applyFilters);
 
-    sortTable(currentColumn, "date", currentDirection);
+    sortTable(currentColumn, "number", currentDirection);
     applyFilters();
   </script>
   <PlayerModal profiles={playerProfiles} />
