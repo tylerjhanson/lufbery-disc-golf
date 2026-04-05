@@ -629,21 +629,7 @@ const playerProfiles = getPlayerProfiles();
           <tbody>
             {rows.map((row) => (
               <tr>
-                <td>
-                  <button
-                    class="player-button"
-                    type="button"
-                    data-player={row.name}
-                    data-rounds={encodeURIComponent(JSON.stringify(row.recentRounds))}
-                    data-all-rounds={encodeURIComponent(JSON.stringify(row.allRounds))}
-                    data-average={row.recentRoundsAverage}
-                    data-handicap={row.hcp}
-                    data-established={row.handicapEstablished ? "true" : "false"}
-                    aria-label={`View recent handicap rounds for ${row.name}`}
-                  >
-                    {row.name}
-                  </button>
-                </td>
+                <td><PlayerLink name={row.name} /></td>
                 <td>{row.hcp}</td>
                 <td>{row.tag}</td>
                 <td>{row.rounds}</td>
