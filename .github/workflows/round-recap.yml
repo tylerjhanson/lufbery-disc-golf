@@ -19,6 +19,11 @@ on:
           - handicap
           - monthly
           - 2-rounds
+      event_date:
+        description: "Optional event date (examples: 3/22/26 or 3/22/2026)"
+        required: false
+        default: ""
+        type: string
 
 jobs:
   recap:
@@ -39,11 +44,18 @@ jobs:
 
       - name: Generate recap
         run: |
-          if [ -z "${{ github.event.inputs.recap_type }}" ] || [ "${{ github.event.inputs.recap_type }}" = "latest" ]; then
-            node scripts/generate-round-recap.mjs
-          else
-            node scripts/generate-round-recap.mjs --type "${{ github.event.inputs.recap_type }}"
+          CMD="node scripts/generate-round-recap.mjs"
+
+          if [ -n "${{ github.event.inputs.recap_type }}" ] && [ "${{ github.event.inputs.recap_type }}" != "latest" ]; then
+            CMD="$CMD --type \"${{ github.event.inputs.recap_type }}\""
           fi
+
+          if [ -n "${{ github.event.inputs.event_date }}" ]; then
+            CMD="$CMD --date \"${{ github.event.inputs.event_date }}\""
+          fi
+
+          echo "Running: $CMD"
+          eval "$CMD"
 
       - name: Add recap to job summary
         run: cat round-recap.md >> "$GITHUB_STEP_SUMMARY"
