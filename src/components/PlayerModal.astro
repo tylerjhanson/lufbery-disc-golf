@@ -19,9 +19,10 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     margin: 0;
     cursor: pointer;
     text-align: left;
-    text-decoration-line: underline;
-    text-decoration-style: dotted;
-    text-decoration-color: currentColor;
+    text-decoration-line: underline !important;
+    text-decoration-style: dotted !important;
+    text-decoration-thickness: 1px !important;
+    text-decoration-color: color-mix(in srgb, currentColor 24%, transparent) !important;
     text-underline-offset: 2px;
     transition: color 0.15s ease, text-decoration-color 0.15s ease;
   }
@@ -29,7 +30,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   .player-button:hover,
   .player-button:focus-visible {
     color: var(--accent, #2563eb);
-    text-decoration-color: currentColor;
+    text-decoration-color: color-mix(in srgb, currentColor 42%, transparent) !important;
     outline: none;
   }
 
@@ -86,24 +87,29 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     position: absolute;
     top: 12px;
     right: 12px;
-    width: 36px;
-    height: 36px;
-    border: 1px solid var(--line-soft, #eef2f7);
-    border-radius: 999px;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--line-soft, #e6edf5);
+    border-radius: 10px;
     background: var(--card, #ffffff);
-    color: var(--muted, #6b7280);
-    font-size: 1.15rem;
+    color: var(--text, #111827);
+    font-size: 1.35rem;
+    font-weight: 600;
     line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
+    padding: 0;
   }
 
   .player-details-modal-close:hover {
     color: var(--text, #111827);
-    background: var(--header, #f8fafc);
+    background: var(--button-bg-hover, #eceff4);
   }
 
   .player-details-modal-title {
-    margin: 0 42px 12px 0;
+    margin: 0 52px 12px 0;
     font-size: 1.12rem;
     line-height: 1.2;
     font-weight: 800;
@@ -286,34 +292,6 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     transform: translateY(-0.11em);
   }
 
-  .player-details-udisc-icon--dark {
-    display: none;
-  }
-
-  :global(html.dark) .player-details-udisc-icon--light,
-  :global(html[data-theme="dark"]) .player-details-udisc-icon--light,
-  :global(body.dark) .player-details-udisc-icon--light,
-  :global(body[data-theme="dark"]) .player-details-udisc-icon--light {
-    display: none;
-  }
-
-  :global(html.dark) .player-details-udisc-icon--dark,
-  :global(html[data-theme="dark"]) .player-details-udisc-icon--dark,
-  :global(body.dark) .player-details-udisc-icon--dark,
-  :global(body[data-theme="dark"]) .player-details-udisc-icon--dark {
-    display: inline-block;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .player-details-udisc-icon--light {
-      display: none;
-    }
-
-    .player-details-udisc-icon--dark {
-      display: inline-block;
-    }
-  }
-
   @media (max-width: 700px) {
     .player-details-modal-panel {
       width: min(94vw, 520px);
@@ -406,20 +384,28 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     return /(^https?:\/\/)?(www\.)?udisc\.com\b/i.test(String(value || "").trim());
   }
 
+  function getResolvedThemeMode() {
+    const mode = document.documentElement.getAttribute("data-theme") || "system";
+
+    if (mode === "dark") return "dark";
+    if (mode === "light") return "light";
+
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  }
+
+  function getUdiscIconSrc() {
+    return getResolvedThemeMode() === "dark" ? "/udisc-icon-white.png" : "/udisc-icon.png";
+  }
+
   function renderUdiscIconMarkup(href) {
     if (!isUdiscUrl(href)) return "";
 
     return `
       <img
-        class="player-details-udisc-icon player-details-udisc-icon--light"
-        src="/udisc-icon.png"
-        alt="UDisc"
-        loading="lazy"
-        decoding="async"
-      />
-      <img
-        class="player-details-udisc-icon player-details-udisc-icon--dark"
-        src="/udisc-icon-white.png"
+        class="player-details-udisc-icon"
+        src="${getUdiscIconSrc()}"
         alt="UDisc"
         loading="lazy"
         decoding="async"
