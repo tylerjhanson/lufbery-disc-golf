@@ -636,7 +636,55 @@ const doublesLinks = [
     </aside>
 
     <script>
-      const html = document.documentElement;
+           function decorateExternalLink(link) {
+        if (!(link instanceof HTMLAnchorElement)) return;
+
+        const href = (link.getAttribute("href") || "").trim();
+        if (!href) return;
+        if (
+          href.startsWith("#") ||
+          href.startsWith("/") ||
+          href.startsWith("mailto:") ||
+          href.startsWith("tel:") ||
+          href.startsWith("sms:") ||
+          href.startsWith("javascript:")
+        ) {
+          return;
+        }
+
+        try {
+          const url = new URL(href, window.location.href);
+          if (url.origin === window.location.origin) return;
+
+          link.setAttribute("target", "_blank");
+
+          const relValues = new Set(
+            (link.getAttribute("rel") || "")
+              .split(/\s+/)
+              .map((value) => value.trim())
+              .filter(Boolean)
+          );
+          relValues.add("noopener");
+          relValues.add("noreferrer");
+          link.setAttribute("rel", Array.from(relValues).join(" "));
+        } catch {
+          // Ignore invalid URLs.
+        }
+      }
+
+      function decorateExternalLinks(root = document) {
+        if (root instanceof HTMLAnchorElement) {
+          decorateExternalLink(root);
+          return;
+        }
+
+        if (!(root instanceof Document || root instanceof Element)) return;
+
+        root.querySelectorAll("a[href]").forEach((link) => {
+          decorateExternalLink(link);
+        });
+      }
+const html = document.documentElement;
       const themeToggle = document.getElementById("themeToggle");
       const themeModes = ["system", "light", "dark"];
 
@@ -739,7 +787,24 @@ const doublesLinks = [
           if (!isOpen) group.classList.add("open");
         });
       });
+      decorateExternalLinks(document);
 
+      const externalLinksObserver = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (node instanceof Element) {
+              decorateExternalLinks(node);
+            }
+          });
+        });
+      });
+
+      if (document.body) {
+        externalLinksObserver.observe(document.body, {
+          childList: true,
+          subtree: true,
+        });
+      }
       document.addEventListener("keydown", (event) => {
         if (event.key === "Escape") closeMenu();
       });
