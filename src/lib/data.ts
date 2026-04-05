@@ -149,7 +149,30 @@ function readCsv(filename: string): CsvRow[] {
     skip_empty_lines: false,
   }) as CsvRow[];
 }
+function readTagHistoryRows(): CsvRow[] {
+  const filePath = path.join(process.cwd(), "src", "data", "tag-history.csv");
+  const raw = fs.readFileSync(filePath, "utf8");
 
+  const commaParsed = parse(raw, {
+    bom: true,
+    skip_empty_lines: false,
+  }) as CsvRow[];
+
+  const looksTabDelimited =
+    raw.includes("\t") &&
+    commaParsed.filter((row) => row.some((cell) => String(cell || "").trim())).length > 0 &&
+    commaParsed.every((row) => row.length <= 1);
+
+  if (!looksTabDelimited) {
+    return commaParsed;
+  }
+
+  return parse(raw, {
+    bom: true,
+    skip_empty_lines: false,
+    delimiter: "\t",
+  }) as CsvRow[];
+}
 function slugifyForId(value: string) {
   return String(value || "")
     .toLowerCase()
@@ -708,14 +731,36 @@ function getCurrentTagEligibilityMap() {
 
   return map;
 }
+function calculateDisplayedHandicapFromRecentRounds(
+  rounds: { date: string; score: number }[]
+) {
+  const lastFive = rounds
+    .slice(-5)
+    .map((round) => Number(round.score))
+    .filter((score) => !Number.isNaN(score));
 
+  if (lastFive.length < 3) return "";
+
+  const values = [...lastFive];
+
+  if (values.length === 4 || values.length === 5) {
+    const maxValue = Math.max(...values);
+    const removeIndex = values.indexOf(maxValue);
+    values.splice(removeIndex, 1);
+  }
+
+  const average =
+    values.reduce((sum, value) => sum + value, 0) / values.length;
+
+  return String(Math.round((average - 53) * 0.8));
+}
 function getTagHistoryData() {
   const snapshots = new Map<string, Map<string, number>>();
   const knownNames = new Map<string, string>();
 
   let rows: CsvRow[] = [];
   try {
-    rows = readCsv("tag-history.csv");
+    rows = readTagHistoryRows();
   } catch {
     return { snapshots, knownNames };
   }
@@ -978,7 +1023,7 @@ function buildTagSummaryMap() {
     });
   });
 
-  summaries.forEach((summary, key) => {
+ summaries.forEach((summary, key) => {
     summary.history.sort(
       (a, b) => parseUsDate(a.date).getTime() - parseUsDate(b.date).getTime()
     );
@@ -987,10 +1032,23 @@ function buildTagSummaryMap() {
     const latestHistoryTag = tags.length ? tags[tags.length - 1] : null;
     const currentInfo = currentEligibility.get(key);
 
+    const numericCurrentTag = currentInfo
+      ? parseNumericTagValue(currentInfo.currentTagText)
+      : null;
+
     if (currentInfo) {
       summary.name = currentInfo.name;
       summary.hasTag = currentInfo.hasTag;
-      summary.currentTag = currentInfo.currentTagText || "";
+
+      if (numericCurrentTag != null) {
+        summary.currentTag = String(numericCurrentTag);
+      } else if (/^tbd$/i.test(currentInfo.currentTagText)) {
+        summary.currentTag = "TBD";
+      } else if (currentInfo.hasTag && latestHistoryTag != null) {
+        summary.currentTag = String(latestHistoryTag);
+      } else {
+        summary.currentTag = "";
+      }
     } else {
       summary.currentTag = latestHistoryTag != null ? String(latestHistoryTag) : "";
       summary.hasTag = latestHistoryTag != null;
@@ -1334,9 +1392,9 @@ export function getHandicaps() {
             roundHistory.length
           : null;
 
-      const averageDisplay =
+       const averageDisplay =
         allRoundsAverage == null ? "" : allRoundsAverage.toFixed(1);
-      const handicapValue = String(row[1] || "").trim();
+      const calculatedHandicap = calculateDisplayedHandicapFromRecentRounds(recentRounds);
       const bestFromColumn = extractFirstNumber(String(row[4] || "").trim());
       const bestRawScore =
         bestFromColumn ??
@@ -1352,7 +1410,7 @@ export function getHandicaps() {
 
       return {
         name,
-        hcp: handicapValue,
+        hcp: calculatedHandicap,
         tag: tagSummary?.currentTag ?? String(row[2] || ""),
         rounds: row[3] || "",
         best: row[4] || "",
@@ -1364,7 +1422,7 @@ export function getHandicaps() {
           dropped: index === droppedIndex,
         })),
         recentRoundsAverage: averageDisplay,
-        handicapEstablished: handicapValue !== "" && recentRounds.length >= 3,
+        handicapEstablished: calculatedHandicap !== "" && recentRounds.length >= 3,
         currentTag: tagSummary?.currentTag ?? String(row[2] || ""),
         hasTag: tagSummary?.hasTag ?? hasCurrentTagValue(String(row[2] || "")),
         tagHistory: tagSummary?.history || [],
