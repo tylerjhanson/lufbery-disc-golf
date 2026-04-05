@@ -19,8 +19,9 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     margin: 0;
     cursor: pointer;
     text-align: left;
-    text-decoration: underline;
-    text-decoration-color: transparent;
+    text-decoration-line: underline;
+    text-decoration-style: dotted;
+    text-decoration-color: currentColor;
     text-underline-offset: 2px;
     transition: color 0.15s ease, text-decoration-color 0.15s ease;
   }
@@ -175,6 +176,17 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     font-weight: 800;
   }
 
+  .player-details-summary-stack {
+    display: grid;
+    gap: 4px;
+    margin-top: 2px;
+  }
+
+  .player-details-summary-item {
+    font-size: 0.94rem;
+    line-height: 1.35;
+  }
+
   .player-details-chart-shell {
     margin-top: 0;
     padding: 12px 12px 10px;
@@ -255,6 +267,51 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
 
   .player-details-link:hover {
     text-decoration: underline;
+  }
+
+  .player-details-link-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .player-details-udisc-icon {
+    height: 0.82em;
+    width: auto;
+    display: inline-block;
+    vertical-align: middle;
+    flex: 0 0 auto;
+    opacity: 0.98;
+    transform: translateY(-0.11em);
+  }
+
+  .player-details-udisc-icon--dark {
+    display: none;
+  }
+
+  :global(html.dark) .player-details-udisc-icon--light,
+  :global(html[data-theme="dark"]) .player-details-udisc-icon--light,
+  :global(body.dark) .player-details-udisc-icon--light,
+  :global(body[data-theme="dark"]) .player-details-udisc-icon--light {
+    display: none;
+  }
+
+  :global(html.dark) .player-details-udisc-icon--dark,
+  :global(html[data-theme="dark"]) .player-details-udisc-icon--dark,
+  :global(body.dark) .player-details-udisc-icon--dark,
+  :global(body[data-theme="dark"]) .player-details-udisc-icon--dark {
+    display: inline-block;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .player-details-udisc-icon--light {
+      display: none;
+    }
+
+    .player-details-udisc-icon--dark {
+      display: inline-block;
+    }
   }
 
   @media (max-width: 700px) {
@@ -341,8 +398,41 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
+      .replace(/\"/g, "&quot;")
       .replace(/'/g, "&#39;");
+  }
+
+  function isUdiscUrl(value) {
+    return /(^https?:\/\/)?(www\.)?udisc\.com\b/i.test(String(value || "").trim());
+  }
+
+  function renderUdiscIconMarkup(href) {
+    if (!isUdiscUrl(href)) return "";
+
+    return `
+      <img
+        class="player-details-udisc-icon player-details-udisc-icon--light"
+        src="/udisc-icon.png"
+        alt="UDisc"
+        loading="lazy"
+        decoding="async"
+      />
+      <img
+        class="player-details-udisc-icon player-details-udisc-icon--dark"
+        src="/udisc-icon-white.png"
+        alt="UDisc"
+        loading="lazy"
+        decoding="async"
+      />
+    `;
+  }
+
+  function renderLinkedLabel(href, label) {
+    const safeLabel = escapeHtml(label);
+
+    if (!href) return safeLabel;
+
+    return `<a class="player-details-link player-details-link-inline" href="${escapeHtml(href)}">${safeLabel}${renderUdiscIconMarkup(href)}</a>`;
   }
 
   function formatScoreWithPar(score) {
@@ -480,6 +570,28 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     `;
   }
 
+  function renderPersonalBestMarkup(items) {
+    if (!items || !items.length) {
+      return `<span class="player-details-muted">—</span>`;
+    }
+
+    if (items.length === 1) {
+      const item = items[0];
+      return `<strong>${escapeHtml(item.score)}</strong> <span class="player-details-muted">on</span> ${renderLinkedLabel(item.href, item.date)}`;
+    }
+
+    return `
+      <div class="player-details-summary-stack">
+        ${items
+          .map(
+            (item) =>
+              `<div class="player-details-summary-item"><strong>${escapeHtml(item.score)}</strong> <span class="player-details-muted">on</span> ${renderLinkedLabel(item.href, item.date)}</div>`
+          )
+          .join("")}
+      </div>
+    `;
+  }
+
   function renderPlayerDetailsModal(profile, fallbackName) {
     if (!playerDetailsModalTitle || !playerDetailsModalBody) return;
 
@@ -491,7 +603,11 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     const average = profile?.average ? String(profile.average) : "";
     const handicap = profile?.handicap ? String(profile.handicap) : "";
     const established = Boolean(profile?.handicapEstablished);
-    const personalBest = profile?.personalBest || null;
+    const personalBests = Array.isArray(profile?.personalBests) && profile.personalBests.length
+      ? profile.personalBests
+      : profile?.personalBest
+        ? [profile.personalBest]
+        : [];
 
     playerDetailsModalTitle.textContent = name;
 
@@ -528,18 +644,10 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
         ? `<p class="player-details-note">3 rounds are required to establish a handicap.</p>`
         : "";
 
-    const personalBestMarkup = personalBest
-      ? personalBest.href
-        ? `<a class="player-details-link" href="${escapeHtml(personalBest.href)}">${escapeHtml(personalBest.score)}</a> <span class="player-details-muted">on ${escapeHtml(personalBest.date)}</span>`
-        : `<strong>${escapeHtml(personalBest.score)}</strong> <span class="player-details-muted">on ${escapeHtml(personalBest.date)}</span>`
-      : `<span class="player-details-muted">—</span>`;
-
     const weeklyWinsMarkup = renderLinkList(
       weeklyWins,
       (item) => {
-        const linkedDate = item.href
-          ? `<a class="player-details-link" href="${escapeHtml(item.href)}">${escapeHtml(item.date)}</a>`
-          : escapeHtml(item.date);
+        const linkedDate = renderLinkedLabel(item.href, item.date);
         return `${linkedDate} — ${escapeHtml(item.label)} • ${escapeHtml(item.score)}`;
       },
       "No weekly wins recorded."
@@ -548,9 +656,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     const acesMarkup = renderLinkList(
       aces,
       (item) => {
-        const linkedDate = item.href
-          ? `<a class="player-details-link" href="${escapeHtml(item.href)}">${escapeHtml(item.date)}</a>`
-          : escapeHtml(item.date);
+        const linkedDate = renderLinkedLabel(item.href, item.date);
         const holeLabel = item.hole ? `Hole ${escapeHtml(item.hole)}` : "Ace";
         const kindLabel = item.label ? `${escapeHtml(item.label)} • ` : "";
         return `${linkedDate} — ${kindLabel}${holeLabel}`;
@@ -581,7 +687,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
 
       <div class="player-details-summary-grid">
         <div class="player-details-summary-row">Average: <strong>${average ? escapeHtml(average) : "—"}</strong></div>
-        <div class="player-details-summary-row">Personal best: ${personalBestMarkup}</div>
+        <div class="player-details-summary-row">Personal best: ${renderPersonalBestMarkup(personalBests)}</div>
       </div>
 
       ${establishmentNote}
