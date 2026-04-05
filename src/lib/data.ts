@@ -1609,6 +1609,12 @@ function ensurePlayerProfile(
       personalBests: [],
       weeklyWins: [],
       aces: [],
+      currentTag: "",
+      hasTag: false,
+      tagHistory: [],
+      bestTagEver: "",
+      averageTag: "",
+      weeksAtOne: 0,
     });
   }
 
@@ -1827,36 +1833,7 @@ export function getPlayerProfiles() {
   return playerProfilesCache;
 }
 
-  for (const row of getDoublesAces()) {
-    for (const name of splitTeamPlayerNames(row.name)) {
-      const profile = ensurePlayerProfile(profiles, name);
-      if (!profile) continue;
 
-      profile.aces.push({
-        kind: "doubles",
-        hole: String(row.hole || ""),
-        date: row.date,
-        href: row.url || row.detailsHref || "",
-        label: "Doubles",
-      });
-    }
-  }
-
-  for (const profile of profiles.values()) {
-    sortByDateDesc(profile.personalBests);
-    profile.personalBest = profile.personalBests[0] || null;
-    sortByDateDesc(profile.weeklyWins);
-    sortByDateDesc(profile.aces);
-  }
-
-  playerProfilesCache = Object.fromEntries(
-    Array.from(profiles.values())
-      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
-      .map((profile) => [profile.key, profile])
-  );
-
-  return playerProfilesCache;
-}
 
 export function getDoublesRecords() {
   const rows = readCsv("dubrec.csv");
