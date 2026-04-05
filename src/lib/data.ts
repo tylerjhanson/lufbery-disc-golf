@@ -6,6 +6,10 @@ type CsvRow = string[];
 
 const HANDICAP_HISTORY_START_COLUMN = 56; // BE
 const SINGLES_PAR = 56;
+const WEEKLY_RESULTS_PAGE_PATH = "/singles/weekly-results";
+const DOUBLES_ACES_PAGE_PATH = "/doubles/aces";
+
+type RoundType = "handicap" | "monthly" | "2-rounds";
 
 type WeeklyPrizeLine = {
   name: string;
@@ -24,6 +28,8 @@ type WinnerRow = {
   score: string;
   date: string;
   url: string;
+  resultsHref?: string;
+  roundType?: RoundType;
 };
 
 type AceRow = {
@@ -31,6 +37,9 @@ type AceRow = {
   hole: string;
   date: string;
   url: string;
+  resultsHref?: string;
+  detailsHref?: string;
+  kind?: "singles" | "doubles";
 };
 
 type RecordRow = {
@@ -38,6 +47,52 @@ type RecordRow = {
   score: string;
   date: string;
   url: string;
+  resultsHref?: string;
+  roundType?: RoundType;
+};
+
+type ResultLinkInfo = {
+  title: string;
+  date: string;
+  anchorId: string;
+  href: string;
+};
+
+type PersonalBestRow = {
+  score: string;
+  rawScore: number;
+  date: string;
+  href: string;
+  roundType: RoundType;
+};
+
+type PlayerWinRow = {
+  date: string;
+  score: string;
+  href: string;
+  roundType: RoundType;
+  label: string;
+};
+
+type PlayerAceRow = {
+  kind: "singles" | "doubles";
+  hole: string;
+  date: string;
+  href: string;
+  label: string;
+};
+
+type PlayerProfile = {
+  name: string;
+  key: string;
+  handicap: string;
+  handicapEstablished: boolean;
+  average: string;
+  allRounds: { date: string; score: number }[];
+  recentRounds: ({ date: string; score: number } & { dropped?: boolean })[];
+  personalBest: PersonalBestRow | null;
+  weeklyWins: PlayerWinRow[];
+  aces: PlayerAceRow[];
 };
 
 let derivedSinglesCache:
@@ -48,6 +103,9 @@ let derivedSinglesCache:
     }
   | null = null;
 
+let weeklyResultEventLookupCache: Map<string, ResultLinkInfo> | null = null;
+let playerProfilesCache: Record<string, PlayerProfile> | null = null;
+
 function readCsv(filename: string): CsvRow[] {
   const filePath = path.join(process.cwd(), "src", "data", filename);
   const raw = fs.readFileSync(filePath, "utf8");
@@ -56,6 +114,107 @@ function readCsv(filename: string): CsvRow[] {
     bom: true,
     skip_empty_lines: false,
   }) as CsvRow[];
+}
+
+function slugifyForId(value: string) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export function getWeeklyResultsAnchorId(value: string) {
+  const slug = slugifyForId(value);
+  return `event-${slug || "result"}`;
+}
+
+function getDoublesAceAnchorId(row: { name: string; hole: string; date: string }) {
+  return `double-ace-${slugifyForId(`${row.name}-${row.hole}-${row.date}`)}`;
+}
+
+export function getDoublesAceRowAnchorId(row: { name: string; hole: string; date: string }) {
+  return getDoublesAceAnchorId(row);
+}
+
+function normalizePlayerKey(value: string) {
+  return cleanSummaryText(value).toLowerCase();
+}
+
+function splitTeamPlayerNames(value: string) {
+  return String(value || "")
+    .split(/\s*\/\s*/)
+    .map((part) => cleanSummaryText(part))
+    .filter(Boolean);
+}
+
+function getRoundTypeFromText(value: string): RoundType {
+  const text = String(value || "").toLowerCase();
+
+  if (
+    text.includes("27 holes") ||
+    text.includes("27 hole") ||
+    text.includes("2 rounds") ||
+    text.includes("2 round")
+  ) {
+    return "2-rounds";
+  }
+
+  if (text.includes("a pool") || text.includes("b pool") || text.includes("c pool")) {
+    return "monthly";
+  }
+
+  return text.includes("handicap") ? "handicap" : "monthly";
+}
+
+function getRoundTypeLabel(value: RoundType) {
+  if (value === "2-rounds") return "2-Round";
+  if (value === "monthly") return "Monthly";
+  return "Handicap";
+}
+
+function getEventRoundType(event: any): RoundType {
+  const title = String(event?.title || "");
+  if (event?.kind === "handicap" || /handicap/i.test(title)) return "handicap";
+  return getRoundTypeFromText(title);
+}
+
+function getWinnerRoundType(row: WinnerRow): RoundType {
+  return row.roundType || getRoundTypeFromText(row.date);
+}
+
+function getWeeklyResultEventLookup() {
+  if (weeklyResultEventLookupCache) return weeklyResultEventLookupCache;
+
+  const map = new Map<string, ResultLinkInfo>();
+
+  for (const event of getWeeklyResults()) {
+    const shortDate = extractEventDate(event.title);
+    const fullDate = toFullYearUsDate(shortDate);
+
+    if (!fullDate) continue;
+
+    const anchorId = getWeeklyResultsAnchorId(event.title);
+    map.set(normalizeDateKey(fullDate), {
+      title: event.title,
+      date: fullDate,
+      anchorId,
+      href: `${WEEKLY_RESULTS_PAGE_PATH}#${anchorId}`,
+    });
+  }
+
+  weeklyResultEventLookupCache = map;
+  return map;
+}
+
+function getWeeklyResultsHrefForDate(value: string) {
+  const dateOnly = extractEventDate(value) || value;
+  const fullDate = toFullYearUsDate(dateOnly);
+  return getWeeklyResultEventLookup().get(normalizeDateKey(fullDate))?.href || "";
+}
+
+function getDoublesAceHref(row: { name: string; hole: string; date: string }) {
+  return `${DOUBLES_ACES_PAGE_PATH}#${getDoublesAceAnchorId(row)}`;
 }
 
 function parseUsDate(value: string) {
@@ -547,6 +706,8 @@ function getDerivedSinglesData() {
     const shortDate = extractEventDate(event.title);
     const fullDate = toFullYearUsDate(shortDate);
     const url = event.url || "";
+    const resultsHref = getWeeklyResultsHrefForDate(fullDate);
+    const eventRoundType = getEventRoundType(event);
     const excludeFromSinglesRecords = isExcludedSinglesRecordLayout(event.title);
 
     if (!shortDate) continue;
@@ -578,6 +739,8 @@ function getDerivedSinglesData() {
           score: formatWinnerScore("Net", bestNet, SINGLES_PAR),
           date: fullDate,
           url,
+          resultsHref,
+          roundType: eventRoundType,
         });
       }
 
@@ -590,6 +753,8 @@ function getDerivedSinglesData() {
             score: formatCourseRecordScore(row.rawValue, SINGLES_PAR),
             date: fullDate,
             url,
+            resultsHref,
+            roundType: eventRoundType,
           });
         });
       }
@@ -605,6 +770,8 @@ function getDerivedSinglesData() {
         hole,
         date: fullDate,
         url,
+        resultsHref,
+        kind: "singles",
       });
     }
 
@@ -657,6 +824,8 @@ function getDerivedSinglesData() {
             score: formatWinnerScore("Raw", bestValue, winnerPar),
             date: winnerDate,
             url,
+            resultsHref,
+            roundType: isTwoRoundPool ? "2-rounds" : "monthly",
           });
         }
       }
@@ -674,6 +843,8 @@ function getDerivedSinglesData() {
               score: formatCourseRecordScore(r1Value, SINGLES_PAR),
               date: fullDate,
               url,
+              resultsHref,
+              roundType: "2-rounds",
             });
           });
         }
@@ -689,6 +860,8 @@ function getDerivedSinglesData() {
             score: formatCourseRecordScore(rawValue, SINGLES_PAR),
             date: fullDate,
             url,
+            resultsHref,
+            roundType: "monthly",
           });
         });
       }
@@ -784,6 +957,8 @@ export function getWeeklyWinners() {
       score: row[1] || "",
       date: row[2] || "",
       url: row[3] || "",
+      resultsHref: getWeeklyResultsHrefForDate(row[2] || ""),
+      roundType: getRoundTypeFromText(row[2] || ""),
     }))
     .filter((row) => !isNoHandicapPoolLabel(row.date));
 
@@ -801,7 +976,13 @@ export function getWeeklyWinners() {
       `${normalizeDateKey(row.date)}|${cleanSummaryText(row.score)}|${normalizeWinnerNameKey(row.name)}`
   );
 
-  return sortByDateDesc(removeStandaloneWinnersCoveredByTie(merged));
+  const linked = removeStandaloneWinnersCoveredByTie(merged).map((row) => ({
+    ...row,
+    resultsHref: row.resultsHref || getWeeklyResultsHrefForDate(row.date),
+    roundType: getWinnerRoundType(row),
+  }));
+
+  return sortByDateDesc(linked);
 }
 
 export function getSinglesAces() {
@@ -813,6 +994,8 @@ export function getSinglesAces() {
       hole: formatAceHoleDisplay(row[1] || ""),
       date: toFullYearUsDate(row[2] || ""),
       url: row[3] || "",
+      resultsHref: getWeeklyResultsHrefForDate(row[2] || ""),
+      kind: "singles" as const,
     }))
     .filter((row) => !!row.name && !!row.hole && !!row.date);
 
@@ -827,7 +1010,13 @@ export function getSinglesAces() {
       `${normalizeDateKey(row.date)}|${cleanSummaryText(row.name)}|${normalizeAceHoleKey(row.hole)}`
   );
 
-  return sortByDateDesc(merged);
+  const linked = merged.map((row) => ({
+    ...row,
+    resultsHref: row.resultsHref || getWeeklyResultsHrefForDate(row.date),
+    kind: "singles" as const,
+  }));
+
+  return sortByDateDesc(linked);
 }
 
 export function getDoublesAces() {
@@ -836,12 +1025,20 @@ export function getDoublesAces() {
   const parsed = rows
     .slice(1)
     .filter((row) => row[0]?.trim())
-    .map((row) => ({
-      name: row[0] || "",
-      hole: row[1] || "",
-      date: row[2] || "",
-      url: row[3] || "",
-    }));
+    .map((row) => {
+      const normalized = {
+        name: row[0] || "",
+        hole: formatAceHoleDisplay(row[1] || "") || String(row[1] || ""),
+        date: toFullYearUsDate(row[2] || ""),
+        url: row[3] || "",
+      };
+
+      return {
+        ...normalized,
+        detailsHref: getDoublesAceHref(normalized),
+        kind: "doubles" as const,
+      };
+    });
 
   parsed.sort(
     (a, b) => parseUsDate(b.date).getTime() - parseUsDate(a.date).getTime()
@@ -872,6 +1069,7 @@ export function getSinglesRecords() {
             : formatCourseRecordScore(rawScore, SINGLES_PAR),
         date: toFullYearUsDate(row[2] || ""),
         url: row[3] || "",
+        resultsHref: getWeeklyResultsHrefForDate(row[2] || ""),
       };
     })
     .filter((row) => !excludedDates.has(row.date));
@@ -898,7 +1096,187 @@ export function getSinglesRecords() {
     return parseUsDate(b.date).getTime() - parseUsDate(a.date).getTime();
   });
 
-  return merged;
+  return merged.map((row) => ({
+    ...row,
+    resultsHref: row.resultsHref || getWeeklyResultsHrefForDate(row.date),
+  }));
+}
+
+function ensurePlayerProfile(
+  map: Map<string, PlayerProfile>,
+  name: string
+) {
+  const displayName = cleanSummaryText(name);
+  const key = normalizePlayerKey(displayName);
+
+  if (!displayName) return null;
+
+  if (!map.has(key)) {
+    map.set(key, {
+      name: displayName,
+      key,
+      handicap: "",
+      handicapEstablished: false,
+      average: "",
+      allRounds: [],
+      recentRounds: [],
+      personalBest: null,
+      weeklyWins: [],
+      aces: [],
+    });
+  }
+
+  return map.get(key) || null;
+}
+
+function setPersonalBest(
+  profile: PlayerProfile,
+  candidate: PersonalBestRow
+) {
+  if (!profile.personalBest) {
+    profile.personalBest = candidate;
+    return;
+  }
+
+  if (candidate.rawScore < profile.personalBest.rawScore) {
+    profile.personalBest = candidate;
+    return;
+  }
+
+  if (candidate.rawScore === profile.personalBest.rawScore) {
+    const candidateTime = parseUsDate(candidate.date).getTime();
+    const existingTime = parseUsDate(profile.personalBest.date).getTime();
+
+    if (candidateTime > existingTime) {
+      profile.personalBest = candidate;
+    }
+  }
+}
+
+export function getPlayerProfiles() {
+  if (playerProfilesCache) return playerProfilesCache;
+
+  const profiles = new Map<string, PlayerProfile>();
+
+  for (const row of getHandicaps()) {
+    const profile = ensurePlayerProfile(profiles, row.name);
+    if (!profile) continue;
+
+    profile.handicap = String(row.hcp || "");
+    profile.handicapEstablished = Boolean(row.handicapEstablished);
+    profile.average = String(row.recentRoundsAverage || "");
+    profile.allRounds = Array.isArray(row.allRounds) ? row.allRounds : [];
+    profile.recentRounds = Array.isArray(row.recentRounds) ? row.recentRounds : [];
+  }
+
+  for (const event of getWeeklyResults()) {
+    const fullDate = toFullYearUsDate(extractEventDate(event.title));
+    const href = getWeeklyResultsHrefForDate(fullDate) || event.url || "";
+    const eventRoundType = getEventRoundType(event);
+
+    if (event.kind === "handicap") {
+      for (const row of event.rows || []) {
+        const name = cleanSummaryText(row.name || "");
+        const rawValue = extractFirstNumber(row.raw || "");
+        const profile = ensurePlayerProfile(profiles, name);
+
+        if (!profile || rawValue == null) continue;
+
+        setPersonalBest(profile, {
+          score: formatCourseRecordScore(rawValue, SINGLES_PAR),
+          rawScore: rawValue,
+          date: fullDate,
+          href,
+          roundType: eventRoundType,
+        });
+      }
+    }
+
+    for (const pool of event.pools || []) {
+      const headers = (pool.headers || []).map((header: string) => String(header || "").trim());
+      const rawIndex = findHeaderIndex(headers, "raw");
+      const r1Index = findHeaderIndex(headers, "r1");
+      const scoreIndex = r1Index !== -1 ? r1Index : rawIndex;
+      const poolRoundType: RoundType = r1Index !== -1 ? "2-rounds" : "monthly";
+
+      if (scoreIndex === -1) continue;
+
+      for (const cells of pool.rows || []) {
+        const name = cleanSummaryText(cells[0] || "");
+        const rawValue = extractFirstNumber(cells[scoreIndex] || "");
+        const profile = ensurePlayerProfile(profiles, name);
+
+        if (!profile || rawValue == null) continue;
+
+        setPersonalBest(profile, {
+          score: formatCourseRecordScore(rawValue, SINGLES_PAR),
+          rawScore: rawValue,
+          date: fullDate,
+          href,
+          roundType: poolRoundType,
+        });
+      }
+    }
+  }
+
+  for (const row of getWeeklyWinners()) {
+    const roundType = getWinnerRoundType(row);
+    const href = row.resultsHref || row.url || "";
+
+    for (const name of extractWinnerNames(row.name)) {
+      const profile = ensurePlayerProfile(profiles, name);
+      if (!profile) continue;
+
+      profile.weeklyWins.push({
+        date: row.date,
+        score: row.score,
+        href,
+        roundType,
+        label: getRoundTypeLabel(roundType),
+      });
+    }
+  }
+
+  for (const row of getSinglesAces()) {
+    const profile = ensurePlayerProfile(profiles, row.name);
+    if (!profile) continue;
+
+    profile.aces.push({
+      kind: "singles",
+      hole: row.hole,
+      date: row.date,
+      href: row.resultsHref || row.url || "",
+      label: "Singles",
+    });
+  }
+
+  for (const row of getDoublesAces()) {
+    for (const name of splitTeamPlayerNames(row.name)) {
+      const profile = ensurePlayerProfile(profiles, name);
+      if (!profile) continue;
+
+      profile.aces.push({
+        kind: "doubles",
+        hole: String(row.hole || ""),
+        date: row.date,
+        href: row.detailsHref || row.url || "",
+        label: "Doubles",
+      });
+    }
+  }
+
+  for (const profile of profiles.values()) {
+    sortByDateDesc(profile.weeklyWins);
+    sortByDateDesc(profile.aces);
+  }
+
+  playerProfilesCache = Object.fromEntries(
+    Array.from(profiles.values())
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+      .map((profile) => [profile.key, profile])
+  );
+
+  return playerProfilesCache;
 }
 
 export function getDoublesRecords() {
