@@ -78,23 +78,24 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     border: 1px solid var(--line-soft, #eef2f7);
     border-radius: 22px;
     box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
-    padding: 18px 18px 16px;
     max-height: 88vh;
     overflow-y: auto;
+    padding: 0;
   }
 
   .player-details-modal-header {
     position: sticky;
     top: 0;
-    z-index: 6;
+    z-index: 8;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
-    margin: 0 0 12px;
-    padding: 0 0 10px;
+    padding: 18px 18px 14px;
     background: var(--card, #ffffff);
     border-bottom: 1px solid var(--line-soft, #eef2f7);
+    border-top-left-radius: 22px;
+    border-top-right-radius: 22px;
   }
 
   .player-details-modal-title {
@@ -130,8 +131,18 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     background: var(--button-bg-hover, #eceff4);
   }
 
+  #playerDetailsModalBody {
+    padding: 0 18px 16px;
+  }
+
+  .player-details-section {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line-soft, #eef2f7);
+  }
+
   .player-details-section-label {
-    margin: 0 0 8px;
+    margin: 0 0 10px;
     font-size: 0.84rem;
     font-weight: 800;
     line-height: 1.2;
@@ -143,7 +154,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   .player-details-history-table {
     width: 100%;
     border-collapse: collapse;
-    margin: 0 0 12px;
+    margin: 0;
   }
 
   .player-details-history-table th,
@@ -175,8 +186,8 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     display: grid;
     gap: 10px 14px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin-top: 6px;
-    margin-bottom: 18px;
+    margin-top: 16px;
+    margin-bottom: 8px;
   }
 
   .player-details-summary-row {
@@ -248,12 +259,6 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     vector-effect: non-scaling-stroke;
   }
 
-  .player-details-chart-point {
-    fill: var(--accent, #2563eb);
-    stroke: var(--card, #ffffff);
-    stroke-width: 1.25;
-  }
-
   .player-details-muted {
     color: var(--muted, #6b7280);
     font-weight: 600;
@@ -268,7 +273,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
 
   .player-details-list {
     list-style: none;
-    margin: 0 0 18px;
+    margin: 0;
     padding: 0;
     display: grid;
     gap: 8px;
@@ -307,7 +312,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   }
 
   .player-details-year-stats {
-    margin: 0 0 18px;
+    margin: 0;
     display: grid;
     gap: 6px;
   }
@@ -334,14 +339,19 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     .player-details-modal-panel {
       width: min(94vw, 560px);
       margin-top: 4vh;
-      padding: 16px 14px 14px;
       border-radius: 20px;
     }
 
     .player-details-modal-header {
       top: 0;
       gap: 10px;
-      padding-bottom: 10px;
+      padding: 16px 14px 12px;
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+    }
+
+    #playerDetailsModalBody {
+      padding: 0 14px 14px;
     }
 
     .player-details-modal-title {
@@ -514,8 +524,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   }
 
   function formatOneDecimal(value) {
-    const text = Number(value).toFixed(1);
-    return text.endsWith(".0") ? text.slice(0, -2) : text;
+    return Number(value).toFixed(1);
   }
 
   function buildYearlyScoreAverages(rounds) {
@@ -651,19 +660,12 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       .map((point, index) => `${getX(index)},${getY(Number(point.value))}`)
       .join(" ");
 
-    const trendValues = buildTrendValues(values.map((point) => ({ score: Number(point.value) })));
+    const showTrend = options.showTrend !== false;
+    const trendValues = showTrend
+      ? buildTrendValues(values.map((point) => ({ score: Number(point.value) })))
+      : [];
     const trendPoints = trendValues.length
       ? trendValues.map((value, index) => `${getX(index)},${getY(value)}`).join(" ")
-      : "";
-
-    const pointMarkup = options.showPoints
-      ? values
-          .map((point, index) => {
-            const cx = getX(index);
-            const cy = getY(Number(point.value));
-            return `<circle class="player-details-chart-point" cx="${cx}" cy="${cy}" r="2.6" />`;
-          })
-          .join("")
       : "";
 
     const gridMarkup = ticks
@@ -698,7 +700,6 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
           ${gridMarkup}
           ${trendPoints ? `<polyline class="player-details-chart-line-trend" points="${trendPoints}" />` : ""}
           <polyline class="player-details-chart-line-player" points="${playerPoints}" />
-          ${pointMarkup}
         </svg>
       </div>
     `;
@@ -725,7 +726,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
         .filter((row) => !Number.isNaN(row.value)),
       "Tag history chart",
       true,
-      { step: 5, min: 0, showPoints: true }
+      { step: 5, min: 0, showTrend: false }
     );
   }
 
@@ -750,7 +751,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
 
     if (items.length === 1) {
       const item = items[0];
-      return `<strong>${escapeHtml(item.score)}</strong> <span class="player-details-muted">on</span> ${renderLinkedLabel(item.href, item.date)}`;
+      return `<strong>${escapeHtml(item.score)}</strong> ${renderLinkedLabel(item.href, item.date)}`;
     }
 
     return `
@@ -758,7 +759,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
         ${items
           .map(
             (item) =>
-              `<div class="player-details-summary-item"><strong>${escapeHtml(item.score)}</strong> <span class="player-details-muted">on</span> ${renderLinkedLabel(item.href, item.date)}</div>`
+              `<div class="player-details-summary-item"><strong>${escapeHtml(item.score)}</strong> ${renderLinkedLabel(item.href, item.date)}</div>`
           )
           .join("")}
       </div>
@@ -816,17 +817,21 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
 
     const scoreChartMarkup = allRounds.length
       ? `
-          <p class="player-details-section-label">SCORE HISTORY (SINCE 2021)</p>
-          ${buildRoundChart(allRounds)}
-          ${renderYearStats("Average by year", buildYearlyScoreAverages(allRounds))}
+          <div class="player-details-section">
+            <p class="player-details-section-label">SCORE HISTORY (SINCE 2021)</p>
+            ${buildRoundChart(allRounds)}
+            ${renderYearStats("Average by year", buildYearlyScoreAverages(allRounds))}
+          </div>
         `
       : "";
 
     const tagChartMarkup = tagHistory.length
       ? `
-          <p class="player-details-section-label">TAG HISTORY (SINCE 2023)</p>
-          ${buildTagChart(tagHistory)}
-          ${renderYearStats("Best tag by year", buildYearlyBestTags(tagHistory))}
+          <div class="player-details-section">
+            <p class="player-details-section-label">TAG HISTORY (SINCE 2023)</p>
+            ${buildTagChart(tagHistory)}
+            ${renderYearStats("Best tag by year", buildYearlyBestTags(tagHistory))}
+          </div>
         `
       : "";
 
@@ -855,38 +860,47 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       "No aces recorded."
     );
 
+    const personalBestLabel = personalBests.length > 1 ? "Personal bests" : "Personal best";
+
     playerDetailsModalBody.innerHTML = `
       <div class="player-details-summary-grid">
-        <div class="player-details-summary-row">Current Handicap: <strong>${handicap ? escapeHtml(handicap) : "—"}</strong></div>
+        <div class="player-details-summary-row">Current handicap: <strong>${handicap ? escapeHtml(handicap) : "—"}</strong></div>
         <div class="player-details-summary-row">Current tag: <strong>${hasTag ? escapeHtml(currentTag || "TBD") : "—"}</strong></div>
         <div class="player-details-summary-row">Average score (since 2021): <strong>${average ? escapeHtml(average) : "—"}</strong></div>
         <div class="player-details-summary-row">Best tag (since 2023): <strong>${bestTagEver ? escapeHtml(bestTagEver) : "—"}</strong></div>
-        <div class="player-details-summary-row" style="grid-column: 1 / -1;">Personal best: ${renderPersonalBestMarkup(personalBests)}</div>
+        <div class="player-details-summary-row" style="grid-column: 1 / -1;">${personalBestLabel}: ${renderPersonalBestMarkup(personalBests)}</div>
       </div>
 
-      <p class="player-details-section-label">ROUNDS COUNTING TOWARDS HANDICAP</p>
+      <div class="player-details-section">
+        <p class="player-details-section-label">ROUNDS COUNTING TOWARDS HANDICAP</p>
 
-      <table class="player-details-history-table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Score</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rowsHtml}
-        </tbody>
-      </table>
+        <table class="player-details-history-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+
+        ${establishmentNote}
+      </div>
 
       ${scoreChartMarkup}
       ${tagChartMarkup}
-      ${establishmentNote}
 
-      <p class="player-details-section-label">WEEKLY WINS</p>
-      ${weeklyWinsMarkup}
+      <div class="player-details-section">
+        <p class="player-details-section-label">WEEKLY WINS</p>
+        ${weeklyWinsMarkup}
+      </div>
 
-      <p class="player-details-section-label">ACES</p>
-      ${acesMarkup}
+      <div class="player-details-section">
+        <p class="player-details-section-label">ACES</p>
+        ${acesMarkup}
+      </div>
     `;
   }
 
