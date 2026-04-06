@@ -394,7 +394,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
-      .replace(/\\"/g, "&quot;")
+      .replace(/\"/g, "&quot;")
       .replace(/'/g, "&#39;");
   }
 
@@ -660,13 +660,13 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     const established = Boolean(profile?.handicapEstablished);
     const currentTag = profile?.currentTag ? String(profile.currentTag) : "";
     const bestTagEver = profile?.bestTagEver ? String(profile.bestTagEver) : "";
-    const averageTag = profile?.averageTag ? String(profile.averageTag) : "";
     const hasTag = Boolean(profile?.hasTag);
     const tagHistory = Array.isArray(profile?.tagHistory)
       ? profile.tagHistory.filter((row) => {
           const parts = String(row?.date || "").split("/");
-          const year = Number(parts[2] || 0);
-          return year >= 2025;
+          let year = Number(parts[2] || 0);
+          if (year < 100) year += 2000;
+          return year >= 2023;
         })
       : [];
     const personalBests = Array.isArray(profile?.personalBests) && profile.personalBests.length
@@ -707,7 +707,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
 
     const tagChartMarkup = tagHistory.length
       ? `
-          <p class="player-details-section-label">TAG HISTORY (SINCE 2025)</p>
+          <p class="player-details-section-label">TAG HISTORY (SINCE 2023)</p>
           ${buildTagChart(tagHistory)}
         `
       : "";
@@ -737,17 +737,18 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       "No aces recorded."
     );
 
+    const bestTagDisplay = bestTagEver ? `${escapeHtml(bestTagEver)}*` : "—";
+
     playerDetailsModalBody.innerHTML = `
       <div class="player-details-summary-grid">
         <div class="player-details-summary-row">Current Handicap: <strong>${handicap ? escapeHtml(handicap) : "—"}</strong></div>
         <div class="player-details-summary-row">Current tag: <strong>${hasTag ? escapeHtml(currentTag || "TBD") : "—"}</strong></div>
         <div class="player-details-summary-row">Average score: <strong>${average ? escapeHtml(average) : "—"}</strong></div>
-        <div class="player-details-summary-row">Best tag*: <strong>${bestTagEver ? escapeHtml(bestTagEver) : "—"}</strong></div>
-        <div class="player-details-summary-row">Average tag*: <strong>${averageTag ? escapeHtml(averageTag) : "—"}</strong></div>
+        <div class="player-details-summary-row">Best tag: <strong>${bestTagDisplay}</strong></div>
         <div class="player-details-summary-row" style="grid-column: 1 / -1;">Personal best: ${renderPersonalBestMarkup(personalBests)}</div>
       </div>
 
-      <p class="player-details-summary-footnote">*Since 2025</p>
+      <p class="player-details-summary-footnote">*Since 2023</p>
 
       <p class="player-details-section-label">ROUNDS COUNTING TOWARDS HANDICAP</p>
 
