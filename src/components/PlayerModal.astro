@@ -719,7 +719,6 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
         <div class="player-details-summary-row">Current tag: <strong>${hasTag ? escapeHtml(currentTag || "TBD") : "—"}</strong></div>
         <div class="player-details-summary-row">Average score: <strong>${average ? escapeHtml(average) : "—"}</strong></div>
         <div class="player-details-summary-row">Best tag*: <strong>${bestTagEver ? escapeHtml(bestTagEver) : "—"}</strong></div>
-        <div class="player-details-summary-row">Average tag*: <strong>${averageTag ? escapeHtml(averageTag) : "—"}</strong></div>
         <div class="player-details-summary-row" style="grid-column: 1 / -1;">Personal best: ${renderPersonalBestMarkup(personalBests)}</div>
       </div>
 
