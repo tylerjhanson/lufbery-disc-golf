@@ -1677,9 +1677,6 @@ export function getPlayerProfiles() {
     profile.averageTag = String(row.averageTag || "");
     profile.weeksAtOne = Number(row.weeksAtOne || 0);
 
-    profile.tagHistory = Array.isArray(row.tagHistory)
-      ? row.tagHistory.filter((entry) => parseUsDate(entry.date).getFullYear() >= 2025)
-      : [];
   }
 
   for (const row of getSinglesRecords()) {
