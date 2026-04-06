@@ -224,7 +224,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
 
   .player-details-chart-axis-label {
     fill: var(--muted, #6b7280);
-    font-size: 10px;
+    font-size: 12px;
     font-family: Inter, Arial, Helvetica, sans-serif;
   }
 
@@ -329,6 +329,10 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
 
     .player-details-modal-close-wrap {
       top: 8px;
+    }
+
+    .player-details-chart-axis-label {
+      font-size: 11px;
     }
   }
 </style>
@@ -472,7 +476,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     return rounds.map((_, index) => intercept + slope * index);
   }
 
-  function buildLineChart(values, ariaLabel, lowerValuesAtBottom = false) {
+  function buildLineChart(values, ariaLabel, lowerValuesAtBottom = false, options = {}) {
     if (!values || !values.length) return "";
 
     const numericValues = values
@@ -486,25 +490,43 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     const padTop = 10;
     const padRight = 8;
     const padBottom = 10;
-    const padLeft = 34;
+    const padLeft = 40;
     const innerWidth = width - padLeft - padRight;
     const innerHeight = height - padTop - padBottom;
+
+    const fixedStep = Number(options.step);
+    const useFixedStep = Number.isFinite(fixedStep) && fixedStep > 0;
 
     let chartMin = Math.min(...numericValues);
     let chartMax = Math.max(...numericValues);
 
-    if (chartMin === chartMax) chartMax = chartMin + 1;
+    if (useFixedStep) {
+      const minBase = Number.isFinite(Number(options.min)) ? Number(options.min) : 0;
+      chartMin = Math.min(minBase, chartMin);
+      chartMin = Math.floor(chartMin / fixedStep) * fixedStep;
+      chartMax = Math.ceil(chartMax / fixedStep) * fixedStep;
+      if (chartMax <= chartMin) chartMax = chartMin + fixedStep;
+    } else {
+      if (chartMin === chartMax) chartMax = chartMin + 1;
 
-    const range = chartMax - chartMin;
-    const step = range <= 10 ? 1 : range <= 30 ? 5 : 10;
+      const range = chartMax - chartMin;
+      const step = range <= 10 ? 1 : range <= 30 ? 5 : 10;
 
-    chartMin = Math.max(1, Math.floor(chartMin / step) * step);
-    chartMax = Math.ceil(chartMax / step) * step;
+      chartMin = Math.max(1, Math.floor(chartMin / step) * step);
+      chartMax = Math.ceil(chartMax / step) * step;
 
-    if (chartMin === chartMax) chartMax = chartMin + step;
+      if (chartMin === chartMax) chartMax = chartMin + step;
+    }
+
+    const tickStep = useFixedStep
+      ? fixedStep
+      : (() => {
+          const range = chartMax - chartMin;
+          return range <= 10 ? 1 : range <= 30 ? 5 : 10;
+        })();
 
     const ticks = [];
-    for (let value = chartMin; value <= chartMax; value += step) {
+    for (let value = chartMin; value <= chartMax; value += tickStep) {
       ticks.push(value);
     }
 
@@ -540,8 +562,8 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
           />
           <text
             class="player-details-chart-axis-label"
-            x="${padLeft - 6}"
-            y="${y + 3}"
+            x="${padLeft - 8}"
+            y="${y + 4}"
             text-anchor="end"
           >${Math.round(tick)}</text>
         `;
@@ -584,7 +606,8 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
         }))
         .filter((row) => !Number.isNaN(row.value)),
       "Tag history chart",
-      false
+      true,
+      { step: 5, min: 0 }
     );
   }
 
@@ -641,7 +664,8 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     const hasTag = Boolean(profile?.hasTag);
     const tagHistory = Array.isArray(profile?.tagHistory)
       ? profile.tagHistory.filter((row) => {
-          const year = Number(String(row?.date || "").split("/")[2] || 0);
+          const parts = String(row?.date || "").split("/");
+          const year = Number(parts[2] || 0);
           return year >= 2025;
         })
       : [];
@@ -719,6 +743,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
         <div class="player-details-summary-row">Current tag: <strong>${hasTag ? escapeHtml(currentTag || "TBD") : "—"}</strong></div>
         <div class="player-details-summary-row">Average score: <strong>${average ? escapeHtml(average) : "—"}</strong></div>
         <div class="player-details-summary-row">Best tag*: <strong>${bestTagEver ? escapeHtml(bestTagEver) : "—"}</strong></div>
+        <div class="player-details-summary-row">Average tag*: <strong>${averageTag ? escapeHtml(averageTag) : "—"}</strong></div>
         <div class="player-details-summary-row" style="grid-column: 1 / -1;">Personal best: ${renderPersonalBestMarkup(personalBests)}</div>
       </div>
 
