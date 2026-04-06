@@ -1677,23 +1677,9 @@ export function getPlayerProfiles() {
     profile.averageTag = String(row.averageTag || "");
     profile.weeksAtOne = Number(row.weeksAtOne || 0);
 
-    const bestRawScore =
-      typeof row.bestRawScore === "number" && Number.isFinite(row.bestRawScore)
-        ? row.bestRawScore
-        : null;
-    const bestDates = Array.isArray(row.bestDates) ? row.bestDates : [];
-
-    if (bestRawScore != null && bestDates.length) {
-      bestDates.forEach((date) => {
-        addPersonalBest(profile, {
-          score: formatCourseRecordScore(bestRawScore, SINGLES_PAR),
-          rawScore: bestRawScore,
-          date,
-          href: getWeeklyResultsHrefForDate(date),
-          roundType: "handicap",
-        });
-      });
-    }
+    profile.tagHistory = Array.isArray(row.tagHistory)
+      ? row.tagHistory.filter((entry) => parseUsDate(entry.date).getFullYear() >= 2025)
+      : [];
   }
 
   for (const row of getSinglesRecords()) {
