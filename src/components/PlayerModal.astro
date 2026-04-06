@@ -388,6 +388,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   <div class="player-details-modal-backdrop" data-close-player-modal></div>
 
   <div
+    id="playerDetailsModalPanel"
     class="player-details-modal-panel"
     role="dialog"
     aria-modal="true"
@@ -423,6 +424,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   }
 
   const playerDetailsModal = document.getElementById("playerDetailsModal");
+  const playerDetailsModalPanel = document.getElementById("playerDetailsModalPanel");
   const playerDetailsModalTitle = document.getElementById("playerDetailsModalTitle");
   const playerDetailsModalBody = document.getElementById("playerDetailsModalBody");
   const playerDetailsModalClose = document.getElementById("playerDetailsModalClose");
@@ -434,7 +436,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
-      .replace(/\\"/g, "&quot;")
+      .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
   }
 
@@ -929,6 +931,13 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
 
     playerDetailsModal.removeAttribute("hidden");
     document.body.style.overflow = "hidden";
+
+    if (playerDetailsModalPanel) {
+      playerDetailsModalPanel.scrollTop = 0;
+      requestAnimationFrame(() => {
+        playerDetailsModalPanel.scrollTop = 0;
+      });
+    }
   }
 
   function closePlayerDetailsModal() {
