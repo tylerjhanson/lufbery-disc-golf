@@ -742,20 +742,20 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     );
   }
 
-  function buildHandicapChart(history) {
-    if (!history || !history.length) return "";
+ function buildHandicapChart(history) {
+  if (!history || !history.length) return "";
 
-    return buildLineChart(
-      history
-        .map((row) => ({
-          value: Number(row.handicap),
-        }))
-        .filter((row) => !Number.isNaN(row.value)),
-      "Handicap history chart",
-      true,
-      { showTrend: false }
-    );
-  }
+  return buildLineChart(
+    history
+      .map((row) => ({
+        value: Number(row.handicap),
+      }))
+      .filter((row) => !Number.isNaN(row.value)),
+    "Handicap history chart",
+    true,
+    { step: 1, min: -4, showTrend: false }
+  );
+}
 
   function buildTagChart(history) {
     if (!history || !history.length) return "";
