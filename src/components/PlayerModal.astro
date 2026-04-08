@@ -501,6 +501,11 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     return year;
   }
 
+  function formatCurrentUsDate() {
+    const now = new Date();
+    return `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()}`;
+  }
+
   function buildTrendValues(rounds) {
     if (!rounds || rounds.length < 2) return [];
 
@@ -554,6 +559,42 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       }));
   }
 
+  function buildEffectiveHandicapHistory(history, currentHandicap) {
+    const baseHistory = Array.isArray(history)
+      ? history
+          .map((row) => ({
+            date: String(row?.date || ""),
+            handicap: Number(row?.handicap),
+          }))
+          .filter((row) => row.date && !Number.isNaN(row.handicap))
+      : [];
+
+    const current = Number(currentHandicap);
+    if (Number.isNaN(current)) return baseHistory;
+
+    if (!baseHistory.length) {
+      return [
+        {
+          date: formatCurrentUsDate(),
+          handicap: current,
+        },
+      ];
+    }
+
+    const lastPoint = baseHistory[baseHistory.length - 1];
+    if (Number(lastPoint?.handicap) === current) {
+      return baseHistory;
+    }
+
+    return [
+      ...baseHistory,
+      {
+        date: formatCurrentUsDate(),
+        handicap: current,
+      },
+    ];
+  }
+
   function buildYearlyBestHandicaps(history) {
     if (!Array.isArray(history) || !history.length) return [];
 
@@ -579,12 +620,21 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       }));
   }
 
-  function getLowestHandicap(history) {
-    if (!Array.isArray(history) || !history.length) return "";
+  function getLowestHandicap(history, currentHandicap) {
+    const values = [];
 
-    const values = history
-      .map((row) => Number(row?.handicap))
-      .filter((value) => !Number.isNaN(value));
+    if (Array.isArray(history)) {
+      values.push(
+        ...history
+          .map((row) => Number(row?.handicap))
+          .filter((value) => !Number.isNaN(value))
+      );
+    }
+
+    const current = Number(currentHandicap);
+    if (!Number.isNaN(current)) {
+      values.push(current);
+    }
 
     if (!values.length) return "";
 
@@ -759,24 +809,24 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   }
 
   function buildHandicapChart(history) {
-  if (!history || !history.length) return "";
+    if (!history || !history.length) return "";
 
-  const values = history
-    .map((row) => Number(row.handicap))
-    .filter((value) => !Number.isNaN(value));
+    const values = history
+      .map((row) => Number(row.handicap))
+      .filter((value) => !Number.isNaN(value));
 
-  if (!values.length) return "";
+    if (!values.length) return "";
 
-  const playerMin = Math.min(...values);
-  const chartMin = Math.floor(playerMin) - 1;
+    const playerMin = Math.min(...values);
+    const chartMin = Math.floor(playerMin) - 1;
 
-  return buildLineChart(
-    values.map((value) => ({ value })),
-    "Handicap history chart",
-    true,
-    { step: 1, min: chartMin, showTrend: false }
-  );
-}
+    return buildLineChart(
+      values.map((value) => ({ value })),
+      "Handicap history chart",
+      true,
+      { step: 1, min: chartMin, showTrend: false }
+    );
+  }
 
   function buildTagChart(history) {
     if (!history || !history.length) return "";
@@ -844,19 +894,24 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     const currentTag = profile?.currentTag ? String(profile.currentTag) : "";
     const bestTagEver = profile?.bestTagEver ? String(profile.bestTagEver) : "";
     const hasTag = Boolean(profile?.hasTag);
+
     const handicapHistory = Array.isArray(profile?.handicapHistory)
       ? profile.handicapHistory.filter((row) => {
           const year = parseDisplayYear(row?.date);
           return year >= 2023;
         })
       : [];
-    const lowestHandicap = getLowestHandicap(handicapHistory);
+
+    const effectiveHandicapHistory = buildEffectiveHandicapHistory(handicapHistory, handicap);
+    const lowestHandicap = getLowestHandicap(handicapHistory, handicap);
+
     const tagHistory = Array.isArray(profile?.tagHistory)
       ? profile.tagHistory.filter((row) => {
           const year = parseDisplayYear(row?.date);
           return year >= 2023;
         })
       : [];
+
     const personalBests =
       Array.isArray(profile?.personalBests) && profile.personalBests.length
         ? profile.personalBests
@@ -897,12 +952,12 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
         `
       : "";
 
-    const handicapChartMarkup = handicapHistory.length
+    const handicapChartMarkup = effectiveHandicapHistory.length
       ? `
           <div class="player-details-section">
             <p class="player-details-section-label">HANDICAP HISTORY (SINCE 2023)</p>
-            ${buildHandicapChart(handicapHistory)}
-            ${renderYearStats("Best handicap by year", buildYearlyBestHandicaps(handicapHistory))}
+            ${buildHandicapChart(effectiveHandicapHistory)}
+            ${renderYearStats("Best handicap by year", buildYearlyBestHandicaps(effectiveHandicapHistory))}
           </div>
         `
       : "";
