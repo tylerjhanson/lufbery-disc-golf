@@ -578,17 +578,19 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
         value: String(handicap),
       }));
   }
-function getLowestHandicap(history) {
-  if (!Array.isArray(history) || !history.length) return "";
 
-  const values = history
-    .map((row) => Number(row?.handicap))
-    .filter((value) => !Number.isNaN(value));
+  function getLowestHandicap(history) {
+    if (!Array.isArray(history) || !history.length) return "";
 
-  if (!values.length) return "";
+    const values = history
+      .map((row) => Number(row?.handicap))
+      .filter((value) => !Number.isNaN(value));
 
-  return String(Math.min(...values));
-}
+    if (!values.length) return "";
+
+    return String(Math.min(...values));
+  }
+
   function buildYearlyBestTags(history) {
     if (!Array.isArray(history) || !history.length) return [];
 
@@ -688,14 +690,18 @@ function getLowestHandicap(history) {
     }
 
     const getX = (index) =>
-      values.length === 1 ? padLeft + innerWidth / 2 : padLeft + (index / (values.length - 1)) * innerWidth;
+      values.length === 1
+        ? padLeft + innerWidth / 2
+        : padLeft + (index / (values.length - 1)) * innerWidth;
 
     const getY = (value) =>
       lowerValuesAtBottom
         ? padTop + ((chartMax - value) / (chartMax - chartMin)) * innerHeight
         : padTop + ((value - chartMin) / (chartMax - chartMin)) * innerHeight;
 
-    const playerPoints = values.map((point, index) => `${getX(index)},${getY(Number(point.value))}`).join(" ");
+    const playerPoints = values
+      .map((point, index) => `${getX(index)},${getY(Number(point.value))}`)
+      .join(" ");
 
     const showTrend = options.showTrend !== false;
     const trendValues = showTrend
@@ -752,20 +758,20 @@ function getLowestHandicap(history) {
     );
   }
 
- function buildHandicapChart(history) {
-  if (!history || !history.length) return "";
+  function buildHandicapChart(history) {
+    if (!history || !history.length) return "";
 
-  return buildLineChart(
-    history
-      .map((row) => ({
-        value: Number(row.handicap),
-      }))
-      .filter((row) => !Number.isNaN(row.value)),
-    "Handicap history chart",
-    true,
-    { step: 1, min: -4, showTrend: false }
-  );
-}
+    return buildLineChart(
+      history
+        .map((row) => ({
+          value: Number(row.handicap),
+        }))
+        .filter((row) => !Number.isNaN(row.value)),
+      "Handicap history chart",
+      true,
+      { step: 1, min: -4, showTrend: false }
+    );
+  }
 
   function buildTagChart(history) {
     if (!history || !history.length) return "";
@@ -831,21 +837,15 @@ function getLowestHandicap(history) {
       profile?.handicap != null && String(profile.handicap) !== "" ? String(profile.handicap) : "";
     const established = Boolean(profile?.handicapEstablished);
     const currentTag = profile?.currentTag ? String(profile.currentTag) : "";
-const bestTagEver = profile?.bestTagEver ? String(profile.bestTagEver) : "";
-const hasTag = Boolean(profile?.hasTag);
-const handicapHistory = Array.isArray(profile?.handicapHistory)
-  ? profile.handicapHistory.filter((row) => {
-      const year = parseDisplayYear(row?.date);
-      return year >= 2023;
-    })
-  : [];
-const lowestHandicap = getLowestHandicap(handicapHistory);
-const tagHistory = Array.isArray(profile?.tagHistory)
-  ? profile.tagHistory.filter((row) => {
-      const year = parseDisplayYear(row?.date);
-      return year >= 2023;
-    })
-  : [];
+    const bestTagEver = profile?.bestTagEver ? String(profile.bestTagEver) : "";
+    const hasTag = Boolean(profile?.hasTag);
+    const handicapHistory = Array.isArray(profile?.handicapHistory)
+      ? profile.handicapHistory.filter((row) => {
+          const year = parseDisplayYear(row?.date);
+          return year >= 2023;
+        })
+      : [];
+    const lowestHandicap = getLowestHandicap(handicapHistory);
     const tagHistory = Array.isArray(profile?.tagHistory)
       ? profile.tagHistory.filter((row) => {
           const year = parseDisplayYear(row?.date);
@@ -940,14 +940,14 @@ const tagHistory = Array.isArray(profile?.tagHistory)
     const personalBestLabel = personalBests.length > 1 ? "Personal bests" : "Personal best";
 
     playerDetailsModalBody.innerHTML = `
-  <div class="player-details-summary-grid">
-    <div class="player-details-summary-row">Current handicap: <strong>${handicap ? escapeHtml(handicap) : "—"}</strong></div>
-    <div class="player-details-summary-row">Current tag: <strong>${hasTag ? escapeHtml(currentTag || "TBD") : "—"}</strong></div>
-    <div class="player-details-summary-row">Average score: <strong>${average ? escapeHtml(average) : "—"}</strong></div>
-    <div class="player-details-summary-row">Best tag: <strong>${bestTagEver ? escapeHtml(bestTagEver) : "—"}</strong></div>
-    <div class="player-details-summary-row">Lowest handicap: <strong>${lowestHandicap !== "" ? escapeHtml(lowestHandicap) : "—"}</strong></div>
-    <div class="player-details-summary-row" style="grid-column: 1 / -1;">${personalBestLabel}: ${renderPersonalBestMarkup(personalBests)}</div>
-  </div>
+      <div class="player-details-summary-grid">
+        <div class="player-details-summary-row">Current handicap: <strong>${handicap ? escapeHtml(handicap) : "—"}</strong></div>
+        <div class="player-details-summary-row">Current tag: <strong>${hasTag ? escapeHtml(currentTag || "TBD") : "—"}</strong></div>
+        <div class="player-details-summary-row">Average score: <strong>${average ? escapeHtml(average) : "—"}</strong></div>
+        <div class="player-details-summary-row">Best tag: <strong>${bestTagEver ? escapeHtml(bestTagEver) : "—"}</strong></div>
+        <div class="player-details-summary-row">Lowest handicap: <strong>${lowestHandicap !== "" ? escapeHtml(lowestHandicap) : "—"}</strong></div>
+        <div class="player-details-summary-row" style="grid-column: 1 / -1;">${personalBestLabel}: ${renderPersonalBestMarkup(personalBests)}</div>
+      </div>
 
       <div class="player-details-section">
         <p class="player-details-section-label">ROUNDS COUNTING TOWARDS HANDICAP</p>
@@ -994,10 +994,14 @@ const tagHistory = Array.isArray(profile?.tagHistory)
       button.dataset.playerName || button.dataset.player || button.textContent || ""
     ).trim();
 
-    const playerKey = normalizePlayerKey(button.dataset.playerKey || button.dataset.player || fallbackName);
+    const playerKey = normalizePlayerKey(
+      button.dataset.playerKey || button.dataset.player || fallbackName
+    );
 
     const profile =
-      PLAYER_PROFILES && typeof PLAYER_PROFILES === "object" ? PLAYER_PROFILES[playerKey] || null : null;
+      PLAYER_PROFILES && typeof PLAYER_PROFILES === "object"
+        ? PLAYER_PROFILES[playerKey] || null
+        : null;
 
     lastPlayerTrigger = button;
     renderPlayerDetailsModal(profile, fallbackName);
@@ -1025,8 +1029,9 @@ const tagHistory = Array.isArray(profile?.tagHistory)
   }
 
   document.addEventListener("click", (event) => {
-    const button =
-      event.target instanceof Element ? event.target.closest("[data-player-key], [data-player]") : null;
+    const button = event.target instanceof Element
+      ? event.target.closest("[data-player-key], [data-player]")
+      : null;
 
     if (button) {
       event.preventDefault();
@@ -1035,8 +1040,9 @@ const tagHistory = Array.isArray(profile?.tagHistory)
       return;
     }
 
-    const closeTarget =
-      event.target instanceof Element ? event.target.closest("[data-close-player-modal]") : null;
+    const closeTarget = event.target instanceof Element
+      ? event.target.closest("[data-close-player-modal]")
+      : null;
 
     if (closeTarget) {
       event.preventDefault();
