@@ -759,19 +759,24 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   }
 
   function buildHandicapChart(history) {
-    if (!history || !history.length) return "";
+  if (!history || !history.length) return "";
 
-    return buildLineChart(
-      history
-        .map((row) => ({
-          value: Number(row.handicap),
-        }))
-        .filter((row) => !Number.isNaN(row.value)),
-      "Handicap history chart",
-      true,
-      { step: 1, min: -4, showTrend: false }
-    );
-  }
+  const values = history
+    .map((row) => Number(row.handicap))
+    .filter((value) => !Number.isNaN(value));
+
+  if (!values.length) return "";
+
+  const playerMin = Math.min(...values);
+  const chartMin = Math.floor(playerMin) - 1;
+
+  return buildLineChart(
+    values.map((value) => ({ value })),
+    "Handicap history chart",
+    true,
+    { step: 1, min: chartMin, showTrend: false }
+  );
+}
 
   function buildTagChart(history) {
     if (!history || !history.length) return "";
