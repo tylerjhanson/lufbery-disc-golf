@@ -478,7 +478,9 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
 
     if (!href) return safeLabel;
 
-    return `<a class="player-details-link player-details-link-inline" href="${escapeHtml(href)}">${safeLabel}${renderUdiscIconMarkup(href)}</a>`;
+    return `<a class="player-details-link player-details-link-inline" href="${escapeHtml(
+      href
+    )}">${safeLabel}${renderUdiscIconMarkup(href)}</a>`;
   }
 
   function formatScoreWithPar(score) {
@@ -552,6 +554,31 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       }));
   }
 
+  function buildYearlyBestHandicaps(history) {
+    if (!Array.isArray(history) || !history.length) return [];
+
+    const bestByYear = new Map();
+
+    history.forEach((row) => {
+      const year = parseDisplayYear(row?.date);
+      const handicap = Number(row?.handicap);
+
+      if (!Number.isFinite(year) || year < 2023 || Number.isNaN(handicap)) return;
+
+      const current = bestByYear.get(year);
+      if (current == null || handicap < current) {
+        bestByYear.set(year, handicap);
+      }
+    });
+
+    return Array.from(bestByYear.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([year, handicap]) => ({
+        year: String(year),
+        value: String(handicap),
+      }));
+  }
+
   function buildYearlyBestTags(history) {
     if (!Array.isArray(history) || !history.length) return [];
 
@@ -586,7 +613,9 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
           ${rows
             .map(
               (row) =>
-                `<div class="player-details-year-stats-item"><strong>${escapeHtml(row.year)}:</strong> ${escapeHtml(row.value)}</div>`
+                `<div class="player-details-year-stats-item"><strong>${escapeHtml(
+                  row.year
+                )}:</strong> ${escapeHtml(row.value)}</div>`
             )
             .join("")}
         </div>
@@ -649,18 +678,14 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     }
 
     const getX = (index) =>
-      values.length === 1
-        ? padLeft + innerWidth / 2
-        : padLeft + (index / (values.length - 1)) * innerWidth;
+      values.length === 1 ? padLeft + innerWidth / 2 : padLeft + (index / (values.length - 1)) * innerWidth;
 
     const getY = (value) =>
       lowerValuesAtBottom
         ? padTop + ((chartMax - value) / (chartMax - chartMin)) * innerHeight
         : padTop + ((value - chartMin) / (chartMax - chartMin)) * innerHeight;
 
-    const playerPoints = values
-      .map((point, index) => `${getX(index)},${getY(Number(point.value))}`)
-      .join(" ");
+    const playerPoints = values.map((point, index) => `${getX(index)},${getY(Number(point.value))}`).join(" ");
 
     const showTrend = options.showTrend !== false;
     const trendValues = showTrend
@@ -717,6 +742,21 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     );
   }
 
+  function buildHandicapChart(history) {
+    if (!history || !history.length) return "";
+
+    return buildLineChart(
+      history
+        .map((row) => ({
+          value: Number(row.handicap),
+        }))
+        .filter((row) => !Number.isNaN(row.value)),
+      "Handicap history chart",
+      true,
+      { showTrend: false }
+    );
+  }
+
   function buildTagChart(history) {
     if (!history || !history.length) return "";
 
@@ -739,9 +779,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
 
     return `
       <ul class="player-details-list">
-        ${items
-          .map((item) => `<li class="player-details-list-item">${formatter(item)}</li>`)
-          .join("")}
+        ${items.map((item) => `<li class="player-details-list-item">${formatter(item)}</li>`).join("")}
       </ul>
     `;
   }
@@ -761,7 +799,9 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
         ${items
           .map(
             (item) =>
-              `<div class="player-details-summary-item"><strong>${escapeHtml(item.score)}</strong> ${renderLinkedLabel(item.href, item.date)}</div>`
+              `<div class="player-details-summary-item"><strong>${escapeHtml(
+                item.score
+              )}</strong> ${renderLinkedLabel(item.href, item.date)}</div>`
           )
           .join("")}
       </div>
@@ -777,22 +817,30 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     const weeklyWins = Array.isArray(profile?.weeklyWins) ? profile.weeklyWins : [];
     const aces = Array.isArray(profile?.aces) ? profile.aces : [];
     const average = profile?.average ? String(profile.average) : "";
-    const handicap = profile?.handicap ? String(profile.handicap) : "";
+    const handicap =
+      profile?.handicap != null && String(profile.handicap) !== "" ? String(profile.handicap) : "";
     const established = Boolean(profile?.handicapEstablished);
     const currentTag = profile?.currentTag ? String(profile.currentTag) : "";
     const bestTagEver = profile?.bestTagEver ? String(profile.bestTagEver) : "";
     const hasTag = Boolean(profile?.hasTag);
+    const handicapHistory = Array.isArray(profile?.handicapHistory)
+      ? profile.handicapHistory.filter((row) => {
+          const year = parseDisplayYear(row?.date);
+          return year >= 2023;
+        })
+      : [];
     const tagHistory = Array.isArray(profile?.tagHistory)
       ? profile.tagHistory.filter((row) => {
           const year = parseDisplayYear(row?.date);
           return year >= 2023;
         })
       : [];
-    const personalBests = Array.isArray(profile?.personalBests) && profile.personalBests.length
-      ? profile.personalBests
-      : profile?.personalBest
-        ? [profile.personalBest]
-        : [];
+    const personalBests =
+      Array.isArray(profile?.personalBests) && profile.personalBests.length
+        ? profile.personalBests
+        : profile?.personalBest
+          ? [profile.personalBest]
+          : [];
 
     playerDetailsModalTitle.textContent = name;
 
@@ -823,6 +871,16 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
             <p class="player-details-section-label">SCORE HISTORY (SINCE 2021)</p>
             ${buildRoundChart(allRounds)}
             ${renderYearStats("Average by year", buildYearlyScoreAverages(allRounds))}
+          </div>
+        `
+      : "";
+
+    const handicapChartMarkup = handicapHistory.length
+      ? `
+          <div class="player-details-section">
+            <p class="player-details-section-label">HANDICAP HISTORY (SINCE 2023)</p>
+            ${buildHandicapChart(handicapHistory)}
+            ${renderYearStats("Best handicap by year", buildYearlyBestHandicaps(handicapHistory))}
           </div>
         `
       : "";
@@ -892,6 +950,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       </div>
 
       ${scoreChartMarkup}
+      ${handicapChartMarkup}
       ${tagChartMarkup}
 
       <div class="player-details-section">
@@ -917,14 +976,10 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       button.dataset.playerName || button.dataset.player || button.textContent || ""
     ).trim();
 
-    const playerKey = normalizePlayerKey(
-      button.dataset.playerKey || button.dataset.player || fallbackName
-    );
+    const playerKey = normalizePlayerKey(button.dataset.playerKey || button.dataset.player || fallbackName);
 
     const profile =
-      PLAYER_PROFILES && typeof PLAYER_PROFILES === "object"
-        ? PLAYER_PROFILES[playerKey] || null
-        : null;
+      PLAYER_PROFILES && typeof PLAYER_PROFILES === "object" ? PLAYER_PROFILES[playerKey] || null : null;
 
     lastPlayerTrigger = button;
     renderPlayerDetailsModal(profile, fallbackName);
@@ -952,9 +1007,8 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   }
 
   document.addEventListener("click", (event) => {
-    const button = event.target instanceof Element
-      ? event.target.closest("[data-player-key], [data-player]")
-      : null;
+    const button =
+      event.target instanceof Element ? event.target.closest("[data-player-key], [data-player]") : null;
 
     if (button) {
       event.preventDefault();
@@ -963,9 +1017,8 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       return;
     }
 
-    const closeTarget = event.target instanceof Element
-      ? event.target.closest("[data-close-player-modal]")
-      : null;
+    const closeTarget =
+      event.target instanceof Element ? event.target.closest("[data-close-player-modal]") : null;
 
     if (closeTarget) {
       event.preventDefault();
