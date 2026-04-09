@@ -78,7 +78,7 @@ const latestResult =
     .sort((a, b) => getEventTimestamp(String(b.title || "")) - getEventTimestamp(String(a.title || "")))[0] ||
   null;
 
-const latestResultHref = String(latestResult?.url || weeklyResultsPageUrl);
+const latestResultHref = weeklyResultsPageUrl;
 
 const latestResultMainRows = getFirstObjectArray(latestResult, [
   "rows",
@@ -784,29 +784,9 @@ const hasLatestResultTable =
 
         {latestResult ? (
           <>
-            {latestResult.url ? (
-              <a
-                class="result-title-link result-title-link-inline"
-                href={latestResultHref}
-                target="_blank"
-                rel="noopener"
-              >
-                <span>{latestResult.title}</span>
-                <img
-                  class="result-udisc-icon result-udisc-icon--light"
-                  src="https://lufberydiscgolf.com/udisc-icon.png"
-                  alt="UDisc"
-                  loading="lazy"
-                  decoding="async"
-                />
-                <img
-                  class="result-udisc-icon result-udisc-icon--dark"
-                  src="https://lufberydiscgolf.com/udisc-icon-white.png"
-                  alt="UDisc"
-                  loading="lazy"
-                  decoding="async"
-                />
-              </a>
+            <a class="result-title-link result-title-link-inline" href={latestResultHref}>
+  <span>{latestResult.title}</span>
+</a>
             ) : (
               <p class="result-title-plain">{latestResult.title}</p>
             )}
