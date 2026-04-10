@@ -1,4 +1,4 @@
-Name,Handicap Out,Date,Name,Tag Out,Date
+Name ,Handicap Out,Date,Name ,Tag Out,Date
 Ian Davila,6,8/15/2023,Bryan Smith,1,7/11/2023
 Keith Sykes,0,8/15/2023,Jason Cebula,2,7/11/2023
 Tyler Hanson,3,8/15/2023,Matthew Viens,3,7/11/2023
@@ -1074,33 +1074,33 @@ Matthew Viens,2,8/21/2025,Peter Zaffina,23,4/2/2026
 Rick Kenyon,2,8/21/2025,Nick Savakis,24,4/2/2026
 Skyler Phelan,2,8/21/2025,Bob Kling,25,4/2/2026
 William Elwell,2,8/21/2025,Doug Latham,26,4/2/2026
-Dan Ney,3,8/21/2025,,,
-Jack Midkiff,3,8/21/2025,,,
-Brian Walendziak,5,8/21/2025,,,
-Matthew Bergeron,5,8/21/2025,,,
-Nick Savakis,5,8/21/2025,,,
-Tim Breault,5,8/21/2025,,,
-Aidan Cahill,6,8/21/2025,,,
-Mark Blachura,6,8/21/2025,,,
-Paul Reddell,6,8/21/2025,,,
-Bradford DeGregorio,7,8/21/2025,,,
-Dave Smith,7,8/21/2025,,,
-Jacek Trelski,7,8/21/2025,,,
-Justin Folsom,7,8/21/2025,,,
-Natale DiNatale,7,8/21/2025,,,
-Elyse Scott,8,8/21/2025,,,
-Michael MacDonald,8,8/21/2025,,,
-David Brewer,9,8/21/2025,,,
-Doug Latham,9,8/21/2025,,,
-Errol Matthews,9,8/21/2025,,,
-Jose Estrada,10,8/21/2025,,,
-Lora Rose Kenyon,10,8/21/2025,,,
-Jessica Millar,17,8/21/2025,,,
-Bryan Smith,0,8/28/2025,,,
-Jason Cebula,0,8/28/2025,,,
-PJ Bergeron,0,8/28/2025,,,
-Tyler Hanson,0,8/28/2025,,,
-Jon Mas,1,8/28/2025,,,
+Dan Ney,3,8/21/2025,Aidan Cahill,15,4/9/2026
+Jack Midkiff,3,8/21/2025,Bob Kling,23,4/9/2026
+Brian Walendziak,5,8/21/2025,Brian Walendziak,11,4/9/2026
+Matthew Bergeron,5,8/21/2025,Bryan Smith,6,4/9/2026
+Nick Savakis,5,8/21/2025,Dave McHale,22,4/9/2026
+Tim Breault,5,8/21/2025,Dave Smith,31,4/9/2026
+Aidan Cahill,6,8/21/2025,Doug Latham,32,4/9/2026
+Mark Blachura,6,8/21/2025,Errol Matthews,26,4/9/2026
+Paul Reddell,6,8/21/2025,Ian Davila,9,4/9/2026
+Bradford DeGregorio,7,8/21/2025,Jack Midkiff,25,4/9/2026
+Dave Smith,7,8/21/2025,Jason Cebula,5,4/9/2026
+Jacek Trelski,7,8/21/2025,Joe Sauer,29,4/9/2026
+Justin Folsom,7,8/21/2025,Liam Wolfram,1,4/9/2026
+Natale DiNatale,7,8/21/2025,Matthew Bergeron,14,4/9/2026
+Elyse Scott,8,8/21/2025,Matthew Viens,24,4/9/2026
+Michael MacDonald,8,8/21/2025,Michael Morin,16,4/9/2026
+David Brewer,9,8/21/2025,Mike Conner,4,4/9/2026
+Doug Latham,9,8/21/2025,Mike Mach,30,4/9/2026
+Errol Matthews,9,8/21/2025,Mike Rocco,33,4/9/2026
+Jose Estrada,10,8/21/2025,Nick Savakis,28,4/9/2026
+Lora Rose Kenyon,10,8/21/2025,Peter Zaffina,35,4/9/2026
+Jessica Millar,17,8/21/2025,PJ Bergeron,2,4/9/2026
+Bryan Smith,0,8/28/2025,Rick Kenyon,18,4/9/2026
+Jason Cebula,0,8/28/2025,Ryan Dolan,13,4/9/2026
+PJ Bergeron,0,8/28/2025,Tim Breault,27,4/9/2026
+Tyler Hanson,0,8/28/2025,Tyler Hanson,7,4/9/2026
+Jon Mas,1,8/28/2025,William Elwell,3,4/9/2026
 Liam Wolfram,1,8/28/2025,,,
 William Elwell,1,8/28/2025,,,
 Aaron Summers,2,8/28/2025,,,
@@ -1184,3 +1184,35 @@ Andrei Alekseiko,10,4/2/2026,,,
 Doug Latham,11,4/2/2026,,,
 Peter Zaffina,15,4/2/2026,,,
 Jessica Millar,17,4/2/2026,,,
+Aidan Cahill,6,4/9/2026,,,
+Bob Kling,7,4/9/2026,,,
+Brian Walendziak,5,4/9/2026,,,
+Bryan Smith,1,4/9/2026,,,
+Dave McHale,6,4/9/2026,,,
+Dave Smith,6,4/9/2026,,,
+Doug Latham,11,4/9/2026,,,
+Elyse Scott,9,4/9/2026,,,
+Errol Matthews,7,4/9/2026,,,
+Ian Davila,3,4/9/2026,,,
+Jack Midkiff,5,4/9/2026,,,
+Jason Cebula,2,4/9/2026,,,
+Liam Wolfram,1,4/9/2026,,,
+Lora Rose Kenyon,7,4/9/2026,,,
+Mark Blachura,7,4/9/2026,,,
+Matthew Bergeron,5,4/9/2026,,,
+Matthew Dahlmeyer,7,4/9/2026,,,
+Matthew Viens,1,4/9/2026,,,
+Michael Morin,4,4/9/2026,,,
+Mike Conner,2,4/9/2026,,,
+Mike Mach,6,4/9/2026,,,
+Mike Rocco,8,4/9/2026,,,
+Nick Savakis,7,4/9/2026,,,
+Peter Zaffina,16,4/9/2026,,,
+PJ Bergeron,-1,4/9/2026,,,
+Rick Kenyon,3,4/9/2026,,,
+Robbie Massores,7,4/9/2026,,,
+Ryan Dolan,4,4/9/2026,,,
+Tim Breault,5,4/9/2026,,,
+Tom Woodruff,7,4/9/2026,,,
+Tyler Hanson,1,4/9/2026,,,
+William Elwell,0,4/9/2026,,,
