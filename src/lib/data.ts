@@ -1484,9 +1484,14 @@ export function getHandicaps() {
 
       const averageDisplay = allRoundsAverage == null ? "" : allRoundsAverage.toFixed(1);
 
-      const calculatedHandicap = calculateDisplayedHandicapFromRecentRounds(
-        recentRounds.map(({ date, score }) => ({ date, score }))
-      );
+      const officialRounds = extractFirstNumber(String(row[3] || ""));
+      const handicapEligible = officialRounds != null && officialRounds >= 3;
+
+      const calculatedHandicap = handicapEligible
+        ? calculateDisplayedHandicapFromRecentRounds(
+            recentRounds.map(({ date, score }) => ({ date, score }))
+          )
+        : "";
 
       const bestRawScore =
         personalBestHistory.length > 0 ? Math.min(...personalBestHistory.map((round) => round.score)) : null;
@@ -1511,7 +1516,7 @@ export function getHandicaps() {
           dropped: index === droppedIndex,
         })),
         recentRoundsAverage: averageDisplay,
-        handicapEstablished: calculatedHandicap !== "" && recentRounds.length >= 3,
+        handicapEstablished: handicapEligible && calculatedHandicap !== "",
         currentTag: tagSummary?.currentTag ?? String(row[2] || ""),
         hasTag: tagSummary?.hasTag ?? hasCurrentTagValue(String(row[2] || "")),
         tagHistory: tagSummary?.history || [],
