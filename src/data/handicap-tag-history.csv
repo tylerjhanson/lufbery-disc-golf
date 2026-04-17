@@ -1101,33 +1101,33 @@ Jason Cebula,0,8/28/2025,Ryan Dolan,13,4/9/2026
 PJ Bergeron,0,8/28/2025,Tim Breault,27,4/9/2026
 Tyler Hanson,0,8/28/2025,Tyler Hanson,7,4/9/2026
 Jon Mas,1,8/28/2025,William Elwell,3,4/9/2026
-Liam Wolfram,1,8/28/2025,,,
-William Elwell,1,8/28/2025,,,
-Aaron Summers,2,8/28/2025,,,
-Matthew Viens,2,8/28/2025,,,
-Jack Midkiff,3,8/28/2025,,,
-Mike Conner,3,8/28/2025,,,
-Ryan Dolan,3,8/28/2025,,,
-Dave Smith,5,8/28/2025,,,
-Mike Mach,5,8/28/2025,,,
-Paul Reddell,5,8/28/2025,,,
-Brian Walendziak,6,8/28/2025,,,
-Tim Breault,6,8/28/2025,,,
-Bob Kling,7,8/28/2025,,,
-Mark Blachura,7,8/28/2025,,,
-Mike Rocco,7,8/28/2025,,,
-Errol Matthews,8,8/28/2025,,,
-Jacek Trelski,8,8/28/2025,,,
-Natale DiNatale,8,8/28/2025,,,
-Doug Latham,9,8/28/2025,,,
-Brian Walendziak,5,9/4/2025,,,
-Bryan Smith,0,9/4/2025,,,
-Dave McHale,5,9/4/2025,,,
-Dave Smith,5,9/4/2025,,,
-Doug Latham,10,9/4/2025,,,
-Errol Matthews,7,9/4/2025,,,
-Jacek Trelski,7,9/4/2025,,,
-Jack Midkiff,3,9/4/2025,,,
+Liam Wolfram,1,8/28/2025,Aidan Cahill,20,4/16/2026
+William Elwell,1,8/28/2025,Bob Kling,24,4/16/2026
+Aaron Summers,2,8/28/2025,Bryan Smith,5,4/16/2026
+Matthew Viens,2,8/28/2025,Dave McHale,27,4/16/2026
+Jack Midkiff,3,8/28/2025,Dave Shaw,33,4/16/2026
+Mike Conner,3,8/28/2025,Dave Smith,26,4/16/2026
+Ryan Dolan,3,8/28/2025,Doug Latham,35,4/16/2026
+Dave Smith,5,8/28/2025,Elias Bitzarakis,38,4/16/2026
+Mike Mach,5,8/28/2025,Errol Matthews,18,4/16/2026
+Paul Reddell,5,8/28/2025,Jack Midkiff,31,4/16/2026
+Brian Walendziak,6,8/28/2025,Jake Shepherd,32,4/16/2026
+Tim Breault,6,8/28/2025,Jason Cebula,4,4/16/2026
+Bob Kling,7,8/28/2025,Liam Wolfram,3,4/16/2026
+Mark Blachura,7,8/28/2025,Matthew Viens,13,4/16/2026
+Mike Rocco,7,8/28/2025,Mike Conner,2,4/16/2026
+Errol Matthews,8,8/28/2025,Mike Rocco,28,4/16/2026
+Jacek Trelski,8,8/28/2025,Natale DiNatale,23,4/16/2026
+Natale DiNatale,8,8/28/2025,Nick Savakis,25,4/16/2026
+Doug Latham,9,8/28/2025,Peter Zaffina,39,4/16/2026
+Brian Walendziak,5,9/4/2025,PJ Bergeron,1,4/16/2026
+Bryan Smith,0,9/4/2025,Rick Kenyon,22,4/16/2026
+Dave McHale,5,9/4/2025,Ryan Dolan,17,4/16/2026
+Dave Smith,5,9/4/2025,Skyler Phelan,10,4/16/2026
+Doug Latham,10,9/4/2025,Tim Breault,15,4/16/2026
+Errol Matthews,7,9/4/2025,Tyler Hanson,8,4/16/2026
+Jacek Trelski,7,9/4/2025,Wesley Krombel,6,4/16/2026
+Jack Midkiff,3,9/4/2025,William Elwell,7,4/16/2026
 Jason Cebula,-1,9/4/2025,,,
 Jessica Millar,17,9/4/2025,,,
 Jon Mas,0,9/4/2025,,,
@@ -1216,3 +1216,32 @@ Tim Breault,5,4/9/2026,,,
 Tom Woodruff,7,4/9/2026,,,
 Tyler Hanson,1,4/9/2026,,,
 William Elwell,0,4/9/2026,,,
+Aidan Cahill,6,4/16/2026,,,
+Bob Kling,8,4/16/2026,,,
+Bryan Smith,1,4/16/2026,,,
+Dave McHale,6,4/16/2026,,,
+Dave Shaw,7,4/16/2026,,,
+Dave Smith,6,4/16/2026,,,
+Doug Latham,13,4/16/2026,,,
+Elias Bitzarakis,6,4/16/2026,,,
+Elyse Scott,9,4/16/2026,,,
+Errol Matthews,7,4/16/2026,,,
+Jack Midkiff,7,4/16/2026,,,
+Jason Cebula,1,4/16/2026,,,
+Liam Wolfram,0,4/16/2026,,,
+Matthew Dahlmeyer,7,4/16/2026,,,
+Matthew Viens,2,4/16/2026,,,
+Mike Conner,0,4/16/2026,,,
+Mike Rocco,9,4/16/2026,,,
+Mike Sirois,7,4/16/2026,,,
+Natale DiNatale,8,4/16/2026,,,
+Nick Savakis,7,4/16/2026,,,
+Peter Zaffina,17,4/16/2026,,,
+PJ Bergeron,-1,4/16/2026,,,
+Rick Kenyon,3,4/16/2026,,,
+Ryan Dolan,4,4/16/2026,,,
+Skyler Phelan,3,4/16/2026,,,
+Tim Breault,5,4/16/2026,,,
+Tyler Hanson,1,4/16/2026,,,
+Wesley Krombel,2,4/16/2026,,,
+William Elwell,-1,4/16/2026,,,
