@@ -846,6 +846,8 @@ const messageText =
   </div>
 
   <script define:vars={{ apiUrl, messageText }}>
+    const SESSION_PASSWORD_KEY = "lufbery-lf-manager-password-session";
+
     const loginCard = document.getElementById("lfmLoginCard");
     const appWrap = document.getElementById("lfmApp");
     const unlockForm = document.getElementById("lfmUnlockForm");
@@ -940,6 +942,33 @@ const messageText =
       } finally {
         setBusy(false);
       }
+    }
+
+    function resetLoadedState() {
+      state.records = {
+        current: [],
+        returned: [],
+        donated: [],
+        sold: [],
+      };
+
+      state.loaded = {
+        current: false,
+        returned: false,
+        donated: false,
+        sold: false,
+      };
+
+      state.selectedRows.clear();
+    }
+
+    function setTableLoading(message = "Loading…") {
+      if (!tableBody) return;
+      tableBody.innerHTML = `
+        <tr>
+          <td class="lfm-empty" colspan="6">${escapeHtml(message)}</td>
+        </tr>
+      `;
     }
 
     function parseDisplayDate(value) {
@@ -1267,6 +1296,7 @@ const messageText =
 
       state.records[view] = Array.isArray(payload.records) ? payload.records : [];
       state.loaded[view] = true;
+      updateFilterButtons();
 
       if (state.activeView === view) {
         renderTable();
@@ -1280,13 +1310,10 @@ const messageText =
 
     async function refreshLoadedViews() {
       const views = ["current", "returned", "donated", "sold"];
-
-      for (const view of views) {
-        await loadView(view);
-      }
+      await Promise.all(views.map((view) => loadView(view)));
     }
 
-    async function unlock(password) {
+    async function unlock(password, { remember = true } = {}) {
       const trimmed = String(password || "");
       if (!trimmed) {
         throw new Error("Enter the manager password.");
@@ -1294,19 +1321,41 @@ const messageText =
 
       state.password = trimmed;
       state.activeView = "current";
-      await refreshLoadedViews();
-      renderTable();
+      resetLoadedState();
+      setTableLoading("Loading current inventory…");
+
+      if (remember) {
+        try {
+          sessionStorage.setItem(SESSION_PASSWORD_KEY, trimmed);
+        } catch {}
+      }
 
       loginCard.hidden = true;
       appWrap.hidden = false;
       setStatus(loginStatus, "");
       setStatus(appStatus, "");
+
+      await loadView("current");
+      renderTable();
+
+      Promise.allSettled([
+        loadView("returned"),
+        loadView("donated"),
+        loadView("sold"),
+      ]).then(() => {
+        updateFilterButtons();
+      });
     }
 
     function showLogin(message = "", type = "") {
       appWrap.hidden = true;
       loginCard.hidden = false;
       if (passwordInput) passwordInput.value = "";
+      try {
+        if (type === "error") {
+          sessionStorage.removeItem(SESSION_PASSWORD_KEY);
+        }
+      } catch {}
       setStatus(loginStatus, message, type);
     }
 
@@ -1462,6 +1511,9 @@ const messageText =
         setStatus(loginStatus, "Unlocking…");
         await runWithBusy("Unlocking…", () => unlock(passwordInput?.value || ""));
       } catch (error) {
+        try {
+          sessionStorage.removeItem(SESSION_PASSWORD_KEY);
+        } catch {}
         state.password = "";
         showLogin(error?.message || "Unable to unlock.", "error");
       }
@@ -1509,6 +1561,9 @@ const messageText =
           await runWithBusy(`Loading ${view} discs…`, async () => {
             state.activeView = view;
             state.selectedRows.clear();
+            if (!state.loaded[view]) {
+              setTableLoading(`Loading ${getViewHeading(view).toLowerCase()}…`);
+            }
             await ensureViewLoaded(view);
             renderTable();
           });
@@ -1660,6 +1715,22 @@ const messageText =
       }
     });
 
-    showLogin();
+    try {
+      const savedPassword = sessionStorage.getItem(SESSION_PASSWORD_KEY);
+
+      if (savedPassword) {
+        runWithBusy("Unlocking…", () => unlock(savedPassword, { remember: false })).catch((error) => {
+          try {
+            sessionStorage.removeItem(SESSION_PASSWORD_KEY);
+          } catch {}
+          state.password = "";
+          showLogin(error?.message || "Unable to unlock.", "error");
+        });
+      } else {
+        showLogin();
+      }
+    } catch {
+      showLogin();
+    }
   </script>
 </SiteLayout>
