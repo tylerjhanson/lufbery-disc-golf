@@ -846,7 +846,6 @@ const messageText =
   </div>
 
   <script define:vars={{ apiUrl, messageText }}>
-    const PASSWORD_KEY = "lufbery-lf-manager-password";
     const loginCard = document.getElementById("lfmLoginCard");
     const appWrap = document.getElementById("lfmApp");
     const unlockForm = document.getElementById("lfmUnlockForm");
@@ -1037,7 +1036,8 @@ const messageText =
         el.textContent = activeSort.dir === "asc" ? "▲" : "▼";
       });
     }
-function getViewCount(view) {
+
+    function getViewCount(view) {
       return Array.isArray(state.records[view]) ? state.records[view].length : 0;
     }
 
@@ -1207,10 +1207,10 @@ function getViewCount(view) {
         const url = new URL(apiUrl);
 
         Object.entries(params || {}).forEach(([key, value]) => {
-  if (value !== undefined && value !== null) {
-    url.searchParams.set(key, String(value));
-  }
-});
+          if (value !== undefined && value !== null) {
+            url.searchParams.set(key, String(value));
+          }
+        });
 
         url.searchParams.set("callback", callbackName);
 
@@ -1286,7 +1286,7 @@ function getViewCount(view) {
       }
     }
 
-    async function unlock(password, { remember = true } = {}) {
+    async function unlock(password) {
       const trimmed = String(password || "");
       if (!trimmed) {
         throw new Error("Enter the manager password.");
@@ -1296,12 +1296,6 @@ function getViewCount(view) {
       state.activeView = "current";
       await refreshLoadedViews();
       renderTable();
-
-      if (remember) {
-        try {
-          localStorage.setItem(PASSWORD_KEY, trimmed);
-        } catch {}
-      }
 
       loginCard.hidden = true;
       appWrap.hidden = false;
@@ -1468,9 +1462,6 @@ function getViewCount(view) {
         setStatus(loginStatus, "Unlocking…");
         await runWithBusy("Unlocking…", () => unlock(passwordInput?.value || ""));
       } catch (error) {
-        try {
-          localStorage.removeItem(PASSWORD_KEY);
-        } catch {}
         state.password = "";
         showLogin(error?.message || "Unable to unlock.", "error");
       }
@@ -1669,22 +1660,6 @@ function getViewCount(view) {
       }
     });
 
-    try {
-      const savedPassword = localStorage.getItem(PASSWORD_KEY);
-
-      if (savedPassword) {
-        runWithBusy("Unlocking…", () => unlock(savedPassword, { remember: false })).catch((error) => {
-          try {
-            localStorage.removeItem(PASSWORD_KEY);
-          } catch {}
-          state.password = "";
-          showLogin(error?.message || "Unable to unlock.", "error");
-        });
-      } else {
-        showLogin();
-      }
-    } catch {
-      showLogin();
-    }
+    showLogin();
   </script>
 </SiteLayout>
