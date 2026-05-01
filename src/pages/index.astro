@@ -223,6 +223,19 @@ function isPlayerColumn(column: ResolvedColumn) {
   return normalizeKey(column.label) === "name";
 }
 
+function getColumnClass(column: ResolvedColumn) {
+  const normalized = normalizeKey(column.label);
+
+  if (normalized === "name" || normalized === "player") return "col-name";
+  if (["raw", "score", "gross", "hcp", "handicap", "net", "r1", "round1", "r2", "round2", "total"].includes(normalized)) {
+    return "col-score";
+  }
+  if (normalized === "payout" || normalized === "pay") return "col-payout";
+  if (normalized === "ctp" || normalized === "ctps") return "col-ctp";
+
+  return "col-extra";
+}
+
 function getCellText(row: LooseRow, key: string) {
   const value = row[key];
 
@@ -538,22 +551,49 @@ const hasLatestResultTable =
 
     .result-main-table thead th:first-child,
     .result-main-table tbody td:first-child {
-      width: 28%;
       padding-left: 8px;
     }
 
-    .result-main-table thead th:nth-child(2),
-    .result-main-table tbody td:nth-child(2),
-    .result-main-table thead th:nth-child(3),
-    .result-main-table tbody td:nth-child(3),
-    .result-main-table thead th:nth-child(4),
-    .result-main-table tbody td:nth-child(4) {
-      width: 11%;
+    .result-handicap-table col.col-name {
+      width: 36%;
     }
 
-    .result-main-table thead th:nth-child(5),
-    .result-main-table tbody td:nth-child(5) {
-      width: 21%;
+    .result-handicap-table col.col-score {
+      width: 12%;
+    }
+
+    .result-handicap-table col.col-payout {
+      width: 28%;
+    }
+
+    .result-pool-table col.col-name {
+      width: 40%;
+    }
+
+    .result-pool-table col.col-score {
+      width: 14%;
+    }
+
+    .result-pool-table col.col-payout {
+      width: 23%;
+    }
+
+    .result-pool-table col.col-ctp {
+      width: 23%;
+    }
+
+    .result-pool-table col.col-extra {
+      width: 18%;
+    }
+
+    .result-table th.col-score,
+    .result-table td.col-score,
+    .result-table th.col-payout,
+    .result-table td.col-payout,
+    .result-table th.col-ctp,
+    .result-table td.col-ctp {
+      overflow-wrap: normal;
+      word-break: normal;
     }
 
     .result-working-table thead th {
@@ -568,8 +608,15 @@ const hasLatestResultTable =
 
     .result-working-table thead th:first-child,
     .result-working-table tbody td:first-child {
-      width: 32%;
       padding-left: 10px;
+    }
+
+    .result-working-table col.col-name {
+      width: 72%;
+    }
+
+    .result-working-table col.col-score {
+      width: 28%;
     }
 
     .working-heading {
@@ -736,22 +783,35 @@ const hasLatestResultTable =
 
       .result-main-table thead th:first-child,
       .result-main-table tbody td:first-child {
-        width: 34%;
         padding-left: 6px;
       }
 
-      .result-main-table thead th:nth-child(2),
-      .result-main-table tbody td:nth-child(2),
-      .result-main-table thead th:nth-child(3),
-      .result-main-table tbody td:nth-child(3),
-      .result-main-table thead th:nth-child(4),
-      .result-main-table tbody td:nth-child(4) {
-        width: 9%;
+      .result-handicap-table col.col-name {
+        width: 38%;
       }
 
-      .result-main-table thead th:nth-child(5),
-      .result-main-table tbody td:nth-child(5) {
-        width: 18%;
+      .result-handicap-table col.col-score {
+        width: 12%;
+      }
+
+      .result-handicap-table col.col-payout {
+        width: 26%;
+      }
+
+      .result-pool-table col.col-name {
+        width: 40%;
+      }
+
+      .result-pool-table col.col-score {
+        width: 14%;
+      }
+
+      .result-pool-table col.col-payout {
+        width: 23%;
+      }
+
+      .result-pool-table col.col-ctp {
+        width: 23%;
       }
 
       .result-working-table thead th {
@@ -819,11 +879,16 @@ const hasLatestResultTable =
                         <div class="result-table-block">
                           <p class="working-heading">{section.title}</p>
                           <div class="result-table-wrap">
-                            <table class="result-table result-main-table">
+                            <table class="result-table result-main-table result-pool-table">
+                              <colgroup>
+                                {section.columns.map((column) => (
+                                  <col class={getColumnClass(column)} />
+                                ))}
+                              </colgroup>
                               <thead>
                                 <tr>
                                   {section.columns.map((column) => (
-                                    <th>{column.label}</th>
+                                    <th class={getColumnClass(column)}>{column.label}</th>
                                   ))}
                                 </tr>
                               </thead>
@@ -831,7 +896,7 @@ const hasLatestResultTable =
                                 {section.rows.map((row) => (
                                   <tr>
                                     {section.columns.map((column) => (
-                                      <td>
+                                      <td class={getColumnClass(column)}>
                                         {isPlayerColumn(column) ? (
                                           <PlayerLink name={getCellText(row, column.key)} />
                                         ) : (
@@ -852,11 +917,16 @@ const hasLatestResultTable =
                   {latestResultMainRows.length > 0 ? (
                     <div class="result-table-block">
                       <div class="result-table-wrap">
-                        <table class="result-table result-main-table">
+                        <table class="result-table result-main-table result-handicap-table">
+                          <colgroup>
+                            {latestResultMainColumns.map((column) => (
+                              <col class={getColumnClass(column)} />
+                            ))}
+                          </colgroup>
                           <thead>
                             <tr>
                               {latestResultMainColumns.map((column) => (
-                                <th>{column.label}</th>
+                                <th class={getColumnClass(column)}>{column.label}</th>
                               ))}
                             </tr>
                           </thead>
@@ -864,7 +934,7 @@ const hasLatestResultTable =
                             {latestResultMainRows.map((row) => (
                               <tr>
                                 {latestResultMainColumns.map((column) => (
-                                  <td>
+                                  <td class={getColumnClass(column)}>
                                     {isPlayerColumn(column) ? (
                                       <PlayerLink name={getCellText(row, column.key)} />
                                     ) : (
@@ -885,10 +955,15 @@ const hasLatestResultTable =
                       <p class="working-heading">Working to a handicap</p>
                       <div class="result-table-wrap">
                         <table class="result-table result-working-table">
+                          <colgroup>
+                            {latestResultWorkingColumns.map((column) => (
+                              <col class={getColumnClass(column)} />
+                            ))}
+                          </colgroup>
                           <thead>
                             <tr>
                               {latestResultWorkingColumns.map((column) => (
-                                <th>{column.label}</th>
+                                <th class={getColumnClass(column)}>{column.label}</th>
                               ))}
                             </tr>
                           </thead>
@@ -896,7 +971,7 @@ const hasLatestResultTable =
                             {latestResultWorkingRows.map((row) => (
                               <tr>
                                 {latestResultWorkingColumns.map((column) => (
-                                  <td>
+                                  <td class={getColumnClass(column)}>
                                     {isPlayerColumn(column) ? (
                                       <PlayerLink name={getCellText(row, column.key)} />
                                     ) : (
