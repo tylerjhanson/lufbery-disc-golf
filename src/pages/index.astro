@@ -164,7 +164,6 @@ const POOL_COLUMN_DEFS = [
   { label: "R2", aliases: ["r2", "round2"] },
   { label: "Total", aliases: ["total"] },
   { label: "Payout", aliases: ["payout", "pay"] },
-  { label: "CTP", aliases: ["ctp"] },
 ];
 
 function humanizeKey(key: string) {
@@ -216,7 +215,9 @@ const latestResultMainColumns = resolveColumns(latestResultMainRows, MAIN_COLUMN
 const latestResultWorkingColumns = resolveColumns(latestResultWorkingRows, WORKING_COLUMN_DEFS);
 const latestResultPoolSections = getLatestPoolSections(latestResult).map((section) => ({
   ...section,
-  columns: resolveColumns(section.rows, POOL_COLUMN_DEFS),
+  columns: resolveColumns(section.rows, POOL_COLUMN_DEFS).filter(
+    (column) => !["ctp", "ctps"].includes(normalizeKey(column.label))
+  ),
 }));
 
 function isPlayerColumn(column: ResolvedColumn) {
@@ -567,19 +568,15 @@ const hasLatestResultTable =
     }
 
     .result-pool-table col.col-name {
-      width: 40%;
+      width: 44%;
     }
 
     .result-pool-table col.col-score {
-      width: 14%;
+      width: 18%;
     }
 
     .result-pool-table col.col-payout {
-      width: 23%;
-    }
-
-    .result-pool-table col.col-ctp {
-      width: 23%;
+      width: 38%;
     }
 
     .result-pool-table col.col-extra {
@@ -589,9 +586,7 @@ const hasLatestResultTable =
     .result-table th.col-score,
     .result-table td.col-score,
     .result-table th.col-payout,
-    .result-table td.col-payout,
-    .result-table th.col-ctp,
-    .result-table td.col-ctp {
+    .result-table td.col-payout {
       overflow-wrap: normal;
       word-break: normal;
     }
@@ -799,19 +794,15 @@ const hasLatestResultTable =
       }
 
       .result-pool-table col.col-name {
-        width: 40%;
+        width: 44%;
       }
 
       .result-pool-table col.col-score {
-        width: 14%;
+        width: 18%;
       }
 
       .result-pool-table col.col-payout {
-        width: 23%;
-      }
-
-      .result-pool-table col.col-ctp {
-        width: 23%;
+        width: 38%;
       }
 
       .result-working-table thead th {
