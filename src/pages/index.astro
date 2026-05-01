@@ -249,6 +249,77 @@ const hasLatestResultTable =
   latestResultMainRows.length > 0 ||
   latestResultWorkingRows.length > 0 ||
   latestResultPoolSections.length > 0;
+
+type HomeEvent = {
+  date: string;
+  time: string;
+  title: string;
+  location?: string;
+};
+
+function makeUtcNoonDate(year: number, monthIndex: number, day: number) {
+  return new Date(Date.UTC(year, monthIndex, day, 12, 0, 0));
+}
+
+function formatHomeEventDate(date: Date) {
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    timeZone: "America/New_York",
+  }).format(date);
+}
+
+function getLastThursdayDay(year: number, monthIndex: number) {
+  let day = makeUtcNoonDate(year, monthIndex + 1, 0).getUTCDate();
+
+  while (makeUtcNoonDate(year, monthIndex, day).getUTCDay() !== 4) {
+    day -= 1;
+  }
+
+  return day;
+}
+
+function buildFallbackUpcomingEvents(startDate = new Date(), count = 5): HomeEvent[] {
+  const events: HomeEvent[] = [];
+  const start = makeUtcNoonDate(
+    startDate.getUTCFullYear(),
+    startDate.getUTCMonth(),
+    startDate.getUTCDate()
+  );
+
+  for (let offset = 0; offset < 370 && events.length < count; offset += 1) {
+    const candidate = new Date(start.getTime() + offset * 24 * 60 * 60 * 1000);
+    const day = candidate.getUTCDay();
+    const monthIndex = candidate.getUTCMonth();
+
+    if (day === 0) {
+      events.push({
+        date: formatHomeEventDate(candidate),
+        time: "9:00 AM",
+        title: "Doubles",
+      });
+      continue;
+    }
+
+    const isSinglesSeason = monthIndex >= 3 && monthIndex <= 8;
+
+    if (day === 4 && isSinglesSeason) {
+      const isMonthly =
+        candidate.getUTCDate() === getLastThursdayDay(candidate.getUTCFullYear(), monthIndex);
+
+      events.push({
+        date: formatHomeEventDate(candidate),
+        time: "5:30 PM",
+        title: isMonthly ? "Monthly" : "Handicap",
+      });
+    }
+  }
+
+  return events;
+}
+
+const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
 ---
 
 <SiteLayout title="Lufbery Disc Golf" showBrandBar={true}>
@@ -1061,8 +1132,19 @@ const hasLatestResultTable =
 
       <div class="card events-card">
         <h2>Upcoming Events</h2>
-        <div id="eventsList" class="event-list">
-          <p id="eventsEmpty" class="subtle-note">Loading upcoming events...</p>
+        <div
+          id="eventsList"
+          class="event-list"
+          data-fallback-events={JSON.stringify(fallbackUpcomingEvents)}
+        >
+          {fallbackUpcomingEvents.map((event) => (
+            <article class="event-item">
+              <p class="event-date">{event.date}</p>
+              <p class="event-time">{event.time}</p>
+              <p class="event-title">{event.title}</p>
+              {event.location ? <p class="event-meta">{event.location}</p> : null}
+            </article>
+          ))}
         </div>
       </div>
     </div>
@@ -1137,6 +1219,8 @@ const hasLatestResultTable =
       if (!eventsList) return;
 
       const CALENDAR_CACHE_KEY = "fa_home_upcoming_events_v1";
+      const CACHE_MAX_AGE_MS = 12 * 60 * 60 * 1000;
+      const FETCH_TIMEOUT_MS = 3500;
       const POSSIBLE_EVENT_ENDPOINTS = ["/events.json", "/calendar-events.json", "/api/events", "/api/upcoming-events"];
 
       function escapeHtml(value) {
@@ -1144,7 +1228,7 @@ const hasLatestResultTable =
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
           .replace(/>/g, "&gt;")
-          .replace(/\"/g, "&quot;")
+          .replace(/"/g, "&quot;")
           .replace(/'/g, "&#39;");
       }
 
@@ -1169,6 +1253,73 @@ const hasLatestResultTable =
             location: event.location || "",
           }))
           .filter((event) => event.date || event.time || event.title);
+      }
+
+      function formatDisplayDate(date) {
+        return new Intl.DateTimeFormat("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+        }).format(date);
+      }
+
+      function getLastThursdayDay(year, monthIndex) {
+        let day = new Date(year, monthIndex + 1, 0).getDate();
+
+        while (new Date(year, monthIndex, day).getDay() !== 4) {
+          day -= 1;
+        }
+
+        return day;
+      }
+
+      function buildGeneratedEvents(count = 5) {
+        const events = [];
+        const today = new Date();
+        const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+        for (let offset = 0; offset < 370 && events.length < count; offset += 1) {
+          const candidate = new Date(start);
+          candidate.setDate(start.getDate() + offset);
+
+          const day = candidate.getDay();
+          const monthIndex = candidate.getMonth();
+
+          if (day === 0) {
+            events.push({
+              date: formatDisplayDate(candidate),
+              time: "9:00 AM",
+              title: "Doubles",
+            });
+            continue;
+          }
+
+          const isSinglesSeason = monthIndex >= 3 && monthIndex <= 8;
+
+          if (day === 4 && isSinglesSeason) {
+            const isMonthly =
+              candidate.getDate() === getLastThursdayDay(candidate.getFullYear(), monthIndex);
+
+            events.push({
+              date: formatDisplayDate(candidate),
+              time: "5:30 PM",
+              title: isMonthly ? "Monthly" : "Handicap",
+            });
+          }
+        }
+
+        return events;
+      }
+
+      function getFallbackEvents() {
+        try {
+          const fallbackEvents = JSON.parse(eventsList.getAttribute("data-fallback-events") || "[]");
+          if (Array.isArray(fallbackEvents) && fallbackEvents.length) return fallbackEvents;
+        } catch (_error) {
+          // Use generated events below.
+        }
+
+        return buildGeneratedEvents();
       }
 
       function renderEvents(events) {
@@ -1201,6 +1352,7 @@ const hasLatestResultTable =
         try {
           const cached = JSON.parse(window.localStorage.getItem(CALENDAR_CACHE_KEY) || "null");
           if (!cached || !Array.isArray(cached.events)) return false;
+          if (!cached.cachedAt || Date.now() - cached.cachedAt > CACHE_MAX_AGE_MS) return false;
 
           renderEvents(cached.events);
           return true;
@@ -1209,13 +1361,32 @@ const hasLatestResultTable =
         }
       }
 
+      async function fetchJsonWithTimeout(endpoint) {
+        const controller = "AbortController" in window ? new AbortController() : null;
+        const timeoutId = controller
+          ? window.setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+          : null;
+
+        try {
+          const response = await fetch(endpoint, {
+            cache: "no-store",
+            signal: controller ? controller.signal : undefined,
+          });
+
+          if (!response.ok) return null;
+
+          return await response.json();
+        } finally {
+          if (timeoutId) window.clearTimeout(timeoutId);
+        }
+      }
+
       async function fetchEvents() {
         for (const endpoint of POSSIBLE_EVENT_ENDPOINTS) {
           try {
-            const response = await fetch(endpoint, { cache: "no-store" });
-            if (!response.ok) continue;
+            const payload = await fetchJsonWithTimeout(endpoint);
+            if (!payload) continue;
 
-            const payload = await response.json();
             const events = normalizeEvents(payload);
             if (!events.length) continue;
 
@@ -1223,6 +1394,7 @@ const hasLatestResultTable =
               CALENDAR_CACHE_KEY,
               JSON.stringify({ events, cachedAt: Date.now() })
             );
+
             renderEvents(events);
             return;
           } catch (_error) {
@@ -1231,10 +1403,11 @@ const hasLatestResultTable =
         }
 
         if (!readCachedEvents()) {
-          renderEmpty("No upcoming events are available right now.");
+          renderEvents(buildGeneratedEvents());
         }
       }
 
+      renderEvents(getFallbackEvents());
       readCachedEvents();
       fetchEvents();
     })();
