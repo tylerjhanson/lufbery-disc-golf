@@ -61,6 +61,48 @@ function asObjectArray(value: unknown): LooseRow[] {
   return value.filter((item) => item && typeof item === "object") as LooseRow[];
 }
 
+function asArrayRows(value: unknown): unknown[][] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is unknown[] => Array.isArray(item));
+}
+
+function cleanHeader(value: unknown) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function rowsFromPool(pool: LooseRow) {
+  const rawHeaders = Array.isArray(pool.headers) ? pool.headers : [];
+  const headers = rawHeaders.map((header, index) =>
+    index === 0 ? "Name" : cleanHeader(header) || `Column ${index + 1}`
+  );
+
+  return asArrayRows(pool.rows).map((row) => {
+    const output: LooseRow = {};
+
+    headers.forEach((header, index) => {
+      output[header] = row[index] ?? "";
+    });
+
+    return output;
+  });
+}
+
+function getLatestPoolSections(source: WeeklyResultItem | null) {
+  if (!source || source.kind !== "pools") return [];
+
+  return asObjectArray(source.pools)
+    .map((pool) => {
+      const title = cleanHeader(pool.title);
+      const rows = rowsFromPool(pool);
+
+      return {
+        title,
+        rows,
+      };
+    })
+    .filter((section) => section.title && section.rows.length);
+}
+
 function getFirstObjectArray(source: WeeklyResultItem | null, keys: string[]) {
   if (!source) return [];
 
@@ -115,6 +157,16 @@ const WORKING_COLUMN_DEFS = [
   { label: "Raw", aliases: ["raw", "score", "gross"] },
 ];
 
+const POOL_COLUMN_DEFS = [
+  { label: "Name", aliases: ["name", "player"] },
+  { label: "Raw", aliases: ["raw", "score", "gross"] },
+  { label: "R1", aliases: ["r1", "round1"] },
+  { label: "R2", aliases: ["r2", "round2"] },
+  { label: "Total", aliases: ["total"] },
+  { label: "Payout", aliases: ["payout", "pay"] },
+  { label: "CTP", aliases: ["ctp"] },
+];
+
 function humanizeKey(key: string) {
   const cleaned = String(key || "").replace(/[_-]+/g, " ").trim();
   if (!cleaned) return "";
@@ -162,6 +214,10 @@ function resolveColumns(rows: LooseRow[], defs: { label: string; aliases: string
 
 const latestResultMainColumns = resolveColumns(latestResultMainRows, MAIN_COLUMN_DEFS).slice(0, 5);
 const latestResultWorkingColumns = resolveColumns(latestResultWorkingRows, WORKING_COLUMN_DEFS);
+const latestResultPoolSections = getLatestPoolSections(latestResult).map((section) => ({
+  ...section,
+  columns: resolveColumns(section.rows, POOL_COLUMN_DEFS),
+}));
 
 function isPlayerColumn(column: ResolvedColumn) {
   return normalizeKey(column.label) === "name";
@@ -176,7 +232,9 @@ function getCellText(row: LooseRow, key: string) {
 }
 
 const hasLatestResultTable =
-  latestResultMainRows.length > 0 || latestResultWorkingRows.length > 0;
+  latestResultMainRows.length > 0 ||
+  latestResultWorkingRows.length > 0 ||
+  latestResultPoolSections.length > 0;
 ---
 
 <SiteLayout title="Lufbery Disc Golf" showBrandBar={true}>
@@ -378,38 +436,6 @@ const hasLatestResultTable =
       flex-wrap: wrap;
     }
 
-    .result-udisc-icon {
-      height: 0.82em;
-      width: auto;
-      display: inline-block;
-      vertical-align: middle;
-      flex: 0 0 auto;
-      opacity: 0.98;
-      transform: translateY(-0.11em);
-    }
-
-    .result-udisc-icon--dark {
-      display: none;
-    }
-
-    html[data-theme="dark"] .result-udisc-icon--light {
-      display: none;
-    }
-
-    html[data-theme="dark"] .result-udisc-icon--dark {
-      display: inline-block;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      html[data-theme="system"] .result-udisc-icon--light {
-        display: none;
-      }
-
-      html[data-theme="system"] .result-udisc-icon--dark {
-        display: inline-block;
-      }
-    }
-
     .result-title-plain {
       color: var(--muted);
     }
@@ -563,7 +589,7 @@ const hasLatestResultTable =
       margin-top: 12px;
     }
 
-        .result-toggle,
+    .result-toggle,
     .result-view-full {
       appearance: none;
       border: 1px solid var(--line-soft);
@@ -678,7 +704,7 @@ const hasLatestResultTable =
       }
     }
 
-        @media (max-width: 560px) {
+    @media (max-width: 560px) {
       .card {
         padding: 18px 14px 14px;
       }
@@ -695,10 +721,6 @@ const hasLatestResultTable =
       .result-title-link,
       .result-title-plain {
         font-size: 0.97rem;
-      }
-
-      .result-udisc-icon {
-        height: 0.78em;
       }
 
       .result-main-table thead th {
@@ -785,12 +807,48 @@ const hasLatestResultTable =
         {latestResult ? (
           <>
             <a class="result-title-link result-title-link-inline" href={latestResultHref}>
-  <span>{latestResult.title}</span>
-</a>
+              <span>{latestResult.title}</span>
+            </a>
 
-<div class="result-collapse" id="latestResultCollapse">
+            <div class="result-collapse" id="latestResultCollapse">
               {hasLatestResultTable ? (
                 <>
+                  {latestResultPoolSections.length > 0 ? (
+                    <>
+                      {latestResultPoolSections.map((section) => (
+                        <div class="result-table-block">
+                          <p class="working-heading">{section.title}</p>
+                          <div class="result-table-wrap">
+                            <table class="result-table result-main-table">
+                              <thead>
+                                <tr>
+                                  {section.columns.map((column) => (
+                                    <th>{column.label}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {section.rows.map((row) => (
+                                  <tr>
+                                    {section.columns.map((column) => (
+                                      <td>
+                                        {isPlayerColumn(column) ? (
+                                          <PlayerLink name={getCellText(row, column.key)} />
+                                        ) : (
+                                          getCellText(row, column.key)
+                                        )}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  ) : null}
+
                   {latestResultMainRows.length > 0 ? (
                     <div class="result-table-block">
                       <div class="result-table-wrap">
@@ -806,7 +864,13 @@ const hasLatestResultTable =
                             {latestResultMainRows.map((row) => (
                               <tr>
                                 {latestResultMainColumns.map((column) => (
-                                  <td>{isPlayerColumn(column) ? <PlayerLink name={getCellText(row, column.key)} /> : getCellText(row, column.key)}</td>
+                                  <td>
+                                    {isPlayerColumn(column) ? (
+                                      <PlayerLink name={getCellText(row, column.key)} />
+                                    ) : (
+                                      getCellText(row, column.key)
+                                    )}
+                                  </td>
                                 ))}
                               </tr>
                             ))}
@@ -832,7 +896,13 @@ const hasLatestResultTable =
                             {latestResultWorkingRows.map((row) => (
                               <tr>
                                 {latestResultWorkingColumns.map((column) => (
-                                  <td>{isPlayerColumn(column) ? <PlayerLink name={getCellText(row, column.key)} /> : getCellText(row, column.key)}</td>
+                                  <td>
+                                    {isPlayerColumn(column) ? (
+                                      <PlayerLink name={getCellText(row, column.key)} />
+                                    ) : (
+                                      getCellText(row, column.key)
+                                    )}
+                                  </td>
                                 ))}
                               </tr>
                             ))}
@@ -1001,28 +1071,49 @@ const hasLatestResultTable =
       if (!eventsList) return;
 
       const CALENDAR_CACHE_KEY = "fa_home_upcoming_events_v1";
+      const POSSIBLE_EVENT_ENDPOINTS = ["/events.json", "/calendar-events.json", "/api/events", "/api/upcoming-events"];
 
       function escapeHtml(value) {
         return String(value ?? "")
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
           .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
+          .replace(/\"/g, "&quot;")
           .replace(/'/g, "&#39;");
       }
 
       function renderEmpty(message) {
-        eventsList.innerHTML =
-          '<p class="subtle-note">' + escapeHtml(message) + "</p>";
+        eventsList.innerHTML = '<p class="subtle-note">' + escapeHtml(message) + "</p>";
+      }
+
+      function normalizeEvents(payload) {
+        const events = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.events)
+            ? payload.events
+            : Array.isArray(payload?.items)
+              ? payload.items
+              : [];
+
+        return events
+          .map((event) => ({
+            date: event.date || event.dateText || event.startDate || event.start || "",
+            time: event.time || event.timeText || "",
+            title: event.title || event.summary || event.name || "League event",
+            location: event.location || "",
+          }))
+          .filter((event) => event.date || event.time || event.title);
       }
 
       function renderEvents(events) {
-        if (!Array.isArray(events) || !events.length) {
+        const normalizedEvents = normalizeEvents(events);
+
+        if (!normalizedEvents.length) {
           renderEmpty("No upcoming events are available right now.");
           return;
         }
 
-        eventsList.innerHTML = events
+        eventsList.innerHTML = normalizedEvents
           .map((event) => {
             const locationHtml = event.location
               ? '<p class="event-meta">' + escapeHtml(event.location) + "</p>"
@@ -1030,8 +1121,8 @@ const hasLatestResultTable =
 
             return (
               '<article class="event-item">' +
-                '<p class="event-date">' + escapeHtml(event.displayDate) + "</p>" +
-                '<p class="event-time">' + escapeHtml(event.displayTime) + "</p>" +
+                '<p class="event-date">' + escapeHtml(event.date) + "</p>" +
+                (event.time ? '<p class="event-time">' + escapeHtml(event.time) + "</p>" : "") +
                 '<p class="event-title">' + escapeHtml(event.title) + "</p>" +
                 locationHtml +
               "</article>"
@@ -1042,91 +1133,46 @@ const hasLatestResultTable =
 
       function readCachedEvents() {
         try {
-          const raw = localStorage.getItem(CALENDAR_CACHE_KEY);
-          if (!raw) return null;
+          const cached = JSON.parse(window.localStorage.getItem(CALENDAR_CACHE_KEY) || "null");
+          if (!cached || !Array.isArray(cached.events)) return false;
 
-          const parsed = JSON.parse(raw);
-          return Array.isArray(parsed) ? parsed : null;
-        } catch (error) {
-          console.warn("Unable to read cached calendar events:", error);
-          return null;
+          renderEvents(cached.events);
+          return true;
+        } catch (_error) {
+          return false;
         }
       }
 
-      function writeCachedEvents(events) {
-        try {
-          localStorage.setItem(CALENDAR_CACHE_KEY, JSON.stringify(events));
-        } catch (error) {
-          console.warn("Unable to cache calendar events:", error);
-        }
-      }
-
-      function getCalendarUrls() {
-        const urls = [
-          "https://lufberydiscgolf.com/api/calendar.json",
-          window.location.origin + "/api/calendar.json",
-        ];
-
-        return [...new Set(urls)];
-      }
-
-      async function fetchJsonWithTimeout(url, timeoutMs) {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-        try {
-          const res = await fetch(url, {
-            method: "GET",
-            cache: "default",
-            mode: "cors",
-            signal: controller.signal,
-          });
-
-          if (!res.ok) {
-            throw new Error("Calendar API failed: " + res.status);
-          }
-
-          return await res.json();
-        } finally {
-          clearTimeout(timeoutId);
-        }
-      }
-
-      async function loadEvents() {
-        const cachedEvents = readCachedEvents();
-
-        if (cachedEvents && cachedEvents.length) {
-          renderEvents(cachedEvents);
-        }
-
-        const urls = getCalendarUrls();
-        let lastError = null;
-
-        for (const url of urls) {
+      async function fetchEvents() {
+        for (const endpoint of POSSIBLE_EVENT_ENDPOINTS) {
           try {
-            const data = await fetchJsonWithTimeout(url, 15000);
-            const events =
-              data && Array.isArray(data.upcomingEvents) ? data.upcomingEvents : [];
+            const response = await fetch(endpoint, { cache: "no-store" });
+            if (!response.ok) continue;
 
-            writeCachedEvents(events);
+            const payload = await response.json();
+            const events = normalizeEvents(payload);
+            if (!events.length) continue;
+
+            window.localStorage.setItem(
+              CALENDAR_CACHE_KEY,
+              JSON.stringify({ events, cachedAt: Date.now() })
+            );
             renderEvents(events);
             return;
-          } catch (error) {
-            lastError = error;
-            console.error("Client calendar load failed for " + url + ":", error);
+          } catch (_error) {
+            // Try the next endpoint.
           }
         }
 
-        if (cachedEvents && cachedEvents.length) {
-          return;
+        if (!readCachedEvents()) {
+          renderEmpty("No upcoming events are available right now.");
         }
-
-        console.error("All calendar fetch attempts failed:", lastError);
-        renderEmpty("Unable to load upcoming events right now.");
       }
 
-      loadEvents();
+      readCachedEvents();
+      fetchEvents();
     })();
   </script>
+
   <PlayerModal profiles={playerProfiles} />
 </SiteLayout>
