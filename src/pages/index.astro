@@ -21,6 +21,7 @@ const lostFoundUrl = "/lost-and-found";
 const handicapTagsUrl = "/singles/handicaps-tags";
 const weeklyResultsPageUrl = "/singles/weekly-results";
 const udiscLeagueUrl = "https://udisc.com/leagues/lufbery-league";
+const udiscScheduleUrl = "https://udisc.com/leagues/lufbery-league-NS86wI/schedule";
 
 type LooseRow = Record<string, unknown>;
 type WeeklyResultItem = Record<string, unknown> & {
@@ -781,6 +782,17 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
       background: var(--button-bg, #f3f5f8);
     }
 
+    :global(a.event-item) {
+      color: inherit;
+      text-decoration: none;
+      transition: background 0.12s ease, transform 0.12s ease;
+    }
+
+    :global(a.event-item:hover) {
+      background: var(--button-bg-hover, #eceff4);
+      transform: translateY(-1px);
+    }
+
     :global(.event-date) {
       margin: 0 0 3px;
       font-weight: 700;
@@ -1176,14 +1188,15 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
           id="eventsList"
           class="event-list"
           data-fallback-events={JSON.stringify(fallbackUpcomingEvents)}
+          data-schedule-url={udiscScheduleUrl}
         >
           {fallbackUpcomingEvents.map((event) => (
-            <article class="event-item">
+            <a class="event-item" href={udiscScheduleUrl} target="_blank" rel="noopener">
               <p class="event-date">{event.date}</p>
               <p class="event-time">{event.time}</p>
               <p class="event-title">{event.title}</p>
               {event.location ? <p class="event-meta">{event.location}</p> : null}
-            </article>
+            </a>
           ))}
         </div>
       </div>
@@ -1260,6 +1273,8 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
 
       const CALENDAR_CACHE_KEY = "fa_home_upcoming_events_v1";
       const EVENT_LIMIT = 4;
+      const DEFAULT_SCHEDULE_URL = "https://udisc.com/leagues/lufbery-league-NS86wI/schedule";
+      const scheduleUrl = eventsList.getAttribute("data-schedule-url") || DEFAULT_SCHEDULE_URL;
       const CACHE_MAX_AGE_MS = 12 * 60 * 60 * 1000;
       const FETCH_TIMEOUT_MS = 3500;
       const POSSIBLE_EVENT_ENDPOINTS = ["/events.json", "/calendar-events.json", "/api/events", "/api/upcoming-events"];
@@ -1300,6 +1315,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
             time: formatEventTime(event.time || event.timeText || ""),
             title: event.title || event.summary || event.name || "League event",
             location: event.location || "",
+            url: event.url || event.link || event.htmlLink || event.detailsUrl || scheduleUrl,
           }))
           .filter((event) => event.date || event.time || event.title);
       }
@@ -1339,6 +1355,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
               date: formatDisplayDate(candidate),
               time: "9:00 a.m.",
               title: "Doubles",
+              url: scheduleUrl,
             });
             continue;
           }
@@ -1353,6 +1370,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
               date: formatDisplayDate(candidate),
               time: "5:30 p.m.",
               title: isMonthly ? "Monthly" : "Handicap",
+              url: scheduleUrl,
             });
           }
         }
@@ -1385,13 +1403,15 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
               ? '<p class="event-meta">' + escapeHtml(event.location) + "</p>"
               : "";
 
+            const href = event.url || scheduleUrl;
+
             return (
-              '<article class="event-item">' +
+              '<a class="event-item" href="' + escapeHtml(href) + '" target="_blank" rel="noopener">' +
                 '<p class="event-date">' + escapeHtml(event.date) + "</p>" +
                 (event.time ? '<p class="event-time">' + escapeHtml(event.time) + "</p>" : "") +
                 '<p class="event-title">' + escapeHtml(event.title) + "</p>" +
                 locationHtml +
-              "</article>"
+              "</a>"
             );
           })
           .join("");
