@@ -280,7 +280,7 @@ function getLastThursdayDay(year: number, monthIndex: number) {
   return day;
 }
 
-function buildFallbackUpcomingEvents(startDate = new Date(), count = 5): HomeEvent[] {
+function buildFallbackUpcomingEvents(startDate = new Date(), count = 4): HomeEvent[] {
   const events: HomeEvent[] = [];
   const start = makeUtcNoonDate(
     startDate.getUTCFullYear(),
@@ -369,7 +369,8 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
     }
 
     .events-card {
-      padding-bottom: 29px;
+      --home-event-count: 4;
+      padding-bottom: 20px;
     }
 
     .subtle-note {
@@ -394,6 +395,10 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
     :global(.event-list) {
       display: grid;
       gap: 10px;
+    }
+
+    :global(.event-list .event-item:nth-of-type(n + 5)) {
+      display: none;
     }
 
     .link-item {
@@ -751,7 +756,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
     :global(.event-item) {
       border: 1px solid var(--line-soft);
       border-radius: 7px;
-      padding: 11px 13px;
+      padding: 10px 13px;
       background: var(--button-bg, #f3f5f8);
     }
 
@@ -1219,6 +1224,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
       if (!eventsList) return;
 
       const CALENDAR_CACHE_KEY = "fa_home_upcoming_events_v1";
+      const EVENT_LIMIT = 4;
       const CACHE_MAX_AGE_MS = 12 * 60 * 60 * 1000;
       const FETCH_TIMEOUT_MS = 3500;
       const POSSIBLE_EVENT_ENDPOINTS = ["/events.json", "/calendar-events.json", "/api/events", "/api/upcoming-events"];
@@ -1273,7 +1279,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
         return day;
       }
 
-      function buildGeneratedEvents(count = 5) {
+      function buildGeneratedEvents(count = EVENT_LIMIT) {
         const events = [];
         const today = new Date();
         const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -1323,7 +1329,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
       }
 
       function renderEvents(events) {
-        const normalizedEvents = normalizeEvents(events);
+        const normalizedEvents = normalizeEvents(events).slice(0, EVENT_LIMIT);
 
         if (!normalizedEvents.length) {
           renderEmpty("No upcoming events are available right now.");
@@ -1387,7 +1393,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
             const payload = await fetchJsonWithTimeout(endpoint);
             if (!payload) continue;
 
-            const events = normalizeEvents(payload);
+            const events = normalizeEvents(payload).slice(0, EVENT_LIMIT);
             if (!events.length) continue;
 
             window.localStorage.setItem(
