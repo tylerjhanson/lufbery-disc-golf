@@ -332,7 +332,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
       display: grid;
       grid-template-columns: minmax(0, 0.97fr) minmax(0, 0.92fr) minmax(210px, 0.62fr);
       gap: 18px;
-      align-items: start;
+      align-items: stretch;
     }
 
     .left-stack,
@@ -342,6 +342,11 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
       gap: 18px;
       align-content: start;
       min-width: 0;
+    }
+
+    .right-stack {
+      grid-template-rows: auto auto minmax(0, 1fr);
+      height: 100%;
     }
 
     .mobile-quick-row {
@@ -370,7 +375,10 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
 
     .events-card {
       --home-event-count: 4;
-      padding-bottom: 30px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      padding-bottom: 18px;
     }
 
     .events-card h2 {
@@ -398,7 +406,13 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
 
     :global(.event-list) {
       display: grid;
-      gap: 16px;
+      gap: 14px;
+    }
+
+    .events-card :global(.event-list) {
+      flex: 1;
+      grid-template-rows: repeat(var(--home-event-count), minmax(0, 1fr));
+      min-height: 0;
     }
 
     :global(.event-list .event-item:nth-of-type(n + 5)) {
@@ -758,9 +772,12 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
     }
 
     :global(.event-item) {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
       border: 1px solid var(--line-soft);
       border-radius: 7px;
-      padding: 11px 13px;
+      padding: 10px 13px;
       background: var(--button-bg, #f3f5f8);
     }
 
@@ -801,6 +818,20 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
     @media (max-width: 900px) {
       .home-grid {
         grid-template-columns: 1fr;
+        align-items: start;
+      }
+
+      .right-stack {
+        grid-template-rows: auto;
+        height: auto;
+      }
+
+      .events-card {
+        display: block;
+      }
+
+      .events-card :global(.event-list) {
+        grid-template-rows: none;
       }
 
       .mobile-quick-row {
