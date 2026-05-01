@@ -263,7 +263,7 @@ function makeUtcNoonDate(year: number, monthIndex: number, day: number) {
 
 function formatHomeEventDate(date: Date) {
   return new Intl.DateTimeFormat("en-US", {
-    weekday: "short",
+    weekday: "long",
     month: "short",
     day: "numeric",
     timeZone: "America/New_York",
@@ -296,7 +296,7 @@ function buildFallbackUpcomingEvents(startDate = new Date(), count = 4): HomeEve
     if (day === 0) {
       events.push({
         date: formatHomeEventDate(candidate),
-        time: "9:00 AM",
+        time: "9:00 a.m.",
         title: "Doubles",
       });
       continue;
@@ -310,7 +310,7 @@ function buildFallbackUpcomingEvents(startDate = new Date(), count = 4): HomeEve
 
       events.push({
         date: formatHomeEventDate(candidate),
-        time: "5:30 PM",
+        time: "5:30 p.m.",
         title: isMonthly ? "Monthly" : "Handicap",
       });
     }
@@ -370,7 +370,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
 
     .events-card {
       --home-event-count: 4;
-      padding-bottom: 20px;
+      padding-bottom: 37px;
     }
 
     .subtle-note {
@@ -768,17 +768,17 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
     }
 
     :global(.event-time) {
-      margin: 0 0 5px;
+      margin: 0 0 1px;
       color: var(--text);
       font-size: 0.92rem;
-      line-height: 1.25;
+      line-height: 1.18;
     }
 
     :global(.event-title) {
       margin: 0;
       font-weight: 400;
       font-size: 0.94rem;
-      line-height: 1.35;
+      line-height: 1.2;
     }
 
     :global(.event-meta) {
@@ -1242,6 +1242,14 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
         eventsList.innerHTML = '<p class="subtle-note">' + escapeHtml(message) + "</p>";
       }
 
+      function formatEventTime(value) {
+        return String(value || "")
+          .replace(/\bAM\b/g, "a.m.")
+          .replace(/\bPM\b/g, "p.m.")
+          .replace(/\bam\b/g, "a.m.")
+          .replace(/\bpm\b/g, "p.m.");
+      }
+
       function normalizeEvents(payload) {
         const events = Array.isArray(payload)
           ? payload
@@ -1254,7 +1262,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
         return events
           .map((event) => ({
             date: event.date || event.dateText || event.startDate || event.start || "",
-            time: event.time || event.timeText || "",
+            time: formatEventTime(event.time || event.timeText || ""),
             title: event.title || event.summary || event.name || "League event",
             location: event.location || "",
           }))
@@ -1263,7 +1271,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
 
       function formatDisplayDate(date) {
         return new Intl.DateTimeFormat("en-US", {
-          weekday: "short",
+          weekday: "long",
           month: "short",
           day: "numeric",
         }).format(date);
@@ -1294,7 +1302,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
           if (day === 0) {
             events.push({
               date: formatDisplayDate(candidate),
-              time: "9:00 AM",
+              time: "9:00 a.m.",
               title: "Doubles",
             });
             continue;
@@ -1308,7 +1316,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
 
             events.push({
               date: formatDisplayDate(candidate),
-              time: "5:30 PM",
+              time: "5:30 p.m.",
               title: isMonthly ? "Monthly" : "Handicap",
             });
           }
