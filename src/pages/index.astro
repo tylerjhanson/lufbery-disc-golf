@@ -333,7 +333,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
       display: grid;
       grid-template-columns: minmax(0, 0.97fr) minmax(0, 0.92fr) minmax(210px, 0.62fr);
       gap: 18px;
-      align-items: stretch;
+      align-items: start;
     }
 
     .left-stack,
@@ -346,8 +346,8 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
     }
 
     .right-stack {
-      grid-template-rows: auto auto minmax(0, 1fr);
-      height: 100%;
+      grid-template-rows: auto auto auto;
+      align-self: start;
     }
 
     .mobile-quick-row {
