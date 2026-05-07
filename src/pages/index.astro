@@ -333,7 +333,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
       display: grid;
       grid-template-columns: minmax(0, 0.97fr) minmax(0, 0.92fr) minmax(210px, 0.62fr);
       gap: 18px;
-      align-items: start;
+      align-items: stretch;
     }
 
     .left-stack,
@@ -346,8 +346,8 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
     }
 
     .right-stack {
-      grid-template-rows: auto auto auto;
-      align-self: start;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      height: 100%;
     }
 
     .mobile-quick-row {
@@ -1182,7 +1182,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
         <img class="udisc-logo-only udisc-logo-dark" src="/udisc-logo-white.png" alt="UDisc" />
       </a>
 
-      <div class="card events-card">
+      <div class="card events-card" id="upcomingEventsCard">
         <h2>Upcoming Events</h2>
         <div
           id="eventsList"
@@ -1479,6 +1479,73 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
       renderEvents(getFallbackEvents());
       readCachedEvents();
       fetchEvents();
+    })();
+  </script>
+
+  <script>
+    (() => {
+      const leftStack = document.querySelector(".left-stack");
+      const middleStack = document.querySelector(".middle-stack");
+      const rightStack = document.querySelector(".right-stack");
+      const eventsCard = document.getElementById("upcomingEventsCard");
+
+      if (!leftStack || !middleStack || !rightStack || !eventsCard) return;
+
+      function getGapPx(element) {
+        const styles = window.getComputedStyle(element);
+        return Number.parseFloat(styles.rowGap || styles.gap || "0") || 0;
+      }
+
+      function resetEventsHeight() {
+        eventsCard.style.minHeight = "";
+        eventsCard.style.height = "";
+      }
+
+      function alignEventsCard() {
+        resetEventsHeight();
+
+        if (window.matchMedia("(max-width: 900px)").matches) return;
+
+        const targetHeight = Math.max(
+          leftStack.getBoundingClientRect().height,
+          middleStack.getBoundingClientRect().height
+        );
+
+        const rightChildren = Array.from(rightStack.children);
+        const cardsBeforeEvents = rightChildren.filter((child) => child !== eventsCard);
+        const usedHeight = cardsBeforeEvents.reduce(
+          (total, child) => total + child.getBoundingClientRect().height,
+          0
+        );
+        const gapTotal = getGapPx(rightStack) * Math.max(rightChildren.length - 1, 0);
+        const targetEventsHeight = Math.max(0, targetHeight - usedHeight - gapTotal);
+
+        if (targetEventsHeight > 0) {
+          const height = Math.ceil(targetEventsHeight);
+          eventsCard.style.minHeight = `${height}px`;
+          eventsCard.style.height = `${height}px`;
+        }
+      }
+
+      function runAlign() {
+        alignEventsCard();
+        requestAnimationFrame(alignEventsCard);
+      }
+
+      window.addEventListener("load", runAlign);
+      window.addEventListener("resize", runAlign);
+      window.addEventListener("pageshow", runAlign);
+      document.addEventListener("astro:page-load", runAlign);
+
+      if ("ResizeObserver" in window) {
+        const observer = new ResizeObserver(runAlign);
+        observer.observe(leftStack);
+        observer.observe(middleStack);
+        observer.observe(rightStack);
+        observer.observe(eventsCard);
+      }
+
+      runAlign();
     })();
   </script>
 
