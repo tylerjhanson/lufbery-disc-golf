@@ -1083,7 +1083,7 @@ function getBestOverallRawScoreForPlayer(event: any, playerName: string) {
 
 function formatBestOverallRawScore(rawScore: number, roundType: RoundType) {
   const par = roundType === "2-rounds" ? 84 : SINGLES_PAR;
-  return `Raw: ${rawScore} (${formatRelativeToPar(rawScore, par)})`;
+  return `${rawScore} (${formatRelativeToPar(rawScore, par)})`;
 }
 
 function buildBestOverallWinsByPlayer() {
