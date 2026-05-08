@@ -886,6 +886,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     const recentRounds = Array.isArray(profile?.recentRounds) ? profile.recentRounds : [];
     const allRounds = Array.isArray(profile?.allRounds) ? profile.allRounds : [];
     const weeklyWins = Array.isArray(profile?.weeklyWins) ? profile.weeklyWins : [];
+    const bestOverallWins = Array.isArray(profile?.bestOverallWins) ? profile.bestOverallWins : [];
     const aces = Array.isArray(profile?.aces) ? profile.aces : [];
     const average = profile?.average ? String(profile.average) : "";
     const handicap =
@@ -986,6 +987,17 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       "No weekly wins recorded."
     );
 
+    const bestOverallWinsMarkup = renderLinkList(
+      bestOverallWins,
+      (item) => {
+        const linkedDate = renderLinkedLabel(item.href, item.date);
+        const tieLabel = item.isTie ? " • Tie" : "";
+
+        return `${linkedDate} — ${escapeHtml(item.label)} • ${escapeHtml(item.score)}${tieLabel}`;
+      },
+      "No best overall wins recorded."
+    );
+
     const acesMarkup = renderLinkList(
       aces,
       (item) => {
@@ -1034,6 +1046,11 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       <div class="player-details-section">
         <p class="player-details-section-label">WEEKLY WINS</p>
         ${weeklyWinsMarkup}
+      </div>
+
+      <div class="player-details-section">
+        <p class="player-details-section-label">BEST OVERALL WINS</p>
+        ${bestOverallWinsMarkup}
       </div>
 
       <div class="player-details-section">
