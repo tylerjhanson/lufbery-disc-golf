@@ -107,6 +107,15 @@ type PlayerWinRow = {
   label: string;
 };
 
+type PlayerBestOverallRow = {
+  date: string;
+  score: string;
+  href: string;
+  roundType: RoundType;
+  label: string;
+  isTie: boolean;
+};
+
 type PlayerAceRow = {
   kind: "singles" | "doubles";
   hole: string;
@@ -126,6 +135,7 @@ type PlayerProfile = {
   personalBest: PersonalBestRow | null;
   personalBests: PersonalBestRow[];
   weeklyWins: PlayerWinRow[];
+  bestOverallWins: PlayerBestOverallRow[];
   aces: PlayerAceRow[];
   currentTag: string;
   hasTag: boolean;
@@ -981,6 +991,146 @@ function getTagEventParticipants(event: any) {
   return Array.from(participantMap.values());
 }
 
+
+function getBestOverallEventHref(event: any) {
+  const title = String(event?.title || "");
+  return `${WEEKLY_RESULTS_PAGE_PATH}#${getWeeklyResultsAnchorId(title)}`;
+}
+
+function findScoreHeaderIndex(headers: string[], labels: string[]) {
+  const normalizedHeaders = headers.map((header) => normalizeSummaryValue(header));
+
+  for (const label of labels) {
+    const wanted = normalizeSummaryValue(label);
+    const exactIndex = normalizedHeaders.findIndex((header) => header === wanted);
+    if (exactIndex !== -1) return exactIndex;
+  }
+
+  for (const label of labels) {
+    const wanted = normalizeSummaryValue(label);
+    const containsIndex = normalizedHeaders.findIndex((header) => header.includes(wanted));
+    if (containsIndex !== -1) return containsIndex;
+  }
+
+  return -1;
+}
+
+function getBestOverallRawScoreFromCells(headers: string[], cells: CsvRow) {
+  const rawIndex = findScoreHeaderIndex(headers, ["raw", "raw score"]);
+  const totalIndex = findScoreHeaderIndex(headers, ["total", "total score"]);
+  const scoreIndex = findScoreHeaderIndex(headers, ["score"]);
+
+  for (const index of [rawIndex, totalIndex, scoreIndex]) {
+    if (index === -1) continue;
+
+    const score = extractFirstNumber(cells[index] || "");
+    if (score != null) return score;
+  }
+
+  const r1Index = findScoreHeaderIndex(headers, ["r1", "round 1"]);
+  const r2Index = findScoreHeaderIndex(headers, ["r2", "round 2"]);
+
+  if (r1Index !== -1 && r2Index !== -1) {
+    const r1 = extractFirstNumber(cells[r1Index] || "");
+    const r2 = extractFirstNumber(cells[r2Index] || "");
+
+    if (r1 != null && r2 != null) return r1 + r2;
+  }
+
+  return null;
+}
+
+function getBestOverallRawScoreForPlayer(event: any, playerName: string) {
+  const targetKey = normalizePlayerKey(playerName);
+  let bestScore: number | null = null;
+
+  const considerScore = (name: string, score: number | null) => {
+    if (score == null) return;
+    if (normalizePlayerKey(name) !== targetKey) return;
+
+    if (bestScore == null || score < bestScore) {
+      bestScore = score;
+    }
+  };
+
+  if (event.kind === "handicap") {
+    for (const row of event.rows || []) {
+      considerScore(row.name || "", extractFirstNumber(row.raw || row.score || ""));
+    }
+
+    if (event.working?.rows?.length) {
+      const headers = (event.working.headers || []).map((header: string) => String(header || "").trim());
+
+      for (const cells of event.working.rows || []) {
+        considerScore(cells[0] || "", getBestOverallRawScoreFromCells(headers, cells));
+      }
+    }
+  }
+
+  for (const pool of event.pools || []) {
+    const poolTitle = cleanSummaryText(pool.title || "");
+    if (!poolTitle || isWorkingTitle(poolTitle)) continue;
+
+    const headers = (pool.headers || []).map((header: string) => String(header || "").trim());
+
+    for (const cells of pool.rows || []) {
+      considerScore(cells[0] || "", getBestOverallRawScoreFromCells(headers, cells));
+    }
+  }
+
+  return bestScore;
+}
+
+function formatBestOverallRawScore(rawScore: number, roundType: RoundType) {
+  const par = roundType === "2-rounds" ? 84 : SINGLES_PAR;
+  return `Raw: ${rawScore} (${formatRelativeToPar(rawScore, par)})`;
+}
+
+function buildBestOverallWinsByPlayer() {
+  const winsByPlayer = new Map<string, PlayerBestOverallRow[]>();
+
+  for (const event of getWeeklyResults()) {
+    const overallLines = Array.isArray(event?.summary?.overall) ? event.summary.overall : [];
+    if (!overallLines.length) continue;
+
+    const eventDate = toFullYearUsDate(extractEventDate(event.title));
+    if (!eventDate) continue;
+
+    const roundType = getEventRoundType(event);
+    const href = getBestOverallEventHref(event);
+    const isTie = overallLines.length > 1;
+    const seenEventPlayers = new Set<string>();
+
+    for (const line of overallLines) {
+      const name = cleanSummaryText(line.name || "");
+      if (!name) continue;
+
+      const key = normalizePlayerKey(name);
+      const eventPlayerKey = `${normalizeDateKey(eventDate)}|${key}`;
+      if (seenEventPlayers.has(eventPlayerKey)) continue;
+      seenEventPlayers.add(eventPlayerKey);
+
+      const rawScore = getBestOverallRawScoreForPlayer(event, name);
+      if (rawScore == null) continue;
+
+      const rows = winsByPlayer.get(key) || [];
+      rows.push({
+        date: eventDate,
+        score: formatBestOverallRawScore(rawScore, roundType),
+        href,
+        roundType,
+        label: getRoundTypeLabel(roundType),
+        isTie,
+      });
+
+      winsByPlayer.set(key, rows);
+    }
+  }
+
+  winsByPlayer.forEach((rows) => sortByDateDesc(rows));
+  return winsByPlayer;
+}
+
 function seedTagStateFromCurrentHandicaps() {
   const eligibility = getCurrentTagEligibilityMap();
   const numericRows = Array.from(eligibility.values())
@@ -1687,6 +1837,7 @@ function ensurePlayerProfile(map: Map<string, PlayerProfile>, name: string) {
       personalBest: null,
       personalBests: [],
       weeklyWins: [],
+      bestOverallWins: [],
       aces: [],
       currentTag: "",
       hasTag: false,
@@ -1909,6 +2060,14 @@ export function getPlayerProfiles() {
     }
   }
 
+  const bestOverallWinsByPlayer = buildBestOverallWinsByPlayer();
+  for (const [key, rows] of bestOverallWinsByPlayer.entries()) {
+    const profile = profiles.get(key);
+    if (!profile) continue;
+
+    profile.bestOverallWins.push(...rows);
+  }
+
   for (const row of getSinglesAces()) {
     const profile = ensurePlayerProfile(profiles, row.name);
     if (!profile) continue;
@@ -1948,6 +2107,7 @@ export function getPlayerProfiles() {
     sortByDateDesc(profile.personalBests);
     profile.personalBest = profile.personalBests[0] || null;
     sortByDateDesc(profile.weeklyWins);
+    sortByDateDesc(profile.bestOverallWins);
     sortByDateDesc(profile.aces);
     profile.handicapHistory.sort((a, b) => parseUsDate(a.date).getTime() - parseUsDate(b.date).getTime());
     profile.tagHistory.sort((a, b) => parseUsDate(a.date).getTime() - parseUsDate(b.date).getTime());
