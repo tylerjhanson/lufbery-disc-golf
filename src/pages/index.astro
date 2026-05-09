@@ -258,8 +258,28 @@ type HomeEvent = {
   location?: string;
 };
 
+type HomeEventOverride = {
+  canceled?: boolean;
+  time?: string;
+  title?: string;
+  location?: string;
+};
+
+const homeEventOverrides: Record<string, HomeEventOverride> = {
+  // Cancel Sunday doubles on May 10, 2026
+  "2026-05-10": { canceled: true },
+};
+
 function makeUtcNoonDate(year: number, monthIndex: number, day: number) {
   return new Date(Date.UTC(year, monthIndex, day, 12, 0, 0));
+}
+
+function getIsoDateKey(date: Date) {
+  return [
+    date.getUTCFullYear(),
+    String(date.getUTCMonth() + 1).padStart(2, "0"),
+    String(date.getUTCDate()).padStart(2, "0"),
+  ].join("-");
 }
 
 function formatHomeEventDate(date: Date) {
@@ -281,6 +301,45 @@ function getLastThursdayDay(year: number, monthIndex: number) {
   return day;
 }
 
+function getFirstThursdayDay(year: number, monthIndex: number) {
+  let day = 1;
+
+  while (makeUtcNoonDate(year, monthIndex, day).getUTCDay() !== 4) {
+    day += 1;
+  }
+
+  return day;
+}
+
+function isNonDoublesSeasonDate(candidate: Date) {
+  const day = candidate.getUTCDay();
+  const monthIndex = candidate.getUTCMonth();
+
+  if (day !== 4) return false;
+
+  // April through August: every Thursday
+  if (monthIndex >= 3 && monthIndex <= 7) return true;
+
+  // September: only the first Thursday
+  if (monthIndex === 8) {
+    return candidate.getUTCDate() === getFirstThursdayDay(candidate.getUTCFullYear(), monthIndex);
+  }
+
+  return false;
+}
+
+function applyHomeEventOverride(date: Date, event: HomeEvent): HomeEvent | null {
+  const override = homeEventOverrides[getIsoDateKey(date)];
+
+  if (!override) return event;
+  if (override.canceled) return null;
+
+  return {
+    ...event,
+    ...override,
+  };
+}
+
 function buildFallbackUpcomingEvents(startDate = new Date(), count = 4): HomeEvent[] {
   const events: HomeEvent[] = [];
   const start = makeUtcNoonDate(
@@ -295,25 +354,27 @@ function buildFallbackUpcomingEvents(startDate = new Date(), count = 4): HomeEve
     const monthIndex = candidate.getUTCMonth();
 
     if (day === 0) {
-      events.push({
+      const event = applyHomeEventOverride(candidate, {
         date: formatHomeEventDate(candidate),
         time: "9:00 a.m.",
         title: "Doubles",
       });
+
+      if (event) events.push(event);
       continue;
     }
 
-    const isSinglesSeason = monthIndex >= 3 && monthIndex <= 8;
-
-    if (day === 4 && isSinglesSeason) {
+    if (isNonDoublesSeasonDate(candidate)) {
       const isMonthly =
         candidate.getUTCDate() === getLastThursdayDay(candidate.getUTCFullYear(), monthIndex);
 
-      events.push({
+      const event = applyHomeEventOverride(candidate, {
         date: formatHomeEventDate(candidate),
         time: "5:30 p.m.",
         title: isMonthly ? "Monthly" : "Handicap",
       });
+
+      if (event) events.push(event);
     }
   }
 
