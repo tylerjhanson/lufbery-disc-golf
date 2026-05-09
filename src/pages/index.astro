@@ -1332,7 +1332,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
       const eventsList = document.getElementById("eventsList");
       if (!eventsList) return;
 
-      const CALENDAR_CACHE_KEY = "fa_home_upcoming_events_v1";
+      const CALENDAR_CACHE_KEY = "fa_home_upcoming_events_v2";
       const EVENT_LIMIT = 4;
       const DEFAULT_SCHEDULE_URL = "https://udisc.com/leagues/lufbery-league-NS86wI/schedule";
       const scheduleUrl = eventsList.getAttribute("data-schedule-url") || DEFAULT_SCHEDULE_URL;
@@ -1389,55 +1389,108 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
         }).format(date);
       }
 
-      function getLastThursdayDay(year, monthIndex) {
-        let day = new Date(year, monthIndex + 1, 0).getDate();
+      function getDateKey(date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
 
-        while (new Date(year, monthIndex, day).getDay() !== 4) {
-          day -= 1;
-        }
+const homeEventOverrides = {
+  "2026-05-10": { canceled: true },
+};
 
-        return day;
-      }
+function getLastThursdayDay(year, monthIndex) {
+  let day = new Date(year, monthIndex + 1, 0).getDate();
 
-      function buildGeneratedEvents(count = EVENT_LIMIT) {
-        const events = [];
-        const today = new Date();
-        const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  while (new Date(year, monthIndex, day).getDay() !== 4) {
+    day -= 1;
+  }
 
-        for (let offset = 0; offset < 370 && events.length < count; offset += 1) {
-          const candidate = new Date(start);
-          candidate.setDate(start.getDate() + offset);
+  return day;
+}
 
-          const day = candidate.getDay();
-          const monthIndex = candidate.getMonth();
+function getFirstThursdayDay(year, monthIndex) {
+  let day = 1;
 
-          if (day === 0) {
-            events.push({
-              date: formatDisplayDate(candidate),
-              time: "9:00 a.m.",
-              title: "Doubles",
-              url: scheduleUrl,
-            });
-            continue;
-          }
+  while (new Date(year, monthIndex, day).getDay() !== 4) {
+    day += 1;
+  }
 
-          const isSinglesSeason = monthIndex >= 3 && monthIndex <= 8;
+  return day;
+}
 
-          if (day === 4 && isSinglesSeason) {
-            const isMonthly =
-              candidate.getDate() === getLastThursdayDay(candidate.getFullYear(), monthIndex);
+function isNonDoublesSeasonDate(candidate) {
+  const day = candidate.getDay();
+  const monthIndex = candidate.getMonth();
 
-            events.push({
-              date: formatDisplayDate(candidate),
-              time: "5:30 p.m.",
-              title: isMonthly ? "Monthly" : "Handicap",
-              url: scheduleUrl,
-            });
-          }
-        }
+  if (day !== 4) return false;
 
-        return events;
-      }
+  // April through August: every Thursday
+  if (monthIndex >= 3 && monthIndex <= 7) return true;
+
+  // September: only the first Thursday
+  if (monthIndex === 8) {
+    return candidate.getDate() === getFirstThursdayDay(candidate.getFullYear(), monthIndex);
+  }
+
+  return false;
+}
+
+function applyHomeEventOverride(date, event) {
+  const override = homeEventOverrides[getDateKey(date)];
+
+  if (!override) return event;
+  if (override.canceled) return null;
+
+  return {
+    ...event,
+    ...override,
+  };
+}
+
+function buildGeneratedEvents(count = EVENT_LIMIT) {
+  const events = [];
+  const today = new Date();
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+  for (let offset = 0; offset < 370 && events.length < count; offset += 1) {
+    const candidate = new Date(start);
+    candidate.setDate(start.getDate() + offset);
+
+    const day = candidate.getDay();
+    const monthIndex = candidate.getMonth();
+
+    if (day === 0) {
+      const event = applyHomeEventOverride(candidate, {
+        date: formatDisplayDate(candidate),
+        time: "9:00 a.m.",
+        title: "Doubles",
+        url: scheduleUrl,
+      });
+
+      if (event) events.push(event);
+      continue;
+    }
+
+    if (isNonDoublesSeasonDate(candidate)) {
+      const isMonthly =
+        candidate.getDate() === getLastThursdayDay(candidate.getFullYear(), monthIndex);
+
+      const event = applyHomeEventOverride(candidate, {
+        date: formatDisplayDate(candidate),
+        time: "5:30 p.m.",
+        title: isMonthly ? "Monthly" : "Handicap",
+        url: scheduleUrl,
+      });
+
+      if (event) events.push(event);
+    }
+  }
+
+  return events;
+}
 
       function getFallbackEvents() {
         try {
@@ -1538,8 +1591,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
       }
 
       renderEvents(getFallbackEvents());
-      readCachedEvents();
-      fetchEvents();
+fetchEvents();
     })();
   </script>
 
