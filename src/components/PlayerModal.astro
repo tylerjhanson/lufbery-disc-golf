@@ -212,16 +212,12 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   }
 
   .player-details-chart-shell {
-    position: relative;
     margin-top: 0;
     margin-bottom: 10px;
     padding: 12px 12px 10px;
     border: 1px solid var(--line-soft, #eef2f7);
     border-radius: 14px;
     background: var(--header, #f8fafc);
-    touch-action: pan-y;
-    -webkit-tap-highlight-color: transparent;
-    user-select: none;
   }
 
   .player-details-chart-svg {
@@ -229,9 +225,6 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     width: 100%;
     height: 180px;
     overflow: visible;
-    cursor: crosshair;
-    outline: none;
-    -webkit-tap-highlight-color: transparent;
   }
 
   .player-details-chart-grid {
@@ -266,6 +259,19 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     vector-effect: non-scaling-stroke;
   }
 
+  .player-details-chart-shell {
+    position: relative;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .player-details-chart-hit-rect {
+    fill: transparent;
+    pointer-events: all;
+    cursor: crosshair;
+  }
+
   .player-details-chart-active-line {
     stroke: var(--muted, #6b7280);
     stroke-width: 1;
@@ -278,18 +284,10 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   .player-details-chart-active-dot {
     fill: var(--card, #ffffff);
     stroke: var(--accent, #2563eb);
-    stroke-width: 2.2;
+    stroke-width: 2.25;
     opacity: 0;
     pointer-events: none;
     vector-effect: non-scaling-stroke;
-  }
-
-  .player-details-chart-hit-zone {
-    fill: transparent;
-    stroke: transparent;
-    cursor: crosshair;
-    outline: none;
-    -webkit-tap-highlight-color: transparent;
   }
 
   .player-details-chart-shell[data-chart-active="true"] .player-details-chart-active-line,
@@ -301,34 +299,35 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     position: fixed;
     left: 0;
     top: 0;
-    z-index: 1200;
-    min-width: 112px;
+    z-index: 1100;
     max-width: min(240px, calc(100vw - 16px));
     padding: 8px 10px;
     border: 1px solid var(--line-soft, #e5e7eb);
     border-radius: 10px;
     background: var(--card, #ffffff);
     color: var(--text, #111827);
-    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.16);
     font-size: 0.82rem;
     line-height: 1.25;
-    font-weight: 800;
+    font-weight: 700;
     opacity: 0;
     pointer-events: none;
     white-space: normal;
-    transition: opacity 0.1s ease;
-  }
-
-  .player-details-chart-tooltip span {
-    display: block;
-    margin-top: 2px;
-    color: var(--muted, #6b7280);
-    font-size: 0.75rem;
-    font-weight: 700;
+    transition: opacity 0.08s ease;
   }
 
   .player-details-chart-shell[data-chart-active="true"] .player-details-chart-tooltip {
     opacity: 1;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .player-details-chart-tooltip {
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.34);
+    }
+  }
+
+  [data-theme="dark"] .player-details-chart-tooltip {
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.34);
   }
 
   .player-details-muted {
@@ -608,6 +607,12 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     return Number(value).toFixed(1);
   }
 
+  function formatChartValue(value) {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) return "";
+    return Number.isInteger(numericValue) ? String(numericValue) : numericValue.toFixed(1);
+  }
+
   function buildYearlyScoreAverages(rounds) {
     if (!Array.isArray(rounds) || !rounds.length) return [];
 
@@ -758,18 +763,18 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   }
 
   function buildLineChart(values, ariaLabel, lowerValuesAtBottom = false, options = {}) {
-    if (!values || !values.length) return "";
+    const cleanValues = Array.isArray(values)
+      ? values
+          .map((point) => ({
+            ...point,
+            value: Number(point?.value),
+          }))
+          .filter((point) => !Number.isNaN(point.value))
+      : [];
 
-    const cleanValues = values
-      .map((point) => ({
-        ...point,
-        value: Number(point.value),
-      }))
-      .filter((point) => !Number.isNaN(point.value));
+    if (!cleanValues.length) return "";
 
     const numericValues = cleanValues.map((point) => Number(point.value));
-
-    if (!numericValues.length) return "";
 
     const width = 640;
     const height = 200;
@@ -827,10 +832,9 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
         : padTop + ((value - chartMin) / (chartMax - chartMin)) * innerHeight;
 
     const pointCoordinates = cleanValues.map((point, index) => ({
+      ...point,
       x: getX(index),
       y: getY(Number(point.value)),
-      title: String(point.title || ""),
-      valueLabel: String(point.valueLabel || point.value),
     }));
 
     const playerPoints = pointCoordinates
@@ -866,10 +870,22 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       })
       .join("");
 
-    const pointsJson = escapeHtml(JSON.stringify(pointCoordinates));
+    const chartPoints = pointCoordinates.map((point) => {
+      const title = point.title || "";
+      const valueLabel = point.valueLabel || formatChartValue(point.value);
+      const tooltip = point.detail || `${title}${title ? " — " : ""}${valueLabel}`;
+
+      return {
+        x: point.x,
+        y: point.y,
+        tooltip,
+      };
+    });
+
+    const chartPointsJson = escapeHtml(JSON.stringify(chartPoints));
 
     return `
-      <div class="player-details-chart-shell" data-player-chart data-chart-points="${pointsJson}">
+      <div class="player-details-chart-shell" data-player-chart data-chart-points="${chartPointsJson}">
         <svg
           class="player-details-chart-svg"
           viewBox="0 0 ${width} ${height}"
@@ -893,11 +909,11 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
             r="5"
           />
           <rect
-            class="player-details-chart-hit-zone"
+            class="player-details-chart-hit-rect"
             x="${padLeft}"
-            y="0"
+            y="${padTop}"
             width="${innerWidth}"
-            height="${height}"
+            height="${innerHeight}"
           />
         </svg>
         <div class="player-details-chart-tooltip" aria-hidden="true"></div>
@@ -912,11 +928,13 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       rounds.map((round) => {
         const score = Number(round.score);
         const date = String(round.date || "");
+        const scoreText = formatScoreWithPar(score);
 
         return {
           value: score,
           title: date,
-          valueLabel: `Score ${formatScoreWithPar(score)}`,
+          valueLabel: `Score ${scoreText}`,
+          detail: `${date} — Score ${scoreText}`,
         };
       }),
       "Score history chart",
@@ -943,7 +961,8 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       values.map((row) => ({
         value: row.handicap,
         title: row.date,
-        valueLabel: `Handicap ${row.handicap}`,
+        valueLabel: `Handicap ${formatChartValue(row.handicap)}`,
+        detail: `${row.date} — Handicap ${formatChartValue(row.handicap)}`,
       })),
       "Handicap history chart",
       true,
@@ -959,7 +978,8 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
         .map((row) => ({
           value: Number(row.tag),
           title: String(row.date || ""),
-          valueLabel: `Tag ${Number(row.tag)}`,
+          valueLabel: `Tag #${formatChartValue(row.tag)}`,
+          detail: `${String(row.date || "")} — Tag #${formatChartValue(row.tag)}`,
         }))
         .filter((row) => !Number.isNaN(row.value)),
       "Tag history chart",
@@ -1183,120 +1203,6 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
         ${acesMarkup}
       </div>
     `;
-
-    initializePlayerChartInteractions();
-  }
-
-  function parseChartPoints(chart) {
-    try {
-      return JSON.parse(chart?.dataset?.chartPoints || "[]");
-    } catch (error) {
-      return [];
-    }
-  }
-
-  function getNearestChartPoint(chart, clientX) {
-    const svg = chart?.querySelector(".player-details-chart-svg");
-    const points = parseChartPoints(chart);
-
-    if (!svg || !points.length) return null;
-
-    const rect = svg.getBoundingClientRect();
-    const viewBox = svg.viewBox?.baseVal;
-
-    if (!rect.width || !viewBox) return null;
-
-    const svgX = viewBox.x + ((clientX - rect.left) / rect.width) * viewBox.width;
-
-    return points.reduce((nearest, point) => {
-      if (!nearest) return point;
-      return Math.abs(point.x - svgX) < Math.abs(nearest.x - svgX) ? point : nearest;
-    }, null);
-  }
-
-  function setChartActivePoint(chart, point) {
-    const svg = chart?.querySelector(".player-details-chart-svg");
-    const line = chart?.querySelector(".player-details-chart-active-line");
-    const dot = chart?.querySelector(".player-details-chart-active-dot");
-    const tooltip = chart?.querySelector(".player-details-chart-tooltip");
-
-    if (!chart || !svg || !line || !dot || !tooltip || !point) return;
-
-    line.setAttribute("x1", String(point.x));
-    line.setAttribute("x2", String(point.x));
-    dot.setAttribute("cx", String(point.x));
-    dot.setAttribute("cy", String(point.y));
-
-    const title = String(point.title || "");
-    const valueLabel = String(point.valueLabel || "");
-    tooltip.innerHTML = `${title ? `<strong>${escapeHtml(title)}</strong>` : ""}${
-      valueLabel ? `<span>${escapeHtml(valueLabel)}</span>` : ""
-    }`;
-
-    chart.dataset.chartActive = "true";
-    tooltip.setAttribute("aria-hidden", "false");
-
-    const svgRect = svg.getBoundingClientRect();
-    const viewBox = svg.viewBox.baseVal;
-    const anchorX = svgRect.left + ((point.x - viewBox.x) / viewBox.width) * svgRect.width;
-    const anchorY = svgRect.top + ((point.y - viewBox.y) / viewBox.height) * svgRect.height;
-
-    tooltip.style.left = "0px";
-    tooltip.style.top = "0px";
-
-    requestAnimationFrame(() => {
-      const tooltipRect = tooltip.getBoundingClientRect();
-      const margin = 8;
-      let left = anchorX - tooltipRect.width / 2;
-      let top = anchorY - tooltipRect.height - 12;
-
-      if (top < margin) {
-        top = anchorY + 12;
-      }
-
-      left = Math.max(margin, Math.min(left, window.innerWidth - tooltipRect.width - margin));
-      top = Math.max(margin, Math.min(top, window.innerHeight - tooltipRect.height - margin));
-
-      tooltip.style.left = `${left}px`;
-      tooltip.style.top = `${top}px`;
-    });
-  }
-
-  function clearChartActivePoint(chart) {
-    if (!chart) return;
-
-    const tooltip = chart.querySelector(".player-details-chart-tooltip");
-    delete chart.dataset.chartActive;
-
-    if (tooltip) {
-      tooltip.setAttribute("aria-hidden", "true");
-    }
-  }
-
-  function initializePlayerChartInteractions() {
-    if (!playerDetailsModalBody) return;
-
-    const charts = playerDetailsModalBody.querySelectorAll("[data-player-chart]");
-
-    charts.forEach((chart) => {
-      chart.addEventListener("pointermove", (event) => {
-        if (event.pointerType === "touch") return;
-
-        const point = getNearestChartPoint(chart, event.clientX);
-        if (point) setChartActivePoint(chart, point);
-      });
-
-      chart.addEventListener("pointerdown", (event) => {
-        const point = getNearestChartPoint(chart, event.clientX);
-        if (point) setChartActivePoint(chart, point);
-      });
-
-      chart.addEventListener("pointerleave", (event) => {
-        if (event.pointerType !== "touch") {
-          clearChartActivePoint(chart);
-        }
-      });
-    });
   }
 
   function normalizePlayerKey(value) {
@@ -1336,6 +1242,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   function closePlayerDetailsModal() {
     if (!playerDetailsModal) return;
 
+    clearActiveCharts();
     playerDetailsModal.setAttribute("hidden", "");
     document.body.style.overflow = "";
 
@@ -1343,6 +1250,177 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       lastPlayerTrigger.focus();
     }
   }
+
+  let activeChart = null;
+  let activeChartPointerId = null;
+
+  function getChartPoints(chart) {
+    try {
+      const raw = chart?.dataset?.chartPoints || "[]";
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function clearActiveCharts(exceptChart = null) {
+    document.querySelectorAll("[data-player-chart][data-chart-active='true']").forEach((chart) => {
+      if (exceptChart && chart === exceptChart) return;
+      chart.removeAttribute("data-chart-active");
+      const tooltip = chart.querySelector(".player-details-chart-tooltip");
+      if (tooltip) {
+        tooltip.textContent = "";
+        tooltip.style.left = "0px";
+        tooltip.style.top = "0px";
+      }
+    });
+  }
+
+  function positionChartTooltip(tooltip, clientX, clientY) {
+    if (!tooltip) return;
+
+    const margin = 8;
+
+    tooltip.style.left = "0px";
+    tooltip.style.top = "0px";
+
+    const rect = tooltip.getBoundingClientRect();
+    const width = rect.width || 160;
+    const height = rect.height || 36;
+
+    let left = clientX - width / 2;
+    let top = clientY - height - 14;
+
+    if (top < margin) {
+      top = clientY + 14;
+    }
+
+    left = Math.max(margin, Math.min(window.innerWidth - width - margin, left));
+    top = Math.max(margin, Math.min(window.innerHeight - height - margin, top));
+
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+  }
+
+  function showChartPoint(chart, event) {
+    if (!chart || !event) return;
+
+    const svg = chart.querySelector(".player-details-chart-svg");
+    const tooltip = chart.querySelector(".player-details-chart-tooltip");
+    const activeLine = chart.querySelector(".player-details-chart-active-line");
+    const activeDot = chart.querySelector(".player-details-chart-active-dot");
+    const points = getChartPoints(chart);
+
+    if (!svg || !tooltip || !points.length) return;
+
+    const rect = svg.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
+    const viewBox = svg.viewBox?.baseVal;
+    const viewBoxWidth = viewBox?.width || 640;
+    const svgX = ((event.clientX - rect.left) / rect.width) * viewBoxWidth;
+
+    const nearest = points.reduce((best, point) => {
+      if (!best) return point;
+      return Math.abs(point.x - svgX) < Math.abs(best.x - svgX) ? point : best;
+    }, null);
+
+    if (!nearest) return;
+
+    if (activeLine) {
+      activeLine.setAttribute("x1", String(nearest.x));
+      activeLine.setAttribute("x2", String(nearest.x));
+    }
+
+    if (activeDot) {
+      activeDot.setAttribute("cx", String(nearest.x));
+      activeDot.setAttribute("cy", String(nearest.y));
+    }
+
+    tooltip.textContent = nearest.tooltip || "";
+    chart.setAttribute("data-chart-active", "true");
+
+    const tooltipClientX = rect.left + (nearest.x / viewBoxWidth) * rect.width;
+    const tooltipClientY = rect.top + (nearest.y / (viewBox?.height || 200)) * rect.height;
+    positionChartTooltip(tooltip, tooltipClientX, tooltipClientY);
+  }
+
+  document.addEventListener(
+    "pointerdown",
+    (event) => {
+      const chart = event.target instanceof Element ? event.target.closest("[data-player-chart]") : null;
+
+      if (!chart) {
+        clearActiveCharts();
+        activeChart = null;
+        activeChartPointerId = null;
+        return;
+      }
+
+      clearActiveCharts(chart);
+      activeChart = chart;
+      activeChartPointerId = event.pointerId;
+      chart.setPointerCapture?.(event.pointerId);
+      showChartPoint(chart, event);
+
+      if (event.pointerType !== "mouse") {
+        event.preventDefault();
+      }
+    },
+    { passive: false }
+  );
+
+  document.addEventListener(
+    "pointermove",
+    (event) => {
+      const chart = event.target instanceof Element ? event.target.closest("[data-player-chart]") : null;
+
+      if (activeChart && event.pointerId === activeChartPointerId) {
+        showChartPoint(activeChart, event);
+        if (event.pointerType !== "mouse") {
+          event.preventDefault();
+        }
+        return;
+      }
+
+      if (chart && event.pointerType === "mouse") {
+        showChartPoint(chart, event);
+      }
+    },
+    { passive: false }
+  );
+
+  document.addEventListener("pointerup", (event) => {
+    if (activeChart && event.pointerId === activeChartPointerId) {
+      showChartPoint(activeChart, event);
+      activeChart.releasePointerCapture?.(event.pointerId);
+      activeChart = null;
+      activeChartPointerId = null;
+    }
+  });
+
+  document.addEventListener("pointercancel", (event) => {
+    if (activeChart && event.pointerId === activeChartPointerId) {
+      activeChart.releasePointerCapture?.(event.pointerId);
+      activeChart = null;
+      activeChartPointerId = null;
+    }
+  });
+
+  document.addEventListener("pointerout", (event) => {
+    if (event.pointerType !== "mouse") return;
+
+    const chart = event.target instanceof Element ? event.target.closest("[data-player-chart]") : null;
+    const relatedTarget = event.relatedTarget instanceof Element ? event.relatedTarget : null;
+
+    if (chart && (!relatedTarget || !chart.contains(relatedTarget))) {
+      clearActiveCharts(chart === activeChart ? chart : null);
+    }
+  });
+
+  window.addEventListener("resize", () => clearActiveCharts());
+  playerDetailsModalPanel?.addEventListener("scroll", () => clearActiveCharts());
 
   document.addEventListener("click", (event) => {
     const button = event.target instanceof Element
