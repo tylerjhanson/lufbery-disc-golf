@@ -212,41 +212,37 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   }
 
   .player-details-chart-shell {
-    position: relative;
     margin-top: 0;
     margin-bottom: 10px;
-    padding: 4px 4px 18px;
-    border: 0;
+    padding: 12px 12px 10px;
+    border: 1px solid var(--line-soft, #eef2f7);
     border-radius: 14px;
-    background: transparent;
-    touch-action: manipulation;
+    background: var(--header, #f8fafc);
   }
 
   .player-details-chart-svg {
     display: block;
     width: 100%;
-    height: 190px;
+    height: 180px;
     overflow: visible;
-    cursor: crosshair;
   }
 
   .player-details-chart-grid {
-    stroke: var(--line-soft, #eef2f7);
+    stroke: var(--line, #e5e7eb);
     stroke-width: 1;
-    opacity: 0.72;
-    vector-effect: non-scaling-stroke;
+    opacity: 0.8;
   }
 
   .player-details-chart-axis-label {
     fill: var(--muted, #6b7280);
-    font-size: 11px;
+    font-size: 12px;
     font-family: Inter, Arial, Helvetica, sans-serif;
   }
 
   .player-details-chart-line-player {
     fill: none;
     stroke: var(--accent, #2563eb);
-    stroke-width: 2.35;
+    stroke-width: 2.5;
     stroke-linecap: round;
     stroke-linejoin: round;
     vector-effect: non-scaling-stroke;
@@ -255,38 +251,11 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   .player-details-chart-line-trend {
     fill: none;
     stroke: var(--muted, #6b7280);
-    stroke-width: 1.4;
+    stroke-width: 1.5;
     stroke-linecap: round;
     stroke-linejoin: round;
     stroke-dasharray: 5 5;
-    opacity: 0.42;
-    vector-effect: non-scaling-stroke;
-  }
-
-  .player-details-chart-active-line {
-    stroke: var(--muted, #6b7280);
-    stroke-width: 1;
-    stroke-dasharray: 3 4;
-    opacity: 0;
-    pointer-events: none;
-    vector-effect: non-scaling-stroke;
-  }
-
-  .player-details-chart-active-dot {
-    fill: var(--card, #ffffff);
-    stroke: var(--accent, #2563eb);
-    stroke-width: 2.25;
-    opacity: 0;
-    pointer-events: none;
-    vector-effect: non-scaling-stroke;
-  }
-
-  .player-details-chart-point {
-    fill: var(--accent, #2563eb);
-    stroke: var(--card, #ffffff);
-    stroke-width: 1.6;
-    opacity: 0;
-    transition: opacity 0.12s ease, r 0.12s ease;
+    opacity: 0.5;
     vector-effect: non-scaling-stroke;
   }
 
@@ -296,46 +265,26 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     cursor: pointer;
   }
 
-  .player-details-chart-point-group:hover .player-details-chart-point,
-  .player-details-chart-point-group:focus .player-details-chart-point,
-  .player-details-chart-point-group:focus-visible .player-details-chart-point,
-  .player-details-chart-shell[data-chart-active="true"] .player-details-chart-active-line,
-  .player-details-chart-shell[data-chart-active="true"] .player-details-chart-active-dot {
-    opacity: 1;
-  }
-
-  .player-details-chart-tooltip {
-    position: absolute;
-    left: 0;
-    top: 0;
-    z-index: 5;
-    min-width: 132px;
-    max-width: min(230px, 78vw);
+  .player-details-chart-tooltip-fixed {
+    position: fixed;
+    z-index: 3000;
+    max-width: min(240px, calc(100vw - 24px));
     padding: 8px 10px;
     border: 1px solid var(--line-soft, #e5e7eb);
     border-radius: 10px;
     background: var(--card, #ffffff);
     color: var(--text, #111827);
-    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.18);
     font-size: 0.82rem;
     line-height: 1.25;
     font-weight: 700;
-    opacity: 0;
-    transform: translate(-50%, calc(-100% - 10px));
     pointer-events: none;
-    white-space: normal;
-    transition: opacity 0.12s ease;
+    opacity: 0;
+    transform: translate(-50%, calc(-100% - 12px));
+    transition: opacity 0.08s ease;
   }
 
-  .player-details-chart-tooltip span {
-    display: block;
-    margin-top: 2px;
-    color: var(--muted, #6b7280);
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
-
-  .player-details-chart-shell[data-chart-active="true"] .player-details-chart-tooltip {
+  .player-details-chart-tooltip-fixed[data-visible="true"] {
     opacity: 1;
   }
 
@@ -349,13 +298,6 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     color: var(--muted, #6b7280);
     font-size: 0.83rem;
     line-height: 1.35;
-  }
-
-  .player-details-chart-note {
-    margin: -8px 0 10px;
-    color: var(--muted, #6b7280);
-    font-size: 0.78rem;
-    line-height: 1.3;
   }
 
   .player-details-list {
@@ -422,16 +364,6 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     color: var(--text, #111827);
   }
 
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .player-details-chart-tooltip {
-      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
-    }
-  }
-
-  [data-theme="dark"] .player-details-chart-tooltip {
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
-  }
-
   @media (max-width: 700px) {
     .player-details-modal-panel {
       width: min(94vw, 560px);
@@ -456,11 +388,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     }
 
     .player-details-chart-svg {
-      height: 160px;
-    }
-
-    .player-details-chart-hit-area {
-      r: 17;
+      height: 150px;
     }
 
     .player-details-history-table th,
@@ -474,12 +402,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     }
 
     .player-details-chart-axis-label {
-      font-size: 10px;
-    }
-
-    .player-details-chart-tooltip {
-      min-width: 124px;
-      font-size: 0.78rem;
+      font-size: 11px;
     }
   }
 </style>
@@ -538,20 +461,12 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   let lastPlayerTrigger = null;
 
   function escapeHtml(value) {
-    return String(value ?? "")
+    return String(value)
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
-  }
-
-  function cleanText(value) {
-    return String(value ?? "").replace(/\s+/g, " ").trim();
-  }
-
-  function getPlayerKey(value) {
-    return cleanText(value).toLowerCase();
   }
 
   function isUdiscUrl(value) {
@@ -597,21 +512,15 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     )}">${safeLabel}${renderUdiscIconMarkup(href)}</a>`;
   }
 
-  function formatRelativeToPar(score) {
+  function formatScoreWithPar(score) {
     const numericScore = Number(score);
     const diff = numericScore - HANDICAP_PAR;
 
-    if (!Number.isFinite(numericScore)) return "";
-    if (diff === 0) return "E";
-    if (diff > 0) return `+${diff}`;
-    return `${diff}`;
-  }
+    let diffText = "E";
+    if (diff > 0) diffText = `+${diff}`;
+    if (diff < 0) diffText = `${diff}`;
 
-  function formatScoreWithPar(score) {
-    const numericScore = Number(score);
-    if (!Number.isFinite(numericScore)) return "";
-
-    return `${numericScore} (${formatRelativeToPar(numericScore)})`;
+    return `${numericScore} (${diffText})`;
   }
 
   function parseDisplayYear(value) {
@@ -619,16 +528,6 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     let year = Number(parts[2] || 0);
     if (year < 100) year += 2000;
     return year;
-  }
-
-  function parseUsDate(value) {
-    const match = String(value || "").match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
-    if (!match) return new Date(0);
-
-    let year = Number(match[3]);
-    if (year < 100) year += 2000;
-
-    return new Date(year, Number(match[1]) - 1, Number(match[2]));
   }
 
   function formatCurrentUsDate() {
@@ -823,24 +722,24 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   }
 
   function buildLineChart(values, ariaLabel, lowerValuesAtBottom = false, options = {}) {
-    const cleanValues = Array.isArray(values)
-      ? values
-          .map((point) => ({
-            ...point,
-            value: Number(point?.value),
-          }))
-          .filter((point) => !Number.isNaN(point.value))
-      : [];
+    if (!values || !values.length) return "";
 
-    if (!cleanValues.length) return "";
+    const chartValues = values
+      .map((point) => ({
+        ...point,
+        value: Number(point.value),
+      }))
+      .filter((point) => !Number.isNaN(point.value));
 
-    const numericValues = cleanValues.map((point) => Number(point.value));
+    if (!chartValues.length) return "";
+
+    const numericValues = chartValues.map((point) => Number(point.value));
 
     const width = 640;
-    const height = 210;
-    const padTop = 16;
-    const padRight = 16;
-    const padBottom = 22;
+    const height = 200;
+    const padTop = 10;
+    const padRight = 8;
+    const padBottom = 10;
     const padLeft = 40;
     const innerWidth = width - padLeft - padRight;
     const innerHeight = height - padTop - padBottom;
@@ -877,33 +776,31 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
         })();
 
     const ticks = [];
-    for (let value = chartMin; value <= chartMax + tickStep / 2; value += tickStep) {
+    for (let value = chartMin; value <= chartMax; value += tickStep) {
       ticks.push(value);
     }
 
     const getX = (index) =>
-      cleanValues.length === 1
+      chartValues.length === 1
         ? padLeft + innerWidth / 2
-        : padLeft + (index / (cleanValues.length - 1)) * innerWidth;
+        : padLeft + (index / (chartValues.length - 1)) * innerWidth;
 
     const getY = (value) =>
       lowerValuesAtBottom
         ? padTop + ((chartMax - value) / (chartMax - chartMin)) * innerHeight
         : padTop + ((value - chartMin) / (chartMax - chartMin)) * innerHeight;
 
-    const pointCoordinates = cleanValues.map((point, index) => ({
+    const pointCoordinates = chartValues.map((point, index) => ({
       ...point,
       x: getX(index),
       y: getY(Number(point.value)),
     }));
 
-    const playerPoints = pointCoordinates
-      .map((point) => `${point.x},${point.y}`)
-      .join(" ");
+    const playerPoints = pointCoordinates.map((point) => `${point.x},${point.y}`).join(" ");
 
     const showTrend = options.showTrend !== false;
     const trendValues = showTrend
-      ? buildTrendValues(cleanValues.map((point) => ({ score: Number(point.value) })))
+      ? buildTrendValues(chartValues.map((point) => ({ score: Number(point.value) })))
       : [];
     const trendPoints = trendValues.length
       ? trendValues.map((value, index) => `${getX(index)},${getY(value)}`).join(" ")
@@ -925,69 +822,33 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
             x="${padLeft - 8}"
             y="${y + 4}"
             text-anchor="end"
-          >${escapeHtml(formatChartValue(tick))}</text>
+          >${Math.round(tick)}</text>
         `;
       })
       .join("");
 
-    const firstLabel = cleanValues[0]?.label || "";
-    const lastLabel = cleanValues[cleanValues.length - 1]?.label || "";
-
-    const xAxisMarkup =
-      firstLabel || lastLabel
-        ? `
-          <text
-            class="player-details-chart-axis-label"
-            x="${padLeft}"
-            y="${height - 3}"
-            text-anchor="start"
-          >${escapeHtml(firstLabel)}</text>
-          <text
-            class="player-details-chart-axis-label"
-            x="${width - padRight}"
-            y="${height - 3}"
-            text-anchor="end"
-          >${escapeHtml(lastLabel)}</text>
-        `
-        : "";
-
-    const pointsMarkup = pointCoordinates
+    const pointMarkup = pointCoordinates
       .map((point) => {
-        const title = point.title || point.label || "";
-        const valueLabel = point.valueLabel || formatChartValue(point.value);
-        const tooltip = point.detail || `${title}${title ? " — " : ""}${valueLabel}`;
+        const valueText = point.valueLabel || formatChartValue(point.value);
+        const labelText = point.label ? `${point.label}: ${valueText}` : valueText;
 
         return `
-          <g
-            class="player-details-chart-point-group"
+          <circle
+            class="player-details-chart-hit-area"
+            cx="${point.x}"
+            cy="${point.y}"
+            r="15"
+            data-chart-tooltip="${escapeHtml(labelText)}"
             tabindex="0"
             role="button"
-            aria-label="${escapeHtml(tooltip)}"
-            data-chart-title="${escapeHtml(title)}"
-            data-chart-value="${escapeHtml(valueLabel)}"
-            data-chart-tooltip="${escapeHtml(tooltip)}"
-            data-chart-x="${point.x}"
-            data-chart-y="${point.y}"
-          >
-            <circle
-              class="player-details-chart-point"
-              cx="${point.x}"
-              cy="${point.y}"
-              r="3.6"
-            />
-            <circle
-              class="player-details-chart-hit-area"
-              cx="${point.x}"
-              cy="${point.y}"
-              r="15"
-            />
-          </g>
+            aria-label="${escapeHtml(labelText)}"
+          />
         `;
       })
       .join("");
 
     return `
-      <div class="player-details-chart-shell" data-player-chart>
+      <div class="player-details-chart-shell">
         <svg
           class="player-details-chart-svg"
           viewBox="0 0 ${width} ${height}"
@@ -995,25 +856,10 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
           aria-label="${escapeHtml(ariaLabel)}"
         >
           ${gridMarkup}
-          ${xAxisMarkup}
           ${trendPoints ? `<polyline class="player-details-chart-line-trend" points="${trendPoints}" />` : ""}
           <polyline class="player-details-chart-line-player" points="${playerPoints}" />
-          <line
-            class="player-details-chart-active-line"
-            x1="0"
-            y1="${padTop}"
-            x2="0"
-            y2="${height - padBottom}"
-          />
-          <circle
-            class="player-details-chart-active-dot"
-            cx="0"
-            cy="0"
-            r="5"
-          />
-          ${pointsMarkup}
+          ${pointMarkup}
         </svg>
-        <div class="player-details-chart-tooltip" aria-hidden="true"></div>
       </div>
     `;
   }
@@ -1024,15 +870,10 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     return buildLineChart(
       rounds.map((round) => {
         const score = Number(round.score);
-        const date = String(round.date || "");
-        const scoreText = formatScoreWithPar(score);
-
         return {
           value: score,
-          label: date,
-          title: date,
-          valueLabel: `Score ${scoreText}`,
-          detail: `${date} — Score ${scoreText}`,
+          label: String(round.date || ""),
+          valueLabel: formatScoreWithPar(score),
         };
       }),
       "Score history chart",
@@ -1059,9 +900,6 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       values.map((row) => ({
         value: row.handicap,
         label: row.date,
-        title: row.date,
-        valueLabel: `Handicap ${formatChartValue(row.handicap)}`,
-        detail: `${row.date} — Handicap ${formatChartValue(row.handicap)}`,
       })),
       "Handicap history chart",
       true,
@@ -1072,21 +910,13 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   function buildTagChart(history) {
     if (!history || !history.length) return "";
 
-    const values = history
-      .map((row) => ({
-        date: String(row.date || ""),
-        tag: Number(row.tag),
-      }))
-      .filter((row) => !Number.isNaN(row.tag));
-
     return buildLineChart(
-      values.map((row) => ({
-        value: row.tag,
-        label: row.date,
-        title: row.date,
-        valueLabel: `Tag #${formatChartValue(row.tag)}`,
-        detail: `${row.date} — Tag #${formatChartValue(row.tag)}`,
-      })),
+      history
+        .map((row) => ({
+          value: Number(row.tag),
+          label: String(row.date || ""),
+        }))
+        .filter((row) => !Number.isNaN(row.value)),
       "Tag history chart",
       true,
       { step: 5, min: 0, showTrend: false }
@@ -1144,8 +974,6 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     const established = Boolean(profile?.handicapEstablished);
     const currentTag = profile?.currentTag ? String(profile.currentTag) : "";
     const bestTagEver = profile?.bestTagEver ? String(profile.bestTagEver) : "";
-    const averageTag = profile?.averageTag ? String(profile.averageTag) : "";
-    const weeksAtOne = Number(profile?.weeksAtOne || 0);
     const hasTag = Boolean(profile?.hasTag);
 
     const handicapHistory = Array.isArray(profile?.handicapHistory)
@@ -1174,12 +1002,8 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
 
     playerDetailsModalTitle.textContent = name;
 
-    const sortedRecentRounds = [...recentRounds].sort(
-      (a, b) => parseUsDate(b.date).getTime() - parseUsDate(a.date).getTime()
-    );
-
-    const rowsHtml = sortedRecentRounds.length
-      ? sortedRecentRounds
+    const rowsHtml = recentRounds.length
+      ? recentRounds
           .map((round) => {
             const droppedStyle = round.dropped
               ? 'style="text-decoration: line-through; text-decoration-thickness: 1.5px; color: var(--muted, #6b7280);"'
@@ -1204,7 +1028,6 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
           <div class="player-details-section">
             <p class="player-details-section-label">SCORE HISTORY (SINCE 2021)</p>
             ${buildRoundChart(allRounds)}
-            <p class="player-details-chart-note">Hover on desktop or tap a point on mobile to see the exact date and value.</p>
             ${renderYearStats("Average by year", buildYearlyScoreAverages(allRounds))}
           </div>
         `
@@ -1215,7 +1038,6 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
           <div class="player-details-section">
             <p class="player-details-section-label">HANDICAP HISTORY (SINCE 2023)</p>
             ${buildHandicapChart(effectiveHandicapHistory)}
-            <p class="player-details-chart-note">Hover on desktop or tap a point on mobile to see the exact date and value.</p>
             ${renderYearStats("Best handicap by year", buildYearlyBestHandicaps(effectiveHandicapHistory))}
           </div>
         `
@@ -1226,102 +1048,62 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
           <div class="player-details-section">
             <p class="player-details-section-label">TAG HISTORY (SINCE 2023)</p>
             ${buildTagChart(tagHistory)}
-            <p class="player-details-chart-note">Hover on desktop or tap a point on mobile to see the exact date and value.</p>
             ${renderYearStats("Best tag by year", buildYearlyBestTags(tagHistory))}
           </div>
         `
       : "";
 
-    const weeklyWinsMarkup = `
-      <div class="player-details-section">
-        <p class="player-details-section-label">WEEKLY WINS</p>
-        ${renderLinkList(
-          weeklyWins,
-          (item) => {
-            const label = item.label || item.roundType || "Win";
-            const text = `${item.date}${item.score ? ` — ${item.score}` : ""}${label ? ` (${label})` : ""}`;
-            return renderLinkedLabel(item.href, text);
-          },
-          "No weekly wins found."
-        )}
-      </div>
-    `;
+    const establishmentNote =
+      recentRounds.length > 0 && !established && recentRounds.length < 3
+        ? `<p class="player-details-note">3 rounds are required to establish a handicap.</p>`
+        : "";
 
-    const bestOverallMarkup = `
-      <div class="player-details-section">
-        <p class="player-details-section-label">BEST OVERALL WINS</p>
-        ${renderLinkList(
-          bestOverallWins,
-          (item) => {
-            const label = item.label || item.roundType || "Best Overall";
-            const tieText = item.isTie ? "Tied " : "";
-            const text = `${item.date}${item.score ? ` — ${tieText}${item.score}` : ""}${label ? ` (${label})` : ""}`;
-            return renderLinkedLabel(item.href, text);
-          },
-          "No best overall wins found."
-        )}
-      </div>
-    `;
+    const weeklyWinsMarkup = renderLinkList(
+      weeklyWins,
+      (item) => {
+        const linkedDate = renderLinkedLabel(item.href, item.date);
+        return `${linkedDate} — ${escapeHtml(item.label)} • ${escapeHtml(item.score)}`;
+      },
+      "No weekly wins recorded."
+    );
 
-    const acesMarkup = `
-      <div class="player-details-section">
-        <p class="player-details-section-label">ACES</p>
-        ${renderLinkList(
-          aces,
-          (item) => {
-            const kind = item.kind === "doubles" ? "Doubles" : "Singles";
-            const label = item.label || `${kind} ace`;
-            const hole = item.hole ? `Hole ${item.hole}` : "Ace";
-            const text = `${item.date} — ${hole} (${label})`;
-            return renderLinkedLabel(item.href, text);
-          },
-          "No aces found."
-        )}
-      </div>
-    `;
+    const bestOverallWinsMarkup = renderLinkList(
+      bestOverallWins,
+      (item) => {
+        const linkedDate = renderLinkedLabel(item.href, item.date);
+        const tieLabel = item.isTie ? " • Tie" : "";
 
-    const handicapDisplay = handicap
-      ? `${escapeHtml(handicap)}${established ? "" : ' <span class="player-details-muted">(provisional)</span>'}`
-      : '<span class="player-details-muted">—</span>';
+        return `${linkedDate} — ${escapeHtml(item.label)} • ${escapeHtml(item.score)}${tieLabel}`;
+      },
+      "No best overall wins recorded."
+    );
 
-    const tagDisplay = hasTag && currentTag
-      ? escapeHtml(currentTag)
-      : currentTag
-        ? escapeHtml(currentTag)
-        : '<span class="player-details-muted">—</span>';
+    const acesMarkup = renderLinkList(
+      aces,
+      (item) => {
+        const linkedDate = renderLinkedLabel(item.href, item.date);
+        const holeLabel = item.hole ? `Hole ${escapeHtml(item.hole)}` : "Ace";
+        const kindLabel = item.label ? `${escapeHtml(item.label)} • ` : "";
+        return `${linkedDate} — ${kindLabel}${holeLabel}`;
+      },
+      "No aces recorded."
+    );
 
-    const lowestHandicapMarkup = lowestHandicap
-      ? escapeHtml(lowestHandicap)
-      : '<span class="player-details-muted">—</span>';
-
-    const bestTagMarkup = bestTagEver
-      ? escapeHtml(bestTagEver)
-      : '<span class="player-details-muted">—</span>';
-
-    const averageTagMarkup = averageTag
-      ? escapeHtml(averageTag)
-      : '<span class="player-details-muted">—</span>';
+    const personalBestLabel = personalBests.length > 1 ? "Personal bests" : "Personal best";
 
     playerDetailsModalBody.innerHTML = `
       <div class="player-details-summary-grid">
-        <div class="player-details-summary-row"><strong>Average:</strong> ${
-          average ? escapeHtml(average) : '<span class="player-details-muted">—</span>'
-        }</div>
-        <div class="player-details-summary-row"><strong>Handicap:</strong> ${handicapDisplay}</div>
-        <div class="player-details-summary-row"><strong>Lowest Handicap:</strong> ${lowestHandicapMarkup}</div>
-        <div class="player-details-summary-row"><strong>Current Tag:</strong> ${tagDisplay}</div>
-        <div class="player-details-summary-row"><strong>Best Tag:</strong> ${bestTagMarkup}</div>
-        <div class="player-details-summary-row"><strong>Average Tag:</strong> ${averageTagMarkup}</div>
-        ${
-          weeksAtOne
-            ? `<div class="player-details-summary-row"><strong>Weeks at #1:</strong> ${escapeHtml(weeksAtOne)}</div>`
-            : ""
-        }
-        <div class="player-details-summary-row"><strong>Personal Best:</strong> ${renderPersonalBestMarkup(personalBests)}</div>
+        <div class="player-details-summary-row">Current handicap: <strong>${handicap ? escapeHtml(handicap) : "—"}</strong></div>
+        <div class="player-details-summary-row">Current tag: <strong>${hasTag ? escapeHtml(currentTag || "TBD") : "—"}</strong></div>
+        <div class="player-details-summary-row">Average score: <strong>${average ? escapeHtml(average) : "—"}</strong></div>
+        <div class="player-details-summary-row">Best tag: <strong>${bestTagEver ? escapeHtml(bestTagEver) : "—"}</strong></div>
+        <div class="player-details-summary-row">Lowest handicap: <strong>${lowestHandicap !== "" ? escapeHtml(lowestHandicap) : "—"}</strong></div>
+        <div class="player-details-summary-row" style="grid-column: 1 / -1;">${personalBestLabel}: ${renderPersonalBestMarkup(personalBests)}</div>
       </div>
 
       <div class="player-details-section">
-        <p class="player-details-section-label">RECENT HANDICAP ROUNDS</p>
+        <p class="player-details-section-label">ROUNDS COUNTING TOWARDS HANDICAP</p>
+
         <table class="player-details-history-table">
           <thead>
             <tr>
@@ -1333,195 +1115,234 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
             ${rowsHtml}
           </tbody>
         </table>
+
+        ${establishmentNote}
       </div>
 
       ${scoreChartMarkup}
       ${handicapChartMarkup}
       ${tagChartMarkup}
-      ${weeklyWinsMarkup}
-      ${bestOverallMarkup}
-      ${acesMarkup}
+
+      <div class="player-details-section">
+        <p class="player-details-section-label">WEEKLY WINS</p>
+        ${weeklyWinsMarkup}
+      </div>
+
+      <div class="player-details-section">
+        <p class="player-details-section-label">BEST OVERALL</p>
+        ${bestOverallWinsMarkup}
+      </div>
+
+      <div class="player-details-section">
+        <p class="player-details-section-label">ACES</p>
+        ${acesMarkup}
+      </div>
     `;
   }
 
-  function openPlayerDetailsModal(profile, fallbackName, trigger) {
-    if (!playerDetailsModal || !playerDetailsModalPanel) return;
+  function normalizePlayerKey(value) {
+    return String(value || "").replace(/\s+/g, " ").trim().toLowerCase();
+  }
 
-    lastPlayerTrigger = trigger || null;
+  function openPlayerDetailsModal(button) {
+    if (!button || !playerDetailsModal) return;
+
+    const fallbackName = String(
+      button.dataset.playerName || button.dataset.player || button.textContent || ""
+    ).trim();
+
+    const playerKey = normalizePlayerKey(
+      button.dataset.playerKey || button.dataset.player || fallbackName
+    );
+
+    const profile =
+      PLAYER_PROFILES && typeof PLAYER_PROFILES === "object"
+        ? PLAYER_PROFILES[playerKey] || null
+        : null;
+
+    lastPlayerTrigger = button;
     renderPlayerDetailsModal(profile, fallbackName);
 
-    hideAllChartTooltips();
+    playerDetailsModal.removeAttribute("hidden");
+    document.body.style.overflow = "hidden";
 
-    playerDetailsModal.hidden = false;
-    document.documentElement.style.overflow = "hidden";
-    playerDetailsModalPanel.scrollTop = 0;
-
-    window.requestAnimationFrame(() => {
-      playerDetailsModalClose?.focus();
-    });
+    if (playerDetailsModalPanel) {
+      playerDetailsModalPanel.scrollTop = 0;
+      requestAnimationFrame(() => {
+        playerDetailsModalPanel.scrollTop = 0;
+      });
+    }
   }
 
   function closePlayerDetailsModal() {
-    if (!playerDetailsModal || playerDetailsModal.hidden) return;
+    if (!playerDetailsModal) return;
 
-    playerDetailsModal.hidden = true;
-    document.documentElement.style.overflow = "";
-    hideAllChartTooltips();
+    hideChartTooltip();
+    playerDetailsModal.setAttribute("hidden", "");
+    document.body.style.overflow = "";
 
     if (lastPlayerTrigger && typeof lastPlayerTrigger.focus === "function") {
       lastPlayerTrigger.focus();
     }
-
-    lastPlayerTrigger = null;
   }
 
-  function getPointFromEventTarget(target) {
-    return target?.closest?.(".player-details-chart-point-group") || null;
+  let activeChartTooltipTarget = null;
+  let playerDetailsChartTooltip = null;
+
+  function getPlayerDetailsChartTooltip() {
+    if (playerDetailsChartTooltip) return playerDetailsChartTooltip;
+
+    playerDetailsChartTooltip = document.createElement("div");
+    playerDetailsChartTooltip.className = "player-details-chart-tooltip-fixed";
+    playerDetailsChartTooltip.setAttribute("aria-hidden", "true");
+    document.body.appendChild(playerDetailsChartTooltip);
+
+    return playerDetailsChartTooltip;
   }
 
-  function getChartShellFromPoint(point) {
-    return point?.closest?.("[data-player-chart]") || null;
+  function clampChartTooltipPosition(left, top, tooltip) {
+    const margin = 12;
+    const rect = tooltip.getBoundingClientRect();
+    const halfWidth = rect.width / 2 || 120;
+
+    const clampedLeft = Math.max(
+      margin + halfWidth,
+      Math.min(window.innerWidth - margin - halfWidth, left)
+    );
+
+    const needsBelow = top - rect.height - 16 < margin;
+    const clampedTop = needsBelow ? top + 28 : top;
+
+    tooltip.style.transform = needsBelow
+      ? "translate(-50%, 0)"
+      : "translate(-50%, calc(-100% - 12px))";
+
+    return { left: clampedLeft, top: clampedTop };
   }
 
-  function hideAllChartTooltips() {
-    document.querySelectorAll("[data-player-chart]").forEach((shell) => {
-      shell.removeAttribute("data-chart-active");
+  function showChartTooltip(target) {
+    if (!(target instanceof Element)) return;
 
-      const tooltip = shell.querySelector(".player-details-chart-tooltip");
-      const activeLine = shell.querySelector(".player-details-chart-active-line");
-      const activeDot = shell.querySelector(".player-details-chart-active-dot");
+    const text = target.getAttribute("data-chart-tooltip") || "";
+    if (!text) return;
 
-      if (tooltip) tooltip.innerHTML = "";
-      if (activeLine) {
-        activeLine.setAttribute("x1", "0");
-        activeLine.setAttribute("x2", "0");
-      }
-      if (activeDot) {
-        activeDot.setAttribute("cx", "0");
-        activeDot.setAttribute("cy", "0");
-      }
-    });
-  }
+    const tooltip = getPlayerDetailsChartTooltip();
+    activeChartTooltipTarget = target;
+    tooltip.textContent = text;
+    tooltip.dataset.visible = "true";
 
-  function positionTooltip(shell, point) {
-    const tooltip = shell.querySelector(".player-details-chart-tooltip");
-    const svg = shell.querySelector(".player-details-chart-svg");
-    const activeLine = shell.querySelector(".player-details-chart-active-line");
-    const activeDot = shell.querySelector(".player-details-chart-active-dot");
-
-    if (!tooltip || !svg || !activeLine || !activeDot) return;
-
-    const x = Number(point.dataset.chartX || 0);
-    const y = Number(point.dataset.chartY || 0);
-    const viewBox = svg.viewBox?.baseVal;
-    const viewBoxWidth = viewBox?.width || 640;
-    const viewBoxHeight = viewBox?.height || 210;
-    const svgRect = svg.getBoundingClientRect();
-    const shellRect = shell.getBoundingClientRect();
-
-    const scaledX = svg.offsetLeft + (x / viewBoxWidth) * svgRect.width;
-    const scaledY = svg.offsetTop + (y / viewBoxHeight) * svgRect.height;
-
-    const title = point.dataset.chartTitle || "";
-    const value = point.dataset.chartValue || point.dataset.chartTooltip || "";
-
-    tooltip.innerHTML = `${escapeHtml(value)}${title ? `<span>${escapeHtml(title)}</span>` : ""}`;
-
-    const minLeft = 70;
-    const maxLeft = Math.max(minLeft, shellRect.width - 70);
-    const left = Math.min(Math.max(scaledX, minLeft), maxLeft);
-    const top = Math.max(scaledY, 36);
+    const targetRect = target.getBoundingClientRect();
+    const { left, top } = clampChartTooltipPosition(
+      targetRect.left + targetRect.width / 2,
+      targetRect.top + targetRect.height / 2,
+      tooltip
+    );
 
     tooltip.style.left = `${left}px`;
     tooltip.style.top = `${top}px`;
-
-    activeLine.setAttribute("x1", String(x));
-    activeLine.setAttribute("x2", String(x));
-    activeDot.setAttribute("cx", String(x));
-    activeDot.setAttribute("cy", String(y));
-
-    shell.setAttribute("data-chart-active", "true");
   }
 
-  function showChartTooltip(point) {
-    if (!point) return;
+  function hideChartTooltip(target = null) {
+    if (target && activeChartTooltipTarget && target !== activeChartTooltipTarget) return;
 
-    const shell = getChartShellFromPoint(point);
-    if (!shell) return;
+    activeChartTooltipTarget = null;
 
-    hideAllChartTooltips();
-    positionTooltip(shell, point);
+    if (playerDetailsChartTooltip) {
+      delete playerDetailsChartTooltip.dataset.visible;
+    }
   }
+
+  document.addEventListener("pointerover", (event) => {
+    const target = event.target instanceof Element
+      ? event.target.closest("[data-chart-tooltip]")
+      : null;
+
+    if (target) {
+      showChartTooltip(target);
+    }
+  });
+
+  document.addEventListener("pointerout", (event) => {
+    const target = event.target instanceof Element
+      ? event.target.closest("[data-chart-tooltip]")
+      : null;
+
+    if (target) {
+      hideChartTooltip(target);
+    }
+  });
+
+  document.addEventListener("focusin", (event) => {
+    const target = event.target instanceof Element
+      ? event.target.closest("[data-chart-tooltip]")
+      : null;
+
+    if (target) {
+      showChartTooltip(target);
+    }
+  });
+
+  document.addEventListener("focusout", (event) => {
+    const target = event.target instanceof Element
+      ? event.target.closest("[data-chart-tooltip]")
+      : null;
+
+    if (target) {
+      hideChartTooltip(target);
+    }
+  });
 
   document.addEventListener("click", (event) => {
-    const playerButton = event.target.closest?.("[data-player-key]");
-    const chartPoint = getPointFromEventTarget(event.target);
+    const chartTarget = event.target instanceof Element
+      ? event.target.closest("[data-chart-tooltip]")
+      : null;
 
-    if (chartPoint) {
+    if (chartTarget) {
       event.preventDefault();
       event.stopPropagation();
-      showChartTooltip(chartPoint);
+      showChartTooltip(chartTarget);
       return;
     }
 
-    if (playerButton) {
-      const key = playerButton.getAttribute("data-player-key") || "";
-      const fallbackName = playerButton.getAttribute("data-player-name") || playerButton.textContent || "";
-      const profile = PLAYER_PROFILES[key] || PLAYER_PROFILES[getPlayerKey(fallbackName)];
+    hideChartTooltip();
 
-      if (!profile) return;
+    const button = event.target instanceof Element
+      ? event.target.closest("[data-player-key], [data-player]")
+      : null;
 
+    if (button) {
       event.preventDefault();
-      openPlayerDetailsModal(profile, fallbackName, playerButton);
+      event.stopPropagation();
+      openPlayerDetailsModal(button);
       return;
     }
 
-    if (event.target.closest?.("[data-close-player-modal]")) {
+    const closeTarget = event.target instanceof Element
+      ? event.target.closest("[data-close-player-modal]")
+      : null;
+
+    if (closeTarget) {
+      event.preventDefault();
       closePlayerDetailsModal();
-      return;
-    }
-
-    if (!event.target.closest?.("[data-player-chart]")) {
-      hideAllChartTooltips();
     }
   });
 
-  playerDetailsModalClose?.addEventListener("click", closePlayerDetailsModal);
-
-  playerDetailsModalBody?.addEventListener("pointerover", (event) => {
-    const point = getPointFromEventTarget(event.target);
-    if (point) showChartTooltip(point);
+  playerDetailsModalClose?.addEventListener("click", (event) => {
+    event.preventDefault();
+    closePlayerDetailsModal();
   });
 
-  playerDetailsModalBody?.addEventListener("pointerout", (event) => {
-    const point = getPointFromEventTarget(event.target);
-    if (!point) return;
-
-    const nextTarget = event.relatedTarget;
-    if (nextTarget && point.contains(nextTarget)) return;
-
-    if (window.matchMedia && window.matchMedia("(hover: hover)").matches) {
-      hideAllChartTooltips();
-    }
+  playerDetailsModalPanel?.addEventListener("scroll", () => {
+    hideChartTooltip();
   });
 
-  playerDetailsModalBody?.addEventListener("focusin", (event) => {
-    const point = getPointFromEventTarget(event.target);
-    if (point) showChartTooltip(point);
-  });
-
-  playerDetailsModalBody?.addEventListener("focusout", (event) => {
-    const point = getPointFromEventTarget(event.target);
-    if (point) hideAllChartTooltips();
+  window.addEventListener("resize", () => {
+    hideChartTooltip();
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      if (playerDetailsModal && !playerDetailsModal.hidden) {
-        closePlayerDetailsModal();
-      }
+    if (event.key === "Escape" && playerDetailsModal && !playerDetailsModal.hasAttribute("hidden")) {
+      closePlayerDetailsModal();
     }
   });
-
-  window.addEventListener("resize", hideAllChartTooltips);
 </script>
