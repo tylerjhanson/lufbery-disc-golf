@@ -212,12 +212,16 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   }
 
   .player-details-chart-shell {
+    position: relative;
     margin-top: 0;
     margin-bottom: 10px;
     padding: 12px 12px 10px;
     border: 1px solid var(--line-soft, #eef2f7);
     border-radius: 14px;
     background: var(--header, #f8fafc);
+    touch-action: pan-y;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
   }
 
   .player-details-chart-svg {
@@ -225,6 +229,9 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     width: 100%;
     height: 180px;
     overflow: visible;
+    cursor: crosshair;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .player-details-chart-grid {
@@ -259,32 +266,68 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     vector-effect: non-scaling-stroke;
   }
 
-  .player-details-chart-hit-area {
-    fill: transparent;
-    stroke: transparent;
-    cursor: pointer;
+  .player-details-chart-active-line {
+    stroke: var(--muted, #6b7280);
+    stroke-width: 1;
+    stroke-dasharray: 3 4;
+    opacity: 0;
+    pointer-events: none;
+    vector-effect: non-scaling-stroke;
   }
 
-  .player-details-chart-tooltip-fixed {
+  .player-details-chart-active-dot {
+    fill: var(--card, #ffffff);
+    stroke: var(--accent, #2563eb);
+    stroke-width: 2.2;
+    opacity: 0;
+    pointer-events: none;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .player-details-chart-hit-zone {
+    fill: transparent;
+    stroke: transparent;
+    cursor: crosshair;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .player-details-chart-shell[data-chart-active="true"] .player-details-chart-active-line,
+  .player-details-chart-shell[data-chart-active="true"] .player-details-chart-active-dot {
+    opacity: 1;
+  }
+
+  .player-details-chart-tooltip {
     position: fixed;
-    z-index: 3000;
-    max-width: min(240px, calc(100vw - 24px));
+    left: 0;
+    top: 0;
+    z-index: 1200;
+    min-width: 112px;
+    max-width: min(240px, calc(100vw - 16px));
     padding: 8px 10px;
     border: 1px solid var(--line-soft, #e5e7eb);
     border-radius: 10px;
     background: var(--card, #ffffff);
     color: var(--text, #111827);
-    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.18);
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
     font-size: 0.82rem;
     line-height: 1.25;
-    font-weight: 700;
-    pointer-events: none;
+    font-weight: 800;
     opacity: 0;
-    transform: translate(-50%, calc(-100% - 12px));
-    transition: opacity 0.08s ease;
+    pointer-events: none;
+    white-space: normal;
+    transition: opacity 0.1s ease;
   }
 
-  .player-details-chart-tooltip-fixed[data-visible="true"] {
+  .player-details-chart-tooltip span {
+    display: block;
+    margin-top: 2px;
+    color: var(--muted, #6b7280);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .player-details-chart-shell[data-chart-active="true"] .player-details-chart-tooltip {
     opacity: 1;
   }
 
@@ -565,13 +608,6 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     return Number(value).toFixed(1);
   }
 
-  function formatChartValue(value) {
-    const numericValue = Number(value);
-    if (!Number.isFinite(numericValue)) return "";
-
-    return Number.isInteger(numericValue) ? String(numericValue) : numericValue.toFixed(1);
-  }
-
   function buildYearlyScoreAverages(rounds) {
     if (!Array.isArray(rounds) || !rounds.length) return [];
 
@@ -724,16 +760,16 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   function buildLineChart(values, ariaLabel, lowerValuesAtBottom = false, options = {}) {
     if (!values || !values.length) return "";
 
-    const chartValues = values
+    const cleanValues = values
       .map((point) => ({
         ...point,
         value: Number(point.value),
       }))
       .filter((point) => !Number.isNaN(point.value));
 
-    if (!chartValues.length) return "";
+    const numericValues = cleanValues.map((point) => Number(point.value));
 
-    const numericValues = chartValues.map((point) => Number(point.value));
+    if (!numericValues.length) return "";
 
     const width = 640;
     const height = 200;
@@ -781,26 +817,29 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     }
 
     const getX = (index) =>
-      chartValues.length === 1
+      cleanValues.length === 1
         ? padLeft + innerWidth / 2
-        : padLeft + (index / (chartValues.length - 1)) * innerWidth;
+        : padLeft + (index / (cleanValues.length - 1)) * innerWidth;
 
     const getY = (value) =>
       lowerValuesAtBottom
         ? padTop + ((chartMax - value) / (chartMax - chartMin)) * innerHeight
         : padTop + ((value - chartMin) / (chartMax - chartMin)) * innerHeight;
 
-    const pointCoordinates = chartValues.map((point, index) => ({
-      ...point,
+    const pointCoordinates = cleanValues.map((point, index) => ({
       x: getX(index),
       y: getY(Number(point.value)),
+      title: String(point.title || ""),
+      valueLabel: String(point.valueLabel || point.value),
     }));
 
-    const playerPoints = pointCoordinates.map((point) => `${point.x},${point.y}`).join(" ");
+    const playerPoints = pointCoordinates
+      .map((point) => `${point.x},${point.y}`)
+      .join(" ");
 
     const showTrend = options.showTrend !== false;
     const trendValues = showTrend
-      ? buildTrendValues(chartValues.map((point) => ({ score: Number(point.value) })))
+      ? buildTrendValues(cleanValues.map((point) => ({ score: Number(point.value) })))
       : [];
     const trendPoints = trendValues.length
       ? trendValues.map((value, index) => `${getX(index)},${getY(value)}`).join(" ")
@@ -827,28 +866,10 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       })
       .join("");
 
-    const pointMarkup = pointCoordinates
-      .map((point) => {
-        const valueText = point.valueLabel || formatChartValue(point.value);
-        const labelText = point.label ? `${point.label}: ${valueText}` : valueText;
-
-        return `
-          <circle
-            class="player-details-chart-hit-area"
-            cx="${point.x}"
-            cy="${point.y}"
-            r="15"
-            data-chart-tooltip="${escapeHtml(labelText)}"
-            tabindex="0"
-            role="button"
-            aria-label="${escapeHtml(labelText)}"
-          />
-        `;
-      })
-      .join("");
+    const pointsJson = escapeHtml(JSON.stringify(pointCoordinates));
 
     return `
-      <div class="player-details-chart-shell">
+      <div class="player-details-chart-shell" data-player-chart data-chart-points="${pointsJson}">
         <svg
           class="player-details-chart-svg"
           viewBox="0 0 ${width} ${height}"
@@ -858,8 +879,28 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
           ${gridMarkup}
           ${trendPoints ? `<polyline class="player-details-chart-line-trend" points="${trendPoints}" />` : ""}
           <polyline class="player-details-chart-line-player" points="${playerPoints}" />
-          ${pointMarkup}
+          <line
+            class="player-details-chart-active-line"
+            x1="0"
+            y1="${padTop}"
+            x2="0"
+            y2="${height - padBottom}"
+          />
+          <circle
+            class="player-details-chart-active-dot"
+            cx="0"
+            cy="0"
+            r="5"
+          />
+          <rect
+            class="player-details-chart-hit-zone"
+            x="${padLeft}"
+            y="0"
+            width="${innerWidth}"
+            height="${height}"
+          />
         </svg>
+        <div class="player-details-chart-tooltip" aria-hidden="true"></div>
       </div>
     `;
   }
@@ -870,10 +911,12 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     return buildLineChart(
       rounds.map((round) => {
         const score = Number(round.score);
+        const date = String(round.date || "");
+
         return {
           value: score,
-          label: String(round.date || ""),
-          valueLabel: formatScoreWithPar(score),
+          title: date,
+          valueLabel: `Score ${formatScoreWithPar(score)}`,
         };
       }),
       "Score history chart",
@@ -899,7 +942,8 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     return buildLineChart(
       values.map((row) => ({
         value: row.handicap,
-        label: row.date,
+        title: row.date,
+        valueLabel: `Handicap ${row.handicap}`,
       })),
       "Handicap history chart",
       true,
@@ -914,7 +958,8 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       history
         .map((row) => ({
           value: Number(row.tag),
-          label: String(row.date || ""),
+          title: String(row.date || ""),
+          valueLabel: `Tag ${Number(row.tag)}`,
         }))
         .filter((row) => !Number.isNaN(row.value)),
       "Tag history chart",
@@ -1138,6 +1183,120 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
         ${acesMarkup}
       </div>
     `;
+
+    initializePlayerChartInteractions();
+  }
+
+  function parseChartPoints(chart) {
+    try {
+      return JSON.parse(chart?.dataset?.chartPoints || "[]");
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function getNearestChartPoint(chart, clientX) {
+    const svg = chart?.querySelector(".player-details-chart-svg");
+    const points = parseChartPoints(chart);
+
+    if (!svg || !points.length) return null;
+
+    const rect = svg.getBoundingClientRect();
+    const viewBox = svg.viewBox?.baseVal;
+
+    if (!rect.width || !viewBox) return null;
+
+    const svgX = viewBox.x + ((clientX - rect.left) / rect.width) * viewBox.width;
+
+    return points.reduce((nearest, point) => {
+      if (!nearest) return point;
+      return Math.abs(point.x - svgX) < Math.abs(nearest.x - svgX) ? point : nearest;
+    }, null);
+  }
+
+  function setChartActivePoint(chart, point) {
+    const svg = chart?.querySelector(".player-details-chart-svg");
+    const line = chart?.querySelector(".player-details-chart-active-line");
+    const dot = chart?.querySelector(".player-details-chart-active-dot");
+    const tooltip = chart?.querySelector(".player-details-chart-tooltip");
+
+    if (!chart || !svg || !line || !dot || !tooltip || !point) return;
+
+    line.setAttribute("x1", String(point.x));
+    line.setAttribute("x2", String(point.x));
+    dot.setAttribute("cx", String(point.x));
+    dot.setAttribute("cy", String(point.y));
+
+    const title = String(point.title || "");
+    const valueLabel = String(point.valueLabel || "");
+    tooltip.innerHTML = `${title ? `<strong>${escapeHtml(title)}</strong>` : ""}${
+      valueLabel ? `<span>${escapeHtml(valueLabel)}</span>` : ""
+    }`;
+
+    chart.dataset.chartActive = "true";
+    tooltip.setAttribute("aria-hidden", "false");
+
+    const svgRect = svg.getBoundingClientRect();
+    const viewBox = svg.viewBox.baseVal;
+    const anchorX = svgRect.left + ((point.x - viewBox.x) / viewBox.width) * svgRect.width;
+    const anchorY = svgRect.top + ((point.y - viewBox.y) / viewBox.height) * svgRect.height;
+
+    tooltip.style.left = "0px";
+    tooltip.style.top = "0px";
+
+    requestAnimationFrame(() => {
+      const tooltipRect = tooltip.getBoundingClientRect();
+      const margin = 8;
+      let left = anchorX - tooltipRect.width / 2;
+      let top = anchorY - tooltipRect.height - 12;
+
+      if (top < margin) {
+        top = anchorY + 12;
+      }
+
+      left = Math.max(margin, Math.min(left, window.innerWidth - tooltipRect.width - margin));
+      top = Math.max(margin, Math.min(top, window.innerHeight - tooltipRect.height - margin));
+
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${top}px`;
+    });
+  }
+
+  function clearChartActivePoint(chart) {
+    if (!chart) return;
+
+    const tooltip = chart.querySelector(".player-details-chart-tooltip");
+    delete chart.dataset.chartActive;
+
+    if (tooltip) {
+      tooltip.setAttribute("aria-hidden", "true");
+    }
+  }
+
+  function initializePlayerChartInteractions() {
+    if (!playerDetailsModalBody) return;
+
+    const charts = playerDetailsModalBody.querySelectorAll("[data-player-chart]");
+
+    charts.forEach((chart) => {
+      chart.addEventListener("pointermove", (event) => {
+        if (event.pointerType === "touch") return;
+
+        const point = getNearestChartPoint(chart, event.clientX);
+        if (point) setChartActivePoint(chart, point);
+      });
+
+      chart.addEventListener("pointerdown", (event) => {
+        const point = getNearestChartPoint(chart, event.clientX);
+        if (point) setChartActivePoint(chart, point);
+      });
+
+      chart.addEventListener("pointerleave", (event) => {
+        if (event.pointerType !== "touch") {
+          clearChartActivePoint(chart);
+        }
+      });
+    });
   }
 
   function normalizePlayerKey(value) {
@@ -1177,7 +1336,6 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   function closePlayerDetailsModal() {
     if (!playerDetailsModal) return;
 
-    hideChartTooltip();
     playerDetailsModal.setAttribute("hidden", "");
     document.body.style.overflow = "";
 
@@ -1186,126 +1344,7 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
     }
   }
 
-  let activeChartTooltipTarget = null;
-  let playerDetailsChartTooltip = null;
-
-  function getPlayerDetailsChartTooltip() {
-    if (playerDetailsChartTooltip) return playerDetailsChartTooltip;
-
-    playerDetailsChartTooltip = document.createElement("div");
-    playerDetailsChartTooltip.className = "player-details-chart-tooltip-fixed";
-    playerDetailsChartTooltip.setAttribute("aria-hidden", "true");
-    document.body.appendChild(playerDetailsChartTooltip);
-
-    return playerDetailsChartTooltip;
-  }
-
-  function clampChartTooltipPosition(left, top, tooltip) {
-    const margin = 12;
-    const rect = tooltip.getBoundingClientRect();
-    const halfWidth = rect.width / 2 || 120;
-
-    const clampedLeft = Math.max(
-      margin + halfWidth,
-      Math.min(window.innerWidth - margin - halfWidth, left)
-    );
-
-    const needsBelow = top - rect.height - 16 < margin;
-    const clampedTop = needsBelow ? top + 28 : top;
-
-    tooltip.style.transform = needsBelow
-      ? "translate(-50%, 0)"
-      : "translate(-50%, calc(-100% - 12px))";
-
-    return { left: clampedLeft, top: clampedTop };
-  }
-
-  function showChartTooltip(target) {
-    if (!(target instanceof Element)) return;
-
-    const text = target.getAttribute("data-chart-tooltip") || "";
-    if (!text) return;
-
-    const tooltip = getPlayerDetailsChartTooltip();
-    activeChartTooltipTarget = target;
-    tooltip.textContent = text;
-    tooltip.dataset.visible = "true";
-
-    const targetRect = target.getBoundingClientRect();
-    const { left, top } = clampChartTooltipPosition(
-      targetRect.left + targetRect.width / 2,
-      targetRect.top + targetRect.height / 2,
-      tooltip
-    );
-
-    tooltip.style.left = `${left}px`;
-    tooltip.style.top = `${top}px`;
-  }
-
-  function hideChartTooltip(target = null) {
-    if (target && activeChartTooltipTarget && target !== activeChartTooltipTarget) return;
-
-    activeChartTooltipTarget = null;
-
-    if (playerDetailsChartTooltip) {
-      delete playerDetailsChartTooltip.dataset.visible;
-    }
-  }
-
-  document.addEventListener("pointerover", (event) => {
-    const target = event.target instanceof Element
-      ? event.target.closest("[data-chart-tooltip]")
-      : null;
-
-    if (target) {
-      showChartTooltip(target);
-    }
-  });
-
-  document.addEventListener("pointerout", (event) => {
-    const target = event.target instanceof Element
-      ? event.target.closest("[data-chart-tooltip]")
-      : null;
-
-    if (target) {
-      hideChartTooltip(target);
-    }
-  });
-
-  document.addEventListener("focusin", (event) => {
-    const target = event.target instanceof Element
-      ? event.target.closest("[data-chart-tooltip]")
-      : null;
-
-    if (target) {
-      showChartTooltip(target);
-    }
-  });
-
-  document.addEventListener("focusout", (event) => {
-    const target = event.target instanceof Element
-      ? event.target.closest("[data-chart-tooltip]")
-      : null;
-
-    if (target) {
-      hideChartTooltip(target);
-    }
-  });
-
   document.addEventListener("click", (event) => {
-    const chartTarget = event.target instanceof Element
-      ? event.target.closest("[data-chart-tooltip]")
-      : null;
-
-    if (chartTarget) {
-      event.preventDefault();
-      event.stopPropagation();
-      showChartTooltip(chartTarget);
-      return;
-    }
-
-    hideChartTooltip();
-
     const button = event.target instanceof Element
       ? event.target.closest("[data-player-key], [data-player]")
       : null;
@@ -1330,14 +1369,6 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
   playerDetailsModalClose?.addEventListener("click", (event) => {
     event.preventDefault();
     closePlayerDetailsModal();
-  });
-
-  playerDetailsModalPanel?.addEventListener("scroll", () => {
-    hideChartTooltip();
-  });
-
-  window.addEventListener("resize", () => {
-    hideChartTooltip();
   });
 
   document.addEventListener("keydown", (event) => {
