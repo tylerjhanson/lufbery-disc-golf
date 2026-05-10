@@ -933,8 +933,8 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
         return {
           value: score,
           title: date,
-          valueLabel: `Score ${scoreText}`,
-          detail: `${date} — Score ${scoreText}`,
+          valueLabel: `${scoreText}`,
+          detail: `${date} — ${scoreText}`,
         };
       }),
       "Score history chart",
@@ -961,8 +961,8 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
       values.map((row) => ({
         value: row.handicap,
         title: row.date,
-        valueLabel: `Handicap ${formatChartValue(row.handicap)}`,
-        detail: `${row.date} — Handicap ${formatChartValue(row.handicap)}`,
+        valueLabel: `${formatChartValue(row.handicap)}`,
+        detail: `${row.date} — ${formatChartValue(row.handicap)}`,
       })),
       "Handicap history chart",
       true,
@@ -978,8 +978,8 @@ const profileJson = JSON.stringify(profiles).replace(/</g, "\\u003c");
         .map((row) => ({
           value: Number(row.tag),
           title: String(row.date || ""),
-          valueLabel: `Tag #${formatChartValue(row.tag)}`,
-          detail: `${String(row.date || "")} — Tag #${formatChartValue(row.tag)}`,
+          valueLabel: `#${formatChartValue(row.tag)}`,
+          detail: `${String(row.date || "")} — #${formatChartValue(row.tag)}`,
         }))
         .filter((row) => !Number.isNaN(row.value)),
       "Tag history chart",
