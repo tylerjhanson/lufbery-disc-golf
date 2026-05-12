@@ -1006,7 +1006,7 @@ function buildHandicapRecap(event, playerMap) {
   const lines = [
     bold(`Lufbery Handicap Results for ${fullDate}`),
     "",
-    `Full results and updated tags/handicaps: ${SITE_URL}`,
+    `Full results and updated tags / handicaps: ${SITE_URL}`,
   ];
 
   if (personalBestSentence) {
@@ -1053,7 +1053,7 @@ function buildHandicapRecap(event, playerMap) {
     bold(formatMoneyHeader("Best overall", overallAmounts, overallRows.length)),
     ...(overallRows.length ? overallRows.map((row) => row.name) : ["None"]),
     "",
-    bold("#1 tag"),
+    bold("#1 Tag"),
     getNumberOneTagSummary(playerMap, participants)
   );
 
@@ -1107,7 +1107,7 @@ function buildMonthlyRecap(event, playerMap, allEvents) {
       ? bold(`Lufbery 27-Hole Recap for ${fullDate}`)
       : bold(`${monthName} Lufbery Monthly Recap`),
     "",
-    `Full results and updated tags/handicaps: ${SITE_URL}`,
+    `Full results and updated tags / handicaps: ${SITE_URL}`,
     "",
     isTwoRound
       ? `${participants.length} joined us today for our 27-hole event.`
