@@ -622,6 +622,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       if (!cell) return "";
 
       const isDateColumn = visibleColIndex === 0;
+      const isLast4Column = visibleColIndex === 4;
 
       if (isDateColumn) {
         if (cell.v instanceof Date) return formatDateValue(cell.v);
@@ -633,6 +634,25 @@ import SiteLayout from "../layouts/SiteLayout.astro";
 
         const parsed = tryParseDate(formatted);
         return parsed ? formatDateValue(parsed) : formatted;
+      }
+
+      if (isLast4Column) {
+        const formatted =
+          cell.f !== null && cell.f !== undefined && cell.f !== ""
+            ? String(cell.f).trim()
+            : "";
+
+        if (formatted) return formatted;
+
+        const rawText = String(cell.v ?? "").trim();
+        if (!rawText) return "";
+
+        const digits = rawText.replace(/\D/g, "");
+        if (/^\d{1,4}$/.test(digits)) {
+          return digits.padStart(4, "0");
+        }
+
+        return rawText;
       }
 
       if (cell.f !== null && cell.f !== undefined && cell.f !== "") return String(cell.f);
