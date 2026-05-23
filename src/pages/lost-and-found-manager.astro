@@ -303,11 +303,11 @@ const messageText =
     }
 
     .lost-found-manager-page table.lfm-table col.col-select { width: 3.2rem; }
-    .lost-found-manager-page table.lfm-table col.col-name { width: 7.5ch; }
-    .lost-found-manager-page table.lfm-table col.col-deadline { width: 7ch; }
+    .lost-found-manager-page table.lfm-table col.col-deadline { width: 5.8ch; }
+    .lost-found-manager-page table.lfm-table col.col-name { width: 7.2ch; }
     .lost-found-manager-page table.lfm-table col.col-disc { width: 8.5ch; }
     .lost-found-manager-page table.lfm-table col.col-color { width: 5.5ch; }
-    .lost-found-manager-page table.lfm-table col.col-phone { width: 9ch; }
+    .lost-found-manager-page table.lfm-table col.col-phone { width: 10.5ch; }
     .lost-found-manager-page table.lfm-table col.col-actions { width: 7ch; }
 
     .lost-found-manager-page table.lfm-table thead th {
@@ -386,10 +386,17 @@ const messageText =
     .lost-found-manager-page table.lfm-table tbody tr:nth-child(odd) td { background: transparent !important; }
     .lost-found-manager-page table.lfm-table tbody tr:hover td { background: var(--hover, #f9fbff) !important; }
 
+    .lost-found-manager-page table.lfm-table tbody td:nth-child(2),
+    .lost-found-manager-page table.lfm-table tbody td:nth-child(6) {
+      white-space: nowrap;
+    }
+
     .lost-found-manager-page .lfm-phone-link {
       color: var(--accent);
       text-decoration: none;
       font-weight: 600;
+      white-space: nowrap;
+      display: inline-block;
     }
 
     .lost-found-manager-page .lfm-phone-link:hover { text-decoration: underline; }
@@ -675,11 +682,11 @@ const messageText =
         flex-direction: column;
       }
 
-      .lost-found-manager-page table.lfm-table col.col-name { width: 6.5ch; }
-      .lost-found-manager-page table.lfm-table col.col-deadline { width: 6.8ch; }
+      .lost-found-manager-page table.lfm-table col.col-deadline { width: 5.2ch; }
+      .lost-found-manager-page table.lfm-table col.col-name { width: 6.4ch; }
       .lost-found-manager-page table.lfm-table col.col-disc { width: 7.5ch; }
       .lost-found-manager-page table.lfm-table col.col-color { width: 5ch; }
-      .lost-found-manager-page table.lfm-table col.col-phone { width: 8ch; }
+      .lost-found-manager-page table.lfm-table col.col-phone { width: 9.2ch; }
       .lost-found-manager-page table.lfm-table col.col-actions { width: 6.5ch; }
 
       .lost-found-manager-page table.lfm-table thead th {
@@ -710,11 +717,11 @@ const messageText =
     @media (max-width: 420px) {
       .lost-found-manager-page h1 { font-size: 1.9rem; }
       .lost-found-manager-page .lfm-card { padding: 18px 10px 14px; }
-      .lost-found-manager-page table.lfm-table col.col-name { width: 6ch; }
-      .lost-found-manager-page table.lfm-table col.col-deadline { width: 6.3ch; }
+      .lost-found-manager-page table.lfm-table col.col-deadline { width: 4.9ch; }
+      .lost-found-manager-page table.lfm-table col.col-name { width: 5.8ch; }
       .lost-found-manager-page table.lfm-table col.col-disc { width: 7ch; }
       .lost-found-manager-page table.lfm-table col.col-color { width: 4.8ch; }
-      .lost-found-manager-page table.lfm-table col.col-phone { width: 7.4ch; }
+      .lost-found-manager-page table.lfm-table col.col-phone { width: 8.6ch; }
       .lost-found-manager-page table.lfm-table col.col-actions { width: 6ch; }
 
       .lost-found-manager-page table.lfm-table thead th {
@@ -805,8 +812,8 @@ const messageText =
             <table class="lfm-table">
               <colgroup>
                 <col class="col-select" />
-                <col class="col-name" />
                 <col class="col-deadline" />
+                <col class="col-name" />
                 <col class="col-disc" />
                 <col class="col-color" />
                 <col class="col-phone" />
@@ -817,13 +824,13 @@ const messageText =
                   <th class="lfm-select-th"></th>
                   <th>
                     <button class="lfm-th-button" type="button" data-sort-index="0">
-                      <span>Name</span>
+                      <span>Deadline</span>
                       <span class="lfm-sort-indicator" data-sort-indicator="0"></span>
                     </button>
                   </th>
                   <th>
                     <button class="lfm-th-button" type="button" data-sort-index="1">
-                      <span>Deadline</span>
+                      <span>Name</span>
                       <span class="lfm-sort-indicator" data-sort-indicator="1"></span>
                     </button>
                   </th>
@@ -962,10 +969,10 @@ const messageText =
       deleteArmed: false,
       selectedRows: new Set(),
       sorts: {
-        current: { index: 1, dir: "asc" },
-        returned: { index: 5, dir: "desc" },
-        donated: { index: 5, dir: "desc" },
-        sold: { index: 5, dir: "desc" },
+        current: { index: 0, dir: "desc" },
+        returned: { index: 0, dir: "desc" },
+        donated: { index: 0, dir: "desc" },
+        sold: { index: 0, dir: "desc" },
       },
     };
 
@@ -1065,9 +1072,18 @@ const messageText =
       return addDays(logged, 60);
     }
 
+    function formatDeadlineDisplay(value) {
+      const parsed = parseDisplayDate(value);
+      if (!parsed) return String(value ?? "").trim();
+
+      const month = parsed.getMonth() + 1;
+      const day = parsed.getDate();
+      return `${month}/${day}`;
+    }
+
     function getDeadlineDisplay(row) {
       const deadline = getDeadlineDate(row);
-      return deadline ? formatDisplayDate(deadline) : "";
+      return deadline ? formatDeadlineDisplay(deadline) : "";
     }
 
     function resetDeleteConfirmation() {
@@ -1107,12 +1123,12 @@ const messageText =
 
     function getSortValue(row, index) {
       switch (index) {
-        case 0:
-          return String(row.name ?? "").trim().toLowerCase();
-        case 1: {
+        case 0: {
           const deadline = getDeadlineDate(row);
           return deadline ? deadline.getTime() : 0;
         }
+        case 1:
+          return String(row.name ?? "").trim().toLowerCase();
         case 2:
           return String(row.disc ?? "").trim().toLowerCase();
         case 3:
@@ -1304,8 +1320,8 @@ function getViewCount(view) {
               <td class="lfm-select-cell">
                 <input type="checkbox" class="lfm-row-check" data-select-row="${rowNumber}" ${checked} />
               </td>
-              <td>${escapeHtml(row.name || "") || "&nbsp;"}</td>
               <td>${escapeHtml(getDeadlineDisplay(row)) || "—"}</td>
+              <td>${escapeHtml(row.name || "") || "&nbsp;"}</td>
               <td>${escapeHtml(row.disc || "") || "&nbsp;"}</td>
               <td>${escapeHtml(row.color || "") || "&nbsp;"}</td>
               <td>${phoneHtml}</td>
@@ -1406,6 +1422,8 @@ function getViewCount(view) {
 
       if (state.activeView === view) {
         renderTable();
+      } else {
+        updateFilterButtons();
       }
     }
 
@@ -1415,10 +1433,24 @@ function getViewCount(view) {
     }
 
     async function refreshLoadedViews() {
-      const views = ["current", "returned", "donated", "sold"];
+      const views = ["current", "returned", "donated", "sold"].filter(
+        (view) => state.loaded[view] || view === state.activeView || view === "current"
+      );
 
       for (const view of views) {
         await loadView(view);
+      }
+    }
+
+    async function loadRemainingViewsInBackground() {
+      const views = ["returned", "donated", "sold"].filter((view) => !state.loaded[view]);
+
+      for (const view of views) {
+        try {
+          await loadView(view);
+        } catch (error) {
+          console.error(error);
+        }
       }
     }
 
@@ -1430,7 +1462,7 @@ function getViewCount(view) {
 
       state.password = trimmed;
       state.activeView = "current";
-      await refreshLoadedViews();
+      await loadView("current");
       renderTable();
 
       if (remember) {
@@ -1443,6 +1475,8 @@ function getViewCount(view) {
       appWrap.hidden = false;
       setStatus(loginStatus, "");
       setStatus(appStatus, "");
+
+      loadRemainingViewsInBackground();
     }
 
     function showLogin(message = "", type = "") {
