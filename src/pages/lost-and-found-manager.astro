@@ -286,8 +286,8 @@ const messageText =
     }
 
     .lost-found-manager-page .lfm-select-cell input {
-      width: 14px;
-      height: 14px;
+      width: 13px;
+      height: 13px;
       accent-color: var(--accent);
       cursor: pointer;
     }
@@ -302,7 +302,7 @@ const messageText =
       margin: 0;
     }
 
-    .lost-found-manager-page table.lfm-table col.col-select { width: 2.2rem; }
+    .lost-found-manager-page table.lfm-table col.col-select { width: 1.9rem; }
     .lost-found-manager-page table.lfm-table col.col-deadline { width: 5.8ch; }
     .lost-found-manager-page table.lfm-table col.col-name { width: 7.2ch; }
     .lost-found-manager-page table.lfm-table col.col-disc { width: 8.5ch; }
@@ -327,7 +327,7 @@ const messageText =
     .lost-found-manager-page .lfm-select-th,
     .lost-found-manager-page .lfm-select-cell {
       text-align: center !important;
-      width: 2.2rem;
+      width: 1.9rem;
     }
 
     .lost-found-manager-page table.lfm-table thead th:first-child {
@@ -391,12 +391,20 @@ const messageText =
       white-space: nowrap;
     }
 
+    .lost-found-manager-page table.lfm-table tbody td:nth-child(3),
+    .lost-found-manager-page table.lfm-table tbody td:nth-child(4),
+    .lost-found-manager-page table.lfm-table tbody td:nth-child(5) {
+      word-break: normal;
+      overflow-wrap: normal;
+    }
+
     .lost-found-manager-page .lfm-phone-link {
       color: var(--accent);
       text-decoration: none;
       font-weight: 600;
       white-space: nowrap;
       display: inline-block;
+      font-variant-numeric: tabular-nums;
     }
 
     .lost-found-manager-page .lfm-phone-link:hover { text-decoration: underline; }
@@ -410,9 +418,9 @@ const messageText =
     }
 
     .lost-found-manager-page .lfm-row-actions .lfm-button {
-      min-height: 32px;
-      padding: 0 10px;
-      font-size: 0.8rem;
+      min-height: 30px;
+      padding: 0 8px;
+      font-size: 0.78rem;
     }
 
     .lost-found-manager-page .lfm-empty {
@@ -682,58 +690,60 @@ const messageText =
         flex-direction: column;
       }
 
-      .lost-found-manager-page table.lfm-table col.col-deadline { width: 4.2ch; }
-      .lost-found-manager-page table.lfm-table col.col-name { width: 6.4ch; }
-      .lost-found-manager-page table.lfm-table col.col-disc { width: 7.5ch; }
-      .lost-found-manager-page table.lfm-table col.col-color { width: 5ch; }
-      .lost-found-manager-page table.lfm-table col.col-phone { width: 9.2ch; }
-      .lost-found-manager-page table.lfm-table col.col-actions { width: 6.5ch; }
+      .lost-found-manager-page table.lfm-table col.col-select { width: 1.55rem; }
+      .lost-found-manager-page table.lfm-table col.col-deadline { width: 3.6ch; }
+      .lost-found-manager-page table.lfm-table col.col-name { width: 5.6ch; }
+      .lost-found-manager-page table.lfm-table col.col-disc { width: 6.4ch; }
+      .lost-found-manager-page table.lfm-table col.col-color { width: 4.4ch; }
+      .lost-found-manager-page table.lfm-table col.col-phone { width: 8.4ch; }
+      .lost-found-manager-page table.lfm-table col.col-actions { width: 4.9ch; }
 
       .lost-found-manager-page table.lfm-table thead th {
-        font-size: 0.58rem !important;
-        padding: 6px 2px !important;
+        font-size: 0.52rem !important;
+        padding: 4px 1px !important;
         letter-spacing: 0 !important;
-        line-height: 1.05 !important;
+        line-height: 1.02 !important;
       }
 
       .lost-found-manager-page table.lfm-table thead th:first-child { padding-left: 0 !important; }
-      .lost-found-manager-page .lfm-sort-indicator { font-size: 0.56rem !important; }
+      .lost-found-manager-page .lfm-sort-indicator { font-size: 0.48rem !important; }
 
       .lost-found-manager-page table.lfm-table tbody td {
-        font-size: 0.76rem !important;
-        padding: 6px 2px !important;
-        line-height: 1.06 !important;
+        font-size: 0.68rem !important;
+        padding: 4px 1px !important;
+        line-height: 1.02 !important;
       }
 
       .lost-found-manager-page table.lfm-table tbody td:first-child { padding-left: 0 !important; }
 
       .lost-found-manager-page .lfm-row-actions .lfm-button {
-        min-height: 30px;
-        padding: 0 8px;
-        font-size: 0.76rem;
+        min-height: 26px;
+        padding: 0 6px;
+        font-size: 0.68rem;
       }
     }
 
     @media (max-width: 420px) {
       .lost-found-manager-page h1 { font-size: 1.9rem; }
       .lost-found-manager-page .lfm-card { padding: 18px 10px 14px; }
-      .lost-found-manager-page table.lfm-table col.col-deadline { width: 4.9ch; }
-      .lost-found-manager-page table.lfm-table col.col-name { width: 5.8ch; }
-      .lost-found-manager-page table.lfm-table col.col-disc { width: 7ch; }
-      .lost-found-manager-page table.lfm-table col.col-color { width: 4.8ch; }
-      .lost-found-manager-page table.lfm-table col.col-phone { width: 8.6ch; }
-      .lost-found-manager-page table.lfm-table col.col-actions { width: 6ch; }
+      .lost-found-manager-page table.lfm-table col.col-select { width: 1.45rem; }
+      .lost-found-manager-page table.lfm-table col.col-deadline { width: 3.4ch; }
+      .lost-found-manager-page table.lfm-table col.col-name { width: 5.1ch; }
+      .lost-found-manager-page table.lfm-table col.col-disc { width: 5.9ch; }
+      .lost-found-manager-page table.lfm-table col.col-color { width: 4.1ch; }
+      .lost-found-manager-page table.lfm-table col.col-phone { width: 7.8ch; }
+      .lost-found-manager-page table.lfm-table col.col-actions { width: 4.5ch; }
 
       .lost-found-manager-page table.lfm-table thead th {
-        font-size: 0.54rem !important;
-        padding: 5px 2px !important;
+        font-size: 0.48rem !important;
+        padding: 4px 1px !important;
       }
 
-      .lost-found-manager-page .lfm-sort-indicator { font-size: 0.52rem !important; }
+      .lost-found-manager-page .lfm-sort-indicator { font-size: 0.44rem !important; }
 
       .lost-found-manager-page table.lfm-table tbody td {
-        font-size: 0.72rem !important;
-        padding: 5px 2px !important;
+        font-size: 0.64rem !important;
+        padding: 4px 1px !important;
       }
     }
   </style>
