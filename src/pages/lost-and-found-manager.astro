@@ -182,6 +182,25 @@ const messageText =
       border-color: #a78bfa;
     }
 
+    .lost-found-manager-page .lfm-button-delete {
+      background: #7f1d1d;
+      border-color: #7f1d1d;
+      color: #fff;
+    }
+
+    .lost-found-manager-page .lfm-button-delete:hover {
+      background: #991b1b;
+      border-color: #991b1b;
+    }
+
+    .lost-found-manager-page .lfm-delete-note {
+      width: 100%;
+      color: #b91c1c;
+      font-size: 0.88rem;
+      line-height: 1.35;
+      margin-top: -2px;
+    }
+
     .lost-found-manager-page .lfm-button-light {
       background: #fff;
       color: var(--text);
@@ -285,6 +304,7 @@ const messageText =
 
     .lost-found-manager-page table.lfm-table col.col-select { width: 3.2rem; }
     .lost-found-manager-page table.lfm-table col.col-name { width: 7.5ch; }
+    .lost-found-manager-page table.lfm-table col.col-deadline { width: 7ch; }
     .lost-found-manager-page table.lfm-table col.col-disc { width: 8.5ch; }
     .lost-found-manager-page table.lfm-table col.col-color { width: 5.5ch; }
     .lost-found-manager-page table.lfm-table col.col-phone { width: 9ch; }
@@ -543,6 +563,16 @@ const messageText =
       color: #ddd6fe !important;
     }
 
+    html[data-theme="dark"] .lost-found-manager-page .lfm-button-delete {
+      background: rgba(127, 29, 29, 0.55) !important;
+      border-color: rgba(248, 113, 113, 0.45) !important;
+      color: #fee2e2 !important;
+    }
+
+    html[data-theme="dark"] .lost-found-manager-page .lfm-delete-note {
+      color: #fecaca !important;
+    }
+
     html[data-theme="dark"] .lost-found-manager-page table.lfm-table thead th {
       background: #162033 !important;
       color: var(--muted) !important;
@@ -607,6 +637,16 @@ const messageText =
         color: #ddd6fe !important;
       }
 
+      html[data-theme="system"] .lost-found-manager-page .lfm-button-delete {
+        background: rgba(127, 29, 29, 0.55) !important;
+        border-color: rgba(248, 113, 113, 0.45) !important;
+        color: #fee2e2 !important;
+      }
+
+      html[data-theme="system"] .lost-found-manager-page .lfm-delete-note {
+        color: #fecaca !important;
+      }
+
       html[data-theme="system"] .lost-found-manager-page table.lfm-table thead th {
         background: #162033 !important;
         color: var(--muted) !important;
@@ -636,6 +676,7 @@ const messageText =
       }
 
       .lost-found-manager-page table.lfm-table col.col-name { width: 6.5ch; }
+      .lost-found-manager-page table.lfm-table col.col-deadline { width: 6.8ch; }
       .lost-found-manager-page table.lfm-table col.col-disc { width: 7.5ch; }
       .lost-found-manager-page table.lfm-table col.col-color { width: 5ch; }
       .lost-found-manager-page table.lfm-table col.col-phone { width: 8ch; }
@@ -670,6 +711,7 @@ const messageText =
       .lost-found-manager-page h1 { font-size: 1.9rem; }
       .lost-found-manager-page .lfm-card { padding: 18px 10px 14px; }
       .lost-found-manager-page table.lfm-table col.col-name { width: 6ch; }
+      .lost-found-manager-page table.lfm-table col.col-deadline { width: 6.3ch; }
       .lost-found-manager-page table.lfm-table col.col-disc { width: 7ch; }
       .lost-found-manager-page table.lfm-table col.col-color { width: 4.8ch; }
       .lost-found-manager-page table.lfm-table col.col-phone { width: 7.4ch; }
@@ -764,6 +806,7 @@ const messageText =
               <colgroup>
                 <col class="col-select" />
                 <col class="col-name" />
+                <col class="col-deadline" />
                 <col class="col-disc" />
                 <col class="col-color" />
                 <col class="col-phone" />
@@ -780,20 +823,26 @@ const messageText =
                   </th>
                   <th>
                     <button class="lfm-th-button" type="button" data-sort-index="1">
-                      <span>Disc</span>
+                      <span>Deadline</span>
                       <span class="lfm-sort-indicator" data-sort-indicator="1"></span>
                     </button>
                   </th>
                   <th>
                     <button class="lfm-th-button" type="button" data-sort-index="2">
-                      <span>Color</span>
+                      <span>Disc</span>
                       <span class="lfm-sort-indicator" data-sort-indicator="2"></span>
                     </button>
                   </th>
                   <th>
                     <button class="lfm-th-button" type="button" data-sort-index="3">
-                      <span>Phone</span>
+                      <span>Color</span>
                       <span class="lfm-sort-indicator" data-sort-indicator="3"></span>
+                    </button>
+                  </th>
+                  <th>
+                    <button class="lfm-th-button" type="button" data-sort-index="4">
+                      <span>Phone</span>
+                      <span class="lfm-sort-indicator" data-sort-indicator="4"></span>
                     </button>
                   </th>
                   <th>Action</th>
@@ -801,7 +850,7 @@ const messageText =
               </thead>
               <tbody id="lfmTableBody">
                 <tr>
-                  <td class="lfm-empty" colspan="6">Loading…</td>
+                  <td class="lfm-empty" colspan="7">Loading…</td>
                 </tr>
               </tbody>
             </table>
@@ -823,6 +872,7 @@ const messageText =
             <input id="lfmEditDisc" name="disc" type="text" placeholder="Disc" aria-label="Disc" required />
             <input id="lfmEditColor" name="color" type="text" placeholder="Color" aria-label="Color" />
             <input id="lfmEditPhone" name="phone" type="text" inputmode="tel" placeholder="Full phone" aria-label="Full phone" />
+            <input id="lfmEditLoggedDate" name="date" type="date" aria-label="Logged date" title="Logged date" />
           </form>
 
           <div class="lfm-modal-actions">
@@ -831,6 +881,8 @@ const messageText =
             <button id="lfmActionReturned" class="lfm-button lfm-button-danger" type="button" hidden>Mark returned</button>
             <button id="lfmActionDonated" class="lfm-button lfm-button-donated" type="button" hidden>Mark donated</button>
             <button id="lfmActionSold" class="lfm-button lfm-button-sold" type="button" hidden>Mark sold</button>
+            <button id="lfmDeleteDisc" class="lfm-button lfm-button-delete" type="button">Delete</button>
+            <div id="lfmDeleteNote" class="lfm-delete-note" hidden>Click Delete again to permanently remove this disc from the manager and public page.</div>
             <button id="lfmCancelEdit" class="lfm-button lfm-button-light" type="button">Cancel</button>
           </div>
         </div>
@@ -846,8 +898,7 @@ const messageText =
   </div>
 
   <script define:vars={{ apiUrl, messageText }}>
-    const SESSION_PASSWORD_KEY = "lufbery-lf-manager-password-session";
-
+    const PASSWORD_KEY = "lufbery-lf-manager-password";
     const loginCard = document.getElementById("lfmLoginCard");
     const appWrap = document.getElementById("lfmApp");
     const unlockForm = document.getElementById("lfmUnlockForm");
@@ -880,11 +931,14 @@ const messageText =
     const editDisc = document.getElementById("lfmEditDisc");
     const editColor = document.getElementById("lfmEditColor");
     const editPhone = document.getElementById("lfmEditPhone");
+    const editLoggedDate = document.getElementById("lfmEditLoggedDate");
     const saveEditButton = document.getElementById("lfmSaveEdit");
     const actionRestoreButton = document.getElementById("lfmActionRestore");
     const actionReturnedButton = document.getElementById("lfmActionReturned");
     const actionDonatedButton = document.getElementById("lfmActionDonated");
     const actionSoldButton = document.getElementById("lfmActionSold");
+    const deleteDiscButton = document.getElementById("lfmDeleteDisc");
+    const deleteNote = document.getElementById("lfmDeleteNote");
 
     const busyOverlay = document.getElementById("lfmBusyOverlay");
     const busyText = document.getElementById("lfmBusyText");
@@ -905,12 +959,13 @@ const messageText =
       },
       activeView: "current",
       editing: null,
+      deleteArmed: false,
       selectedRows: new Set(),
       sorts: {
-        current: { index: 4, dir: "desc" },
-        returned: { index: 4, dir: "desc" },
-        donated: { index: 4, dir: "desc" },
-        sold: { index: 4, dir: "desc" },
+        current: { index: 1, dir: "asc" },
+        returned: { index: 5, dir: "desc" },
+        donated: { index: 5, dir: "desc" },
+        sold: { index: 5, dir: "desc" },
       },
     };
 
@@ -944,33 +999,6 @@ const messageText =
       }
     }
 
-    function resetLoadedState() {
-      state.records = {
-        current: [],
-        returned: [],
-        donated: [],
-        sold: [],
-      };
-
-      state.loaded = {
-        current: false,
-        returned: false,
-        donated: false,
-        sold: false,
-      };
-
-      state.selectedRows.clear();
-    }
-
-    function setTableLoading(message = "Loading…") {
-      if (!tableBody) return;
-      tableBody.innerHTML = `
-        <tr>
-          <td class="lfm-empty" colspan="6">${escapeHtml(message)}</td>
-        </tr>
-      `;
-    }
-
     function parseDisplayDate(value) {
       const text = String(value ?? "").trim();
       if (!text) return null;
@@ -983,8 +1011,83 @@ const messageText =
         return Number.isNaN(date.getTime()) ? null : date;
       }
 
+      const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (iso) {
+        const date = new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+
       const direct = new Date(text);
       return Number.isNaN(direct.getTime()) ? null : direct;
+    }
+
+    function formatDisplayDate(value) {
+      const parsed = parseDisplayDate(value);
+      if (!parsed) return String(value ?? "").trim();
+
+      const month = parsed.getMonth() + 1;
+      const day = parsed.getDate();
+      const year = String(parsed.getFullYear()).slice(-2);
+      return `${month}/${day}/${year}`;
+    }
+
+    function formatDateInputValue(value) {
+      const parsed = parseDisplayDate(value);
+      if (!parsed) return "";
+      const year = parsed.getFullYear();
+      const month = String(parsed.getMonth() + 1).padStart(2, "0");
+      const day = String(parsed.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function addDays(date, days) {
+      const next = new Date(date);
+      next.setDate(next.getDate() + days);
+      return next;
+    }
+
+    function getLoggedDateRaw(row) {
+      return row?.loggedDate ?? row?.dateLogged ?? row?.date ?? "";
+    }
+
+    function getLoggedDateDisplay(row) {
+      return formatDisplayDate(getLoggedDateRaw(row));
+    }
+
+    function getDeadlineDate(row) {
+      const explicit = row?.deadline ?? row?.deadlineDate ?? row?.expireDate ?? "";
+      const explicitParsed = parseDisplayDate(explicit);
+      if (explicitParsed) return explicitParsed;
+
+      const logged = parseDisplayDate(getLoggedDateRaw(row));
+      if (!logged) return null;
+
+      return addDays(logged, 60);
+    }
+
+    function getDeadlineDisplay(row) {
+      const deadline = getDeadlineDate(row);
+      return deadline ? formatDisplayDate(deadline) : "";
+    }
+
+    function resetDeleteConfirmation() {
+      state.deleteArmed = false;
+      if (deleteDiscButton) {
+        deleteDiscButton.textContent = "Delete";
+      }
+      if (deleteNote) {
+        deleteNote.hidden = true;
+      }
+    }
+
+    function armDeleteConfirmation() {
+      state.deleteArmed = true;
+      if (deleteDiscButton) {
+        deleteDiscButton.textContent = "Confirm delete";
+      }
+      if (deleteNote) {
+        deleteNote.hidden = false;
+      }
     }
 
     function normalizePhone(value) {
@@ -1006,14 +1109,18 @@ const messageText =
       switch (index) {
         case 0:
           return String(row.name ?? "").trim().toLowerCase();
-        case 1:
-          return String(row.disc ?? "").trim().toLowerCase();
+        case 1: {
+          const deadline = getDeadlineDate(row);
+          return deadline ? deadline.getTime() : 0;
+        }
         case 2:
-          return String(row.color ?? "").trim().toLowerCase();
+          return String(row.disc ?? "").trim().toLowerCase();
         case 3:
+          return String(row.color ?? "").trim().toLowerCase();
+        case 4:
           return String(row.phone ?? "").replace(/[^\d]/g, "");
-        case 4: {
-          const parsed = parseDisplayDate(row.date);
+        case 5: {
+          const parsed = parseDisplayDate(getLoggedDateRaw(row));
           return parsed ? parsed.getTime() : 0;
         }
         default:
@@ -1065,8 +1172,7 @@ const messageText =
         el.textContent = activeSort.dir === "asc" ? "▲" : "▼";
       });
     }
-
-    function getViewCount(view) {
+function getViewCount(view) {
       return Array.isArray(state.records[view]) ? state.records[view].length : 0;
     }
 
@@ -1175,7 +1281,7 @@ const messageText =
 
         tableBody.innerHTML = `
           <tr>
-            <td class="lfm-empty" colspan="6">${emptyText}</td>
+            <td class="lfm-empty" colspan="7">${emptyText}</td>
           </tr>
         `;
         updateSortIndicators();
@@ -1199,6 +1305,7 @@ const messageText =
                 <input type="checkbox" class="lfm-row-check" data-select-row="${rowNumber}" ${checked} />
               </td>
               <td>${escapeHtml(row.name || "") || "&nbsp;"}</td>
+              <td>${escapeHtml(getDeadlineDisplay(row)) || "—"}</td>
               <td>${escapeHtml(row.disc || "") || "&nbsp;"}</td>
               <td>${escapeHtml(row.color || "") || "&nbsp;"}</td>
               <td>${phoneHtml}</td>
@@ -1236,10 +1343,10 @@ const messageText =
         const url = new URL(apiUrl);
 
         Object.entries(params || {}).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            url.searchParams.set(key, String(value));
-          }
-        });
+  if (value !== undefined && value !== null) {
+    url.searchParams.set(key, String(value));
+  }
+});
 
         url.searchParams.set("callback", callbackName);
 
@@ -1296,7 +1403,6 @@ const messageText =
 
       state.records[view] = Array.isArray(payload.records) ? payload.records : [];
       state.loaded[view] = true;
-      updateFilterButtons();
 
       if (state.activeView === view) {
         renderTable();
@@ -1310,7 +1416,10 @@ const messageText =
 
     async function refreshLoadedViews() {
       const views = ["current", "returned", "donated", "sold"];
-      await Promise.all(views.map((view) => loadView(view)));
+
+      for (const view of views) {
+        await loadView(view);
+      }
     }
 
     async function unlock(password, { remember = true } = {}) {
@@ -1321,12 +1430,12 @@ const messageText =
 
       state.password = trimmed;
       state.activeView = "current";
-      resetLoadedState();
-      setTableLoading("Loading current inventory…");
+      await refreshLoadedViews();
+      renderTable();
 
       if (remember) {
         try {
-          sessionStorage.setItem(SESSION_PASSWORD_KEY, trimmed);
+          localStorage.setItem(PASSWORD_KEY, trimmed);
         } catch {}
       }
 
@@ -1334,28 +1443,12 @@ const messageText =
       appWrap.hidden = false;
       setStatus(loginStatus, "");
       setStatus(appStatus, "");
-
-      await loadView("current");
-      renderTable();
-
-      Promise.allSettled([
-        loadView("returned"),
-        loadView("donated"),
-        loadView("sold"),
-      ]).then(() => {
-        updateFilterButtons();
-      });
     }
 
     function showLogin(message = "", type = "") {
       appWrap.hidden = true;
       loginCard.hidden = false;
       if (passwordInput) passwordInput.value = "";
-      try {
-        if (type === "error") {
-          sessionStorage.removeItem(SESSION_PASSWORD_KEY);
-        }
-      } catch {}
       setStatus(loginStatus, message, type);
     }
 
@@ -1385,6 +1478,10 @@ const messageText =
       editDisc.value = row.disc || "";
       editColor.value = row.color || "";
       editPhone.value = row.phone || "";
+      if (editLoggedDate) {
+        editLoggedDate.value = formatDateInputValue(getLoggedDateRaw(row));
+      }
+      resetDeleteConfirmation();
 
       if (state.activeView === "current") {
         actionRestoreButton.hidden = true;
@@ -1420,6 +1517,7 @@ const messageText =
       document.body.style.overflow = "";
       state.editing = null;
       editForm.reset();
+      resetDeleteConfirmation();
     }
 
     function getEditPayload() {
@@ -1429,6 +1527,7 @@ const messageText =
         disc: editDisc.value,
         color: editColor.value,
         phone: editPhone.value,
+        date: editLoggedDate?.value || "",
       };
     }
 
@@ -1462,6 +1561,28 @@ const messageText =
 
       setStatus(appStatus, successMessage, "success");
       window.alert(successMessage);
+    }
+
+    async function deleteEditingDisc() {
+      if (!state.editing) return;
+
+      await runWithBusy("Deleting disc…", async () => {
+        const response = await jsonp({
+          action: "delete",
+          password: state.password,
+          rowNumber: state.editing.rowNumber,
+        });
+
+        if (!response?.ok) {
+          throw new Error(response?.error || "Unable to delete disc.");
+        }
+
+        closeEditModal();
+        await refreshLoadedViews();
+      });
+
+      setStatus(appStatus, "Disc deleted.", "success");
+      window.alert("Disc deleted.");
     }
 
     addForm?.addEventListener("submit", async (event) => {
@@ -1512,7 +1633,7 @@ const messageText =
         await runWithBusy("Unlocking…", () => unlock(passwordInput?.value || ""));
       } catch (error) {
         try {
-          sessionStorage.removeItem(SESSION_PASSWORD_KEY);
+          localStorage.removeItem(PASSWORD_KEY);
         } catch {}
         state.password = "";
         showLogin(error?.message || "Unable to unlock.", "error");
@@ -1561,9 +1682,6 @@ const messageText =
           await runWithBusy(`Loading ${view} discs…`, async () => {
             state.activeView = view;
             state.selectedRows.clear();
-            if (!state.loaded[view]) {
-              setTableLoading(`Loading ${getViewHeading(view).toLowerCase()}…`);
-            }
             await ensureViewLoaded(view);
             renderTable();
           });
@@ -1647,6 +1765,21 @@ const messageText =
       }
     });
 
+    deleteDiscButton?.addEventListener("click", async () => {
+      if (!state.editing) return;
+
+      if (!state.deleteArmed) {
+        armDeleteConfirmation();
+        return;
+      }
+
+      try {
+        await deleteEditingDisc();
+      } catch (error) {
+        setStatus(appStatus, error?.message || "Unable to delete disc.", "error");
+      }
+    });
+
     bulkReturnedButton?.addEventListener("click", async () => {
       try {
         await runBulkAction(
@@ -1715,13 +1848,22 @@ const messageText =
       }
     });
 
+    [saveEditButton, actionRestoreButton, actionReturnedButton, actionDonatedButton, actionSoldButton, modalCancel, modalClose].forEach((button) => {
+      button?.addEventListener("click", resetDeleteConfirmation);
+    });
+
+    [editName, editDisc, editColor, editPhone, editLoggedDate].forEach((field) => {
+      field?.addEventListener("input", resetDeleteConfirmation);
+      field?.addEventListener("change", resetDeleteConfirmation);
+    });
+
     try {
-      const savedPassword = sessionStorage.getItem(SESSION_PASSWORD_KEY);
+      const savedPassword = localStorage.getItem(PASSWORD_KEY);
 
       if (savedPassword) {
         runWithBusy("Unlocking…", () => unlock(savedPassword, { remember: false })).catch((error) => {
           try {
-            sessionStorage.removeItem(SESSION_PASSWORD_KEY);
+            localStorage.removeItem(PASSWORD_KEY);
           } catch {}
           state.password = "";
           showLogin(error?.message || "Unable to unlock.", "error");
