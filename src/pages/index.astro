@@ -1334,7 +1334,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
       const eventsList = document.getElementById("eventsList");
       if (!eventsList) return;
 
-      const CALENDAR_CACHE_KEY = "fa_home_upcoming_events_v2";
+      const CALENDAR_CACHE_KEY = "fa_home_upcoming_events_v3";
       const EVENT_LIMIT = 4;
       const DEFAULT_SCHEDULE_URL = "https://udisc.com/leagues/lufbery-league-NS86wI/schedule";
       const scheduleUrl = eventsList.getAttribute("data-schedule-url") || DEFAULT_SCHEDULE_URL;
@@ -1363,6 +1363,75 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
           .replace(/\bpm\b/g, "p.m.");
       }
 
+      function getEventDateKey(event) {
+        const rawDate =
+          event.dateKey ||
+          event.isoDate ||
+          event.startDate ||
+          event.start ||
+          event.date ||
+          event.dateText ||
+          "";
+
+        if (typeof rawDate === "string") {
+          const isoMatch = rawDate.match(/\b(\d{4}-\d{2}-\d{2})\b/);
+          if (isoMatch) return isoMatch[1];
+
+          const monthMatch = rawDate.match(/\b(Jan|January|Feb|February|Mar|March|Apr|April|May|Jun|June|Jul|July|Aug|August|Sep|Sept|September|Oct|October|Nov|November|Dec|December)\.?\s+(\d{1,2})(?:,\s*(\d{4}))?/i);
+
+          if (monthMatch) {
+            const monthMap = {
+              jan: "01",
+              january: "01",
+              feb: "02",
+              february: "02",
+              mar: "03",
+              march: "03",
+              apr: "04",
+              april: "04",
+              may: "05",
+              jun: "06",
+              june: "06",
+              jul: "07",
+              july: "07",
+              aug: "08",
+              august: "08",
+              sep: "09",
+              sept: "09",
+              september: "09",
+              oct: "10",
+              october: "10",
+              nov: "11",
+              november: "11",
+              dec: "12",
+              december: "12",
+            };
+
+            const year = monthMatch[3] || String(new Date().getFullYear());
+            const month = monthMap[monthMatch[1].toLowerCase()];
+            const day = String(Number(monthMatch[2])).padStart(2, "0");
+
+            if (month) return `${year}-${month}-${day}`;
+          }
+        }
+
+        const parsedDate = new Date(rawDate);
+
+        if (!Number.isNaN(parsedDate.getTime())) {
+          return [
+            parsedDate.getFullYear(),
+            String(parsedDate.getMonth() + 1).padStart(2, "0"),
+            String(parsedDate.getDate()).padStart(2, "0"),
+          ].join("-");
+        }
+
+        return "";
+      }
+
+      function isCanceledHomeEvent(event) {
+        return homeEventOverrides[getEventDateKey(event)]?.canceled === true;
+      }
+
       function normalizeEvents(payload) {
         const events = Array.isArray(payload)
           ? payload
@@ -1373,6 +1442,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
               : [];
 
         return events
+          .filter((event) => !isCanceledHomeEvent(event))
           .map((event) => ({
             date: event.date || event.dateText || event.startDate || event.start || "",
             time: formatEventTime(event.time || event.timeText || ""),
@@ -1401,6 +1471,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
 
 const homeEventOverrides = {
   "2026-05-10": { canceled: true },
+  "2026-05-24": { canceled: true },
 };
 
 function getLastThursdayDay(year, monthIndex) {
