@@ -297,18 +297,18 @@ const messageText =
       border-collapse: separate;
       border-spacing: 0;
       table-layout: fixed;
-      min-width: 0;
+      min-width: 36rem;
       background: transparent;
       margin: 0;
     }
 
     .lost-found-manager-page table.lfm-table col.col-select { width: 3.2rem; }
-    .lost-found-manager-page table.lfm-table col.col-deadline { width: 5.8ch; }
-    .lost-found-manager-page table.lfm-table col.col-name { width: 7.2ch; }
-    .lost-found-manager-page table.lfm-table col.col-disc { width: 8.5ch; }
-    .lost-found-manager-page table.lfm-table col.col-color { width: 5.5ch; }
-    .lost-found-manager-page table.lfm-table col.col-phone { width: 10.5ch; }
-    .lost-found-manager-page table.lfm-table col.col-actions { width: 7ch; }
+    .lost-found-manager-page table.lfm-table col.col-deadline { width: 5ch; }
+    .lost-found-manager-page table.lfm-table col.col-name { width: 6.8ch; }
+    .lost-found-manager-page table.lfm-table col.col-disc { width: 7.8ch; }
+    .lost-found-manager-page table.lfm-table col.col-color { width: 6.4ch; }
+    .lost-found-manager-page table.lfm-table col.col-phone { width: 11.2ch; }
+    .lost-found-manager-page table.lfm-table col.col-actions { width: 6.8ch; }
 
     .lost-found-manager-page table.lfm-table thead th {
       background: var(--header, #f8fafc);
@@ -389,6 +389,12 @@ const messageText =
     .lost-found-manager-page table.lfm-table tbody td:nth-child(2),
     .lost-found-manager-page table.lfm-table tbody td:nth-child(6) {
       white-space: nowrap;
+    }
+
+    .lost-found-manager-page table.lfm-table tbody td:nth-child(5) {
+      white-space: nowrap;
+      overflow-wrap: normal;
+      word-break: normal;
     }
 
     .lost-found-manager-page .lfm-phone-link {
@@ -682,12 +688,22 @@ const messageText =
         flex-direction: column;
       }
 
-      .lost-found-manager-page table.lfm-table col.col-deadline { width: 5.2ch; }
-      .lost-found-manager-page table.lfm-table col.col-name { width: 6.4ch; }
-      .lost-found-manager-page table.lfm-table col.col-disc { width: 7.5ch; }
-      .lost-found-manager-page table.lfm-table col.col-color { width: 5ch; }
-      .lost-found-manager-page table.lfm-table col.col-phone { width: 9.2ch; }
-      .lost-found-manager-page table.lfm-table col.col-actions { width: 6.5ch; }
+      .lost-found-manager-page table.lfm-table {
+        min-width: 34rem;
+      }
+
+      .lost-found-manager-page table.lfm-table col.col-select { width: 2.7rem; }
+      .lost-found-manager-page table.lfm-table col.col-deadline { width: 4.8ch; }
+      .lost-found-manager-page table.lfm-table col.col-name { width: 6ch; }
+      .lost-found-manager-page table.lfm-table col.col-disc { width: 7ch; }
+      .lost-found-manager-page table.lfm-table col.col-color { width: 5.8ch; }
+      .lost-found-manager-page table.lfm-table col.col-phone { width: 10.2ch; }
+      .lost-found-manager-page table.lfm-table col.col-actions { width: 5.8ch; }
+
+      .lost-found-manager-page .lfm-select-th,
+      .lost-found-manager-page .lfm-select-cell {
+        width: 2.7rem;
+      }
 
       .lost-found-manager-page table.lfm-table thead th {
         font-size: 0.58rem !important;
@@ -717,12 +733,23 @@ const messageText =
     @media (max-width: 420px) {
       .lost-found-manager-page h1 { font-size: 1.9rem; }
       .lost-found-manager-page .lfm-card { padding: 18px 10px 14px; }
-      .lost-found-manager-page table.lfm-table col.col-deadline { width: 4.9ch; }
-      .lost-found-manager-page table.lfm-table col.col-name { width: 5.8ch; }
-      .lost-found-manager-page table.lfm-table col.col-disc { width: 7ch; }
-      .lost-found-manager-page table.lfm-table col.col-color { width: 4.8ch; }
-      .lost-found-manager-page table.lfm-table col.col-phone { width: 8.6ch; }
-      .lost-found-manager-page table.lfm-table col.col-actions { width: 6ch; }
+
+      .lost-found-manager-page table.lfm-table {
+        min-width: 32rem;
+      }
+
+      .lost-found-manager-page table.lfm-table col.col-select { width: 2.5rem; }
+      .lost-found-manager-page table.lfm-table col.col-deadline { width: 4.5ch; }
+      .lost-found-manager-page table.lfm-table col.col-name { width: 5.5ch; }
+      .lost-found-manager-page table.lfm-table col.col-disc { width: 6.5ch; }
+      .lost-found-manager-page table.lfm-table col.col-color { width: 5.4ch; }
+      .lost-found-manager-page table.lfm-table col.col-phone { width: 9.7ch; }
+      .lost-found-manager-page table.lfm-table col.col-actions { width: 5.5ch; }
+
+      .lost-found-manager-page .lfm-select-th,
+      .lost-found-manager-page .lfm-select-cell {
+        width: 2.5rem;
+      }
 
       .lost-found-manager-page table.lfm-table thead th {
         font-size: 0.54rem !important;
