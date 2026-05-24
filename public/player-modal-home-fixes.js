@@ -11,37 +11,29 @@
     style.id = STYLE_ID;
     style.textContent = `
       @media (min-width: 901px) {
-        .home-grid {
-          align-items: start !important;
-        }
-
-        .left-stack,
-        .middle-stack,
-        .right-stack {
-          align-self: start !important;
-        }
-
+        .home-grid { align-items: start !important; }
+        .left-stack, .middle-stack, .right-stack { align-self: start !important; }
         .right-stack {
           min-height: 0 !important;
           grid-template-rows: auto auto minmax(0, 1fr) !important;
         }
-
-        .right-stack > .events-card,
-        .events-card {
+        .right-stack > .events-card, .events-card {
           align-self: stretch !important;
           min-height: 0 !important;
           display: flex !important;
           flex-direction: column !important;
         }
-
         .events-card .event-list {
           flex: 1 1 auto !important;
           min-height: 0 !important;
-          display: grid !important;
-          grid-template-rows: repeat(var(--home-event-count), minmax(0, 1fr)) !important;
+          display: flex !important;
+          flex-direction: column !important;
+          justify-content: space-between !important;
+          gap: 14px !important;
+          grid-template-rows: none !important;
         }
-
         .events-card .event-item {
+          flex: 0 0 auto !important;
           min-height: 0 !important;
         }
       }
@@ -51,10 +43,10 @@
 
   function naturalHeight(element) {
     if (!element) return 0;
-    const previousHeight = element.style.height;
+    const oldHeight = element.style.height;
     element.style.height = "auto";
     const height = Math.ceil(element.getBoundingClientRect().height);
-    element.style.height = previousHeight;
+    element.style.height = oldHeight;
     return height;
   }
 
@@ -66,45 +58,18 @@
     const eventsCard = document.getElementById("upcomingEventsCard") || document.querySelector(".events-card");
     const eventsList = document.getElementById("eventsList") || document.querySelector(".events-card .event-list");
 
-    if (window.matchMedia("(max-width: 900px)").matches) {
-      if (homeGrid) homeGrid.style.alignItems = "";
-      [leftStack, middleStack, rightStack].forEach((stack) => {
-        if (!stack) return;
-        stack.style.alignSelf = "";
-      });
-      if (rightStack) {
-        rightStack.style.height = "";
-        rightStack.style.minHeight = "";
-        rightStack.style.gridTemplateRows = "";
-      }
-      if (eventsCard) {
-        eventsCard.style.alignSelf = "";
-        eventsCard.style.height = "";
-        eventsCard.style.minHeight = "";
-        eventsCard.style.maxHeight = "";
-        eventsCard.style.display = "";
-        eventsCard.style.flexDirection = "";
-      }
-      if (eventsList) {
-        eventsList.style.flex = "";
-        eventsList.style.gridTemplateRows = "";
-        eventsList.style.minHeight = "";
-      }
-      return;
-    }
+    if (window.matchMedia("(max-width: 900px)").matches) return;
 
     if (homeGrid) homeGrid.style.alignItems = "start";
-
     [leftStack, middleStack, rightStack].forEach((stack) => {
-      if (!stack) return;
-      stack.style.alignSelf = "start";
+      if (stack) stack.style.alignSelf = "start";
     });
 
     const middleHeight = naturalHeight(middleStack);
     const targetHeight = middleHeight > 0 ? middleHeight : naturalHeight(rightStack);
 
     if (rightStack) {
-      rightStack.style.height = targetHeight ? `${targetHeight}px` : "auto";
+      rightStack.style.height = targetHeight ? targetHeight + "px" : "auto";
       rightStack.style.minHeight = "0";
       rightStack.style.gridTemplateRows = "auto auto minmax(0, 1fr)";
     }
@@ -120,21 +85,27 @@
 
     if (eventsList) {
       eventsList.style.flex = "1 1 auto";
-      eventsList.style.gridTemplateRows = "repeat(var(--home-event-count), minmax(0, 1fr))";
+      eventsList.style.display = "flex";
+      eventsList.style.flexDirection = "column";
+      eventsList.style.justifyContent = "space-between";
+      eventsList.style.gap = "14px";
+      eventsList.style.gridTemplateRows = "none";
       eventsList.style.minHeight = "0";
+      eventsList.querySelectorAll(".event-item").forEach((item) => {
+        item.style.flex = "0 0 auto";
+        item.style.minHeight = "0";
+      });
     }
   }
 
-  function scheduleHomeLayoutFix() {
+  function runHomeLayoutFix() {
     applyHomeLayoutFix();
-    window.requestAnimationFrame(applyHomeLayoutFix);
-    window.setTimeout(applyHomeLayoutFix, 0);
-    window.setTimeout(applyHomeLayoutFix, 150);
+    requestAnimationFrame(applyHomeLayoutFix);
+    setTimeout(applyHomeLayoutFix, 150);
   }
 
   function updateCourseStatsModalLabel(root = document) {
     if (!(root instanceof Document || root instanceof Element)) return;
-
     root.querySelectorAll(".player-details-accordion-button .player-details-section-label").forEach((label) => {
       if ((label.textContent || "").trim() === "COURSE STATS") {
         label.textContent = "COURSE STATS (SINCE 2024)";
@@ -144,34 +115,21 @@
 
   function start() {
     injectHomeLayoutFix();
-    scheduleHomeLayoutFix();
+    runHomeLayoutFix();
     updateCourseStatsModalLabel(document);
 
     const latestResultCard = document.getElementById("latestResultCard");
     if (latestResultCard && "MutationObserver" in window) {
-      new MutationObserver(scheduleHomeLayoutFix).observe(latestResultCard, {
+      new MutationObserver(runHomeLayoutFix).observe(latestResultCard, {
         attributes: true,
         attributeFilter: ["class", "style"],
       });
     }
 
-    window.addEventListener("resize", scheduleHomeLayoutFix);
+    window.addEventListener("resize", runHomeLayoutFix);
 
     const modalBody = document.getElementById("playerDetailsModalBody") || document.body;
-    if (!modalBody) return;
-
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-          if (node instanceof Element) {
-            updateCourseStatsModalLabel(node);
-          }
-        });
-      });
-      updateCourseStatsModalLabel(document);
-    });
-
-    observer.observe(modalBody, {
+    new MutationObserver(() => updateCourseStatsModalLabel(document)).observe(modalBody, {
       childList: true,
       subtree: true,
     });
