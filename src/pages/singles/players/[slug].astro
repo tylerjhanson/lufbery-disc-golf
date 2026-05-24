@@ -61,7 +61,7 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
 <SiteLayout title={`${name} Player Profile`} description={`League player profile and history for ${name}.`} showBrandBar={true}>
   <style is:global>
     body { margin: 0; padding: 24px; background: linear-gradient(180deg, #f8fafc 0%, var(--bg, #f5f7fb) 100%); color: var(--text, #111827); font-family: Inter, Arial, Helvetica, sans-serif; }
-    .player-profile-wrap { width: 100%; max-width: none; margin: 0; }
+    .player-profile-wrap { width: 100%; max-width: none; margin: 0; overflow-anchor: none; }
     .profile-card, .profile-header { border: 1px solid var(--line-soft, #eef2f7); border-radius: 22px; background: var(--card, #fff); box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08); }
     .profile-header { margin-bottom: 18px; padding: 24px; }
     .profile-title { margin: 0; font-size: clamp(2.1rem, 5vw, 4rem); line-height: 0.98; letter-spacing: -0.045em; }
@@ -73,7 +73,7 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
     .profile-content-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 0.34fr); gap: 18px; align-items: start; }
     .profile-stack { display: grid; gap: 18px; }
     .profile-bottom-stack { margin-top: 18px; }
-    .profile-card { overflow: hidden; }
+    .profile-card { overflow: hidden; overflow-anchor: none; }
     .profile-card-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 20px 10px; }
     .profile-card-body { padding: 0 20px 18px; }
     .profile-section-title { margin: 0; font-size: 0.9rem; font-weight: 850; letter-spacing: 0.04em; line-height: 1.2; text-transform: uppercase; }
@@ -143,8 +143,8 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
       body { padding: 14px; }
       .site-go-top { display: none !important; }
       .profile-header { padding: 18px 14px; }
-      .profile-summary-grid { grid-template-columns: 1fr; gap: 8px; }
-      .profile-stat-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .profile-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .profile-stat-group { display: grid; grid-template-columns: 1fr; gap: 8px; }
       .profile-stat { padding: 10px 11px; border-radius: 14px; }
       .profile-stat + .profile-stat { margin-top: 0; }
       .profile-stat-label { font-size: 0.67rem; }
@@ -220,7 +220,7 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
     </div>
 
     <div class="profile-stack profile-bottom-stack">
-      {courseViews.length ? <section class="profile-card" data-course-stats-card data-mobile-collapse><div class="profile-card-header"><h2 class="profile-section-title">Course Stats</h2>{courseViews.length > 1 ? <select class="profile-course-filter" aria-label="Filter player course stats by year">{courseViews.map((view) => <option value={view.value}>{view.label}</option>)}</select> : null}<button class="profile-mobile-toggle" type="button" aria-label="Toggle section">⌄</button></div><div class="profile-card-body">{courseViews.map((view, index) => <div class="profile-course-panel" data-course-panel={view.value} hidden={index !== 0}><p class="profile-course-summary">{formatRounds(view.rounds)} • Original Layout</p><div class="profile-course-grid">{view.holes.map((hole) => <article class="profile-course-hole"><div class="profile-course-hole-header"><h3 class="profile-course-hole-title">Hole {hole.hole} <span>Par {hole.par}</span></h3><div class="profile-course-meta"><span>Diff. <strong>{hole.difficultyRank || "—"}</strong></span><span>Avg <strong>{formatAverage(hole.average)}</strong></span></div></div><div class="profile-course-bar" style={hole.barStyle}>{hole.segments.map((segment) => <div class={`profile-course-segment profile-course-segment--${segment.className}`} title={`${segment.label}: ${segment.count} (${segment.pctNumber.toFixed(1)}%)`}>{segment.pctNumber >= 11 ? <span>{segment.count}</span> : null}</div>)}</div></article>)}</div></div>)}</div></section> : null}
+      {courseViews.length ? <section class="profile-card" data-course-stats-card data-mobile-collapse data-default-open><div class="profile-card-header"><h2 class="profile-section-title">Course Stats</h2>{courseViews.length > 1 ? <select class="profile-course-filter" aria-label="Filter player course stats by year">{courseViews.map((view) => <option value={view.value}>{view.label}</option>)}</select> : null}<button class="profile-mobile-toggle" type="button" aria-label="Toggle section">⌄</button></div><div class="profile-card-body">{courseViews.map((view, index) => <div class="profile-course-panel" data-course-panel={view.value} hidden={index !== 0}><p class="profile-course-summary">{formatRounds(view.rounds)} • Original Layout</p><div class="profile-course-grid">{view.holes.map((hole) => <article class="profile-course-hole"><div class="profile-course-hole-header"><h3 class="profile-course-hole-title">Hole {hole.hole} <span>Par {hole.par}</span></h3><div class="profile-course-meta"><span>Diff. <strong>{hole.difficultyRank || "—"}</strong></span><span>Avg <strong>{formatAverage(hole.average)}</strong></span></div></div><div class="profile-course-bar" style={hole.barStyle}>{hole.segments.map((segment) => <div class={`profile-course-segment profile-course-segment--${segment.className}`} title={`${segment.label}: ${segment.count} (${segment.pctNumber.toFixed(1)}%)`}>{segment.pctNumber >= 11 ? <span>{segment.count}</span> : null}</div>)}</div></article>)}</div></div>)}</div></section> : null}
     </div>
     <div class="profile-chart-tooltip" aria-hidden="true"></div>
   </main>
@@ -235,7 +235,12 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
         header.addEventListener("click", (event) => {
           if (!isMobile) return;
           if (event.target.closest("select")) return;
+          const topBefore = header.getBoundingClientRect().top;
           card.classList.toggle("is-collapsed");
+          window.requestAnimationFrame(() => {
+            const topAfter = header.getBoundingClientRect().top;
+            window.scrollBy(0, topAfter - topBefore);
+          });
         });
       });
 
