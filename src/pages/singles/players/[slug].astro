@@ -113,7 +113,7 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
     .profile-course-meta { display: inline-flex; gap: 8px; white-space: nowrap; color: var(--muted, #6b7280); font-size: 0.78rem; font-weight: 700; }
     .profile-course-meta strong { color: var(--text, #111827); font-weight: 850; }
     .profile-course-bar { display: grid; min-height: 20px; overflow: hidden; border: 2px solid #cfe0ef; border-radius: 9px; background: var(--card, #ffffff); }
-    .profile-course-segment { min-width: 0; position: relative; }
+    .profile-course-segment { min-width: 0; position: relative; cursor: help; }
     .profile-course-segment + .profile-course-segment { box-shadow: inset 1px 0 0 rgba(15, 23, 42, 0.1); }
     .profile-course-segment span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 0.72rem; font-weight: 850; line-height: 1; }
     .profile-course-segment--ace { background: #2f6fb6; color: #fff; }
@@ -206,7 +206,7 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
           <div class="profile-card-header"><h2 class="profile-section-title">Rounds Counting Towards Handicap</h2><button class="profile-mobile-toggle" type="button" aria-label="Toggle section">⌄</button></div>
           <div class="profile-card-body"><table class="profile-table"><thead><tr><th>Date</th><th>Score</th></tr></thead><tbody>{recentRounds.length ? recentRounds.map((round, index) => <tr class={index === droppedIndex ? "profile-dropped-round" : ""}><td>{round.date}</td><td>{formatScoreWithPar(round.score)}</td></tr>) : <tr><td colspan="2" class="profile-muted">No handicap rounds found.</td></tr>}</tbody></table></div>
         </section>
-        <section class="profile-card" data-mobile-collapse data-default-open>
+        <section class="profile-card" data-mobile-collapse data-default-open data-profile-personal-best>
           <div class="profile-card-header"><h2 class="profile-section-title">{personalBestTitle}</h2><button class="profile-mobile-toggle" type="button" aria-label="Toggle section">⌄</button></div>
           <div class="profile-card-body">{personalBests.length ? <ul class="profile-link-list">{personalBests.map((item) => <li><strong>{item.score}</strong> <a class="profile-link" href={item.href}>{item.date}</a></li>)}</ul> : <p class="profile-muted">No personal best found.</p>}</div>
         </section>
@@ -226,7 +226,7 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
     </div>
 
     <div class="profile-stack profile-bottom-stack">
-      {courseViews.length ? <section class="profile-card" data-course-stats-card data-mobile-collapse data-default-open><div class="profile-card-header"><h2 class="profile-section-title">Course Stats</h2>{courseViews.length > 1 ? <select class="profile-course-filter" aria-label="Filter player course stats by year">{courseViews.map((view) => <option value={view.value}>{view.label}</option>)}</select> : null}<button class="profile-mobile-toggle" type="button" aria-label="Toggle section">⌄</button></div><div class="profile-card-body">{courseViews.map((view, index) => <div class="profile-course-panel" data-course-panel={view.value} hidden={index !== 0}><p class="profile-course-summary">{formatRounds(view.rounds)} • Original Layout</p><div class="profile-course-grid">{view.holes.map((hole) => <article class="profile-course-hole"><div class="profile-course-hole-header"><h3 class="profile-course-hole-title">Hole {hole.hole} <span>Par {hole.par}</span></h3><div class="profile-course-meta"><span>Diff. <strong>{hole.difficultyRank || "—"}</strong></span><span>Avg <strong>{formatAverage(hole.average)}</strong></span></div></div><div class="profile-course-bar" style={hole.barStyle}>{hole.segments.map((segment) => <div class={`profile-course-segment profile-course-segment--${segment.className}`} title={`${segment.label}: ${segment.count} (${segment.pctNumber.toFixed(1)}%)`}>{segment.pctNumber >= 11 ? <span>{segment.count}</span> : null}</div>)}</div></article>)}</div></div>)}</div></section> : null}
+      {courseViews.length ? <section class="profile-card" data-course-stats-card data-mobile-collapse data-default-open><div class="profile-card-header"><h2 class="profile-section-title">Course Stats</h2>{courseViews.length > 1 ? <select class="profile-course-filter" aria-label="Filter player course stats by year">{courseViews.map((view) => <option value={view.value}>{view.label}</option>)}</select> : null}<button class="profile-mobile-toggle" type="button" aria-label="Toggle section">⌄</button></div><div class="profile-card-body">{courseViews.map((view, index) => <div class="profile-course-panel" data-course-panel={view.value} hidden={index !== 0}><p class="profile-course-summary">{formatRounds(view.rounds)} • Original Layout</p><div class="profile-course-grid">{view.holes.map((hole) => <article class="profile-course-hole"><div class="profile-course-hole-header"><h3 class="profile-course-hole-title">Hole {hole.hole} <span>Par {hole.par}</span></h3><div class="profile-course-meta"><span>Diff. <strong>{hole.difficultyRank || "—"}</strong></span><span>Avg <strong>{formatAverage(hole.average)}</strong></span></div></div><div class="profile-course-bar" style={hole.barStyle}>{hole.segments.map((segment) => <div class={`profile-course-segment profile-course-segment--${segment.className}`} data-course-tip={`${segment.label}: ${segment.count} (${segment.pctNumber.toFixed(1)}%)`} title={`${segment.label}: ${segment.count} (${segment.pctNumber.toFixed(1)}%)`}>{segment.pctNumber >= 11 ? <span>{segment.count}</span> : null}</div>)}</div></article>)}</div></div>)}</div></section> : null}
     </div>
     <div class="profile-chart-tooltip" aria-hidden="true"></div>
   </main>
@@ -234,6 +234,12 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
   <script is:inline>
     (() => {
       const isMobile = window.matchMedia("(max-width: 900px)").matches;
+      if (isMobile) {
+        const mainStack = document.querySelector(".profile-main");
+        const personalBestCard = document.querySelector("[data-profile-personal-best]");
+        if (mainStack && personalBestCard) personalBestCard.insertAdjacentElement("afterend", mainStack);
+      }
+
       document.querySelectorAll("[data-mobile-collapse]").forEach((card) => {
         const header = card.querySelector(".profile-card-header");
         if (isMobile && !card.hasAttribute("data-default-open")) card.classList.add("is-collapsed");
@@ -258,6 +264,7 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
       });
 
       const tooltip = document.querySelector(".profile-chart-tooltip");
+      let courseTipTimer;
       function findHotspotFromPoint(shell, clientX) {
         const items = Array.from(shell.querySelectorAll(".profile-chart-hotspot"));
         if (!items.length) return null;
@@ -289,12 +296,45 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
         tooltip.style.top = `${rect.top}px`;
         tooltip.classList.add("is-visible");
       }
+      function showCourseTip(segment, clientX, clientY) {
+        if (!tooltip || !segment) return;
+        const text = segment.dataset.courseTip;
+        if (!text) return;
+        const rect = segment.getBoundingClientRect();
+        clearTimeout(courseTipTimer);
+        tooltip.textContent = text;
+        tooltip.style.left = `${clientX || rect.left + rect.width / 2}px`;
+        tooltip.style.top = `${clientY || rect.top}px`;
+        tooltip.classList.add("is-visible");
+      }
       function hide() {
+        clearTimeout(courseTipTimer);
         if (tooltip) tooltip.classList.remove("is-visible");
         document.querySelectorAll(".profile-chart-guide").forEach((guide) => { guide.style.display = "none"; });
       }
-      document.addEventListener("mouseover", (event) => { if (event.target?.classList?.contains("profile-chart-hotspot")) show(event.target, event.clientX); });
-      document.addEventListener("mouseout", (event) => { if (event.target?.classList?.contains("profile-chart-hotspot")) hide(); });
+      function getCourseSegment(event) {
+        return event.target?.closest?.(".profile-course-segment") || null;
+      }
+      document.addEventListener("mouseover", (event) => {
+        if (event.target?.classList?.contains("profile-chart-hotspot")) show(event.target, event.clientX);
+        const segment = getCourseSegment(event);
+        if (segment) showCourseTip(segment, event.clientX, event.clientY);
+      });
+      document.addEventListener("mousemove", (event) => {
+        const segment = getCourseSegment(event);
+        if (segment) showCourseTip(segment, event.clientX, event.clientY);
+      });
+      document.addEventListener("mouseout", (event) => {
+        if (event.target?.classList?.contains("profile-chart-hotspot")) hide();
+        const segment = getCourseSegment(event);
+        if (segment && !segment.contains(event.relatedTarget)) hide();
+      });
+      document.addEventListener("pointerdown", (event) => {
+        const segment = getCourseSegment(event);
+        if (!segment) return;
+        showCourseTip(segment, event.clientX, event.clientY);
+        if (event.pointerType !== "mouse") courseTipTimer = setTimeout(hide, 2500);
+      });
       document.querySelectorAll(".profile-chart-shell").forEach((shell) => {
         shell.addEventListener("pointerdown", (event) => { const target = findHotspotFromPoint(shell, event.clientX); show(target, event.clientX); });
         shell.addEventListener("pointermove", (event) => { if (event.pointerType === "mouse" && event.buttons === 0) return; const target = findHotspotFromPoint(shell, event.clientX); show(target, event.clientX); });
