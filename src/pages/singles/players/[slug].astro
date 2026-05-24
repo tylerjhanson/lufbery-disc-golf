@@ -47,11 +47,11 @@ function formatRounds(rounds) {
 }
 
 function htmlEscape(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;");
+  return String(value == null ? "" : value)
+    .split("&").join("&amp;")
+    .split("<").join("&lt;")
+    .split(">").join("&gt;")
+    .split('"').join("&quot;");
 }
 
 function yearAverages(rounds) {
@@ -232,7 +232,8 @@ const bestHandicaps = yearlyBest(handicapHistory, "handicap", 2023);
 const bestTags = yearlyBest(tagHistory, "tag", 2023);
 const droppedIndex = droppedRecentRoundIndex(recentRounds);
 const scoreChart = chartHtml(allRounds.map((round) => ({ value: Number(round.score), label: String(round.date || ""), detail: `${round.date} — ${formatScoreWithPar(round.score)}` })));
-const handicapChart = chartHtml(handicapHistory.map((row) => ({ value: Number(row.handicap), label: String(row.date || ""), detail: `${row.date} — ${row.handicap}` })), { step: 1, min: Math.floor(Math.min(...handicapHistory.map((row) => Number(row.handicap)).filter((v) => Number.isFinite(v)), 0)) - 1 });
+const handicapValues = handicapHistory.map((row) => Number(row.handicap)).filter((value) => Number.isFinite(value));
+const handicapChart = chartHtml(handicapHistory.map((row) => ({ value: Number(row.handicap), label: String(row.date || ""), detail: `${row.date} — ${row.handicap}` })), { step: 1, min: handicapValues.length ? Math.floor(Math.min(...handicapValues)) - 1 : 0 });
 const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), label: String(row.date || ""), detail: `${row.date} — #${row.tag}` })), { step: 5, min: 0 });
 ---
 
