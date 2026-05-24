@@ -23,6 +23,34 @@ const href = displayName ? `/singles/players/${playerSlug(displayName)}/` : "";
 const linkClass = ["player-button", className].filter(Boolean).join(" ");
 ---
 
+<style is:global>
+  .player-button {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-weight: inherit;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    text-align: left;
+    text-decoration-line: underline !important;
+    text-decoration-style: dotted !important;
+    text-decoration-thickness: 1px !important;
+    text-decoration-color: color-mix(in srgb, currentColor 24%, transparent) !important;
+    text-underline-offset: 2px;
+    transition: color 0.15s ease, text-decoration-color 0.15s ease;
+  }
+
+  .player-button:hover,
+  .player-button:focus-visible {
+    color: var(--accent, #2563eb);
+    text-decoration-color: color-mix(in srgb, currentColor 42%, transparent) !important;
+    outline: none;
+  }
+</style>
+
 {displayName && (
   <a class={linkClass} href={href} aria-label={`View player profile for ${displayName}`}>
     {displayName}
