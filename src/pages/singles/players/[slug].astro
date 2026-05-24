@@ -4,7 +4,7 @@ import courseStats from "../../../data/course-stats.generated.json";
 import { getPlayerProfiles } from "../../../lib/data";
 
 const HANDICAP_PAR = 56;
-const SEGMENT_CLASSES: Record<string, string> = {
+const SEGMENT_CLASSES = {
   ace: "ace",
   birdie: "birdie",
   par: "par",
@@ -13,19 +13,11 @@ const SEGMENT_CLASSES: Record<string, string> = {
   triple: "triple",
 };
 
-type AnyProfile = Record<string, any>;
-
-type ChartPoint = {
-  label: string;
-  value: number;
-  detail?: string;
-};
-
-function cleanName(value: string) {
+function cleanName(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
 
-function playerSlug(value: string) {
+function playerSlug(value) {
   return cleanName(value)
     .toLowerCase()
     .replace(/&/g, " and ")
@@ -33,18 +25,18 @@ function playerSlug(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-function normalizePlayerKey(value: string) {
+function normalizePlayerKey(value) {
   return cleanName(value).toLowerCase();
 }
 
-function parseDisplayYear(value: string) {
+function parseDisplayYear(value) {
   const parts = String(value || "").split("/");
   let year = Number(parts[2] || 0);
   if (year < 100) year += 2000;
   return year;
 }
 
-function formatScoreWithPar(score: number | string) {
+function formatScoreWithPar(score) {
   const numericScore = Number(score);
   if (!Number.isFinite(numericScore)) return "—";
   const diff = numericScore - HANDICAP_PAR;
@@ -52,18 +44,18 @@ function formatScoreWithPar(score: number | string) {
   return `${numericScore} (${diff > 0 ? "+" : ""}${diff})`;
 }
 
-function formatAverage(value: number | string) {
+function formatAverage(value) {
   const number = Number(value || 0);
   return Number.isFinite(number) ? number.toFixed(2) : "—";
 }
 
-function formatRounds(rounds: number | string) {
+function formatRounds(rounds) {
   const count = Number(rounds || 0);
   return `${new Intl.NumberFormat("en-US").format(count)} round${count === 1 ? "" : "s"}`;
 }
 
-function buildYearlyScoreAverages(rounds: any[]) {
-  const buckets = new Map<number, number[]>();
+function buildYearlyScoreAverages(rounds) {
+  const buckets = new Map();
   rounds.forEach((round) => {
     const year = parseDisplayYear(round?.date);
     const score = Number(round?.score);
@@ -81,7 +73,7 @@ function buildYearlyScoreAverages(rounds: any[]) {
     }));
 }
 
-function buildEffectiveHandicapHistory(history: any[], currentHandicap: string) {
+function buildEffectiveHandicapHistory(history, currentHandicap) {
   const baseHistory = Array.isArray(history)
     ? history
         .map((row) => ({ date: String(row?.date || ""), handicap: Number(row?.handicap) }))
@@ -97,7 +89,7 @@ function buildEffectiveHandicapHistory(history: any[], currentHandicap: string) 
   return [...baseHistory, { date: "Current", handicap: current }];
 }
 
-function getLowestHandicap(history: any[], currentHandicap: string) {
+function getLowestHandicap(history, currentHandicap) {
   const values = Array.isArray(history)
     ? history.map((row) => Number(row?.handicap)).filter((value) => Number.isFinite(value))
     : [];
@@ -106,8 +98,8 @@ function getLowestHandicap(history: any[], currentHandicap: string) {
   return values.length ? String(Math.min(...values)) : "";
 }
 
-function buildYearlyBestHandicaps(history: any[]) {
-  const bestByYear = new Map<number, number>();
+function buildYearlyBestHandicaps(history) {
+  const bestByYear = new Map();
   history.forEach((row) => {
     const year = parseDisplayYear(row?.date);
     const handicap = Number(row?.handicap);
@@ -120,8 +112,8 @@ function buildYearlyBestHandicaps(history: any[]) {
     .map(([year, value]) => ({ year: String(year), value: String(value) }));
 }
 
-function buildYearlyBestTags(history: any[]) {
-  const bestByYear = new Map<number, number>();
+function buildYearlyBestTags(history) {
+  const bestByYear = new Map();
   history.forEach((row) => {
     const year = parseDisplayYear(row?.date);
     const tag = Number(row?.tag);
@@ -134,7 +126,7 @@ function buildYearlyBestTags(history: any[]) {
     .map(([year, value]) => ({ year: String(year), value: String(value) }));
 }
 
-function buildLineChart(points: ChartPoint[], lowerIsBetter = true, options: { step?: number; min?: number; showTrend?: boolean } = {}) {
+function buildLineChart(points, lowerIsBetter = true, options = {}) {
   const cleanPoints = points.filter((point) => Number.isFinite(point.value));
   if (!cleanPoints.length) return "";
 
@@ -172,8 +164,8 @@ function buildLineChart(points: ChartPoint[], lowerIsBetter = true, options: { s
   const ticks = [];
   for (let value = chartMin; value <= chartMax; value += tickStep) ticks.push(value);
 
-  const getX = (index: number) => cleanPoints.length === 1 ? padLeft + innerWidth / 2 : padLeft + (index / (cleanPoints.length - 1)) * innerWidth;
-  const getY = (value: number) => lowerIsBetter
+  const getX = (index) => cleanPoints.length === 1 ? padLeft + innerWidth / 2 : padLeft + (index / (cleanPoints.length - 1)) * innerWidth;
+  const getY = (value) => lowerIsBetter
     ? padTop + ((value - chartMin) / (chartMax - chartMin)) * innerHeight
     : padTop + ((chartMax - value) / (chartMax - chartMin)) * innerHeight;
 
@@ -191,23 +183,23 @@ function buildLineChart(points: ChartPoint[], lowerIsBetter = true, options: { s
   return `<div class="profile-chart-shell"><svg class="profile-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">${grid}<polyline class="profile-chart-line" points="${polyline}" />${dots}</svg></div>`;
 }
 
-function getCourseStatsForPlayer(name: string) {
-  const players = (courseStats as any)?.players || {};
-  const aliases = (courseStats as any)?.source?.aliases || {};
+function getCourseStatsForPlayer(name) {
+  const players = courseStats?.players || {};
+  const aliases = courseStats?.source?.aliases || {};
   const key = normalizePlayerKey(name);
   const aliasKey = aliases[key] || key;
   return players[aliasKey] || players[key] || null;
 }
 
-function courseBarStyle(segments: any[]) {
+function courseBarStyle(segments) {
   const visible = Array.isArray(segments) ? segments.filter((segment) => Number(segment?.count || 0) > 0) : [];
   if (!visible.length) return "grid-template-columns:1fr;";
   return `grid-template-columns:${visible.map((segment) => `${Math.max(1, Number(segment.count || 0))}fr`).join(" ")};`;
 }
 
 export function getStaticPaths() {
-  const profiles = Object.values(getPlayerProfiles()) as AnyProfile[];
-  const seen = new Set<string>();
+  const profiles = Object.values(getPlayerProfiles());
+  const seen = new Set();
   return profiles
     .map((profile) => ({ profile, slug: playerSlug(String(profile.name || "")) }))
     .filter(({ slug }) => {
@@ -218,7 +210,7 @@ export function getStaticPaths() {
     .map(({ profile, slug }) => ({ params: { slug }, props: { profile } }));
 }
 
-const { profile } = Astro.props as { profile: AnyProfile };
+const { profile } = Astro.props;
 const name = String(profile?.name || "Player");
 const allRounds = Array.isArray(profile?.allRounds) ? profile.allRounds : [];
 const recentRounds = Array.isArray(profile?.recentRounds) ? profile.recentRounds : [];
@@ -237,8 +229,14 @@ const personalBests = Array.isArray(profile?.personalBests) && profile.personalB
     ? [profile.personalBest]
     : [];
 const effectiveHandicapHistory = buildEffectiveHandicapHistory(handicapHistory, String(profile?.handicap || ""));
+const handicapMin = effectiveHandicapHistory.length
+  ? Math.floor(Math.min(...effectiveHandicapHistory.map((row) => Number(row.handicap)))) - 1
+  : 0;
 const courseStatsForPlayer = getCourseStatsForPlayer(name);
-const courseHoles = courseStatsForPlayer?.holes ? [...courseStatsForPlayer.holes].sort((a: any, b: any) => Number(a.hole) - Number(b.hole)) : [];
+const courseHoles = courseStatsForPlayer?.holes ? [...courseStatsForPlayer.holes].sort((a, b) => Number(a.hole) - Number(b.hole)) : [];
+const yearlyScoreAverages = buildYearlyScoreAverages(allRounds);
+const yearlyBestHandicaps = buildYearlyBestHandicaps(effectiveHandicapHistory);
+const yearlyBestTags = buildYearlyBestTags(tagHistory);
 ---
 
 <SiteLayout title={`${name} Player Profile`} description={`League player profile and history for ${name}.`} showBrandBar={true}>
@@ -622,10 +620,10 @@ const courseHoles = courseStatsForPlayer?.holes ? [...courseStatsForPlayer.holes
         <section class="profile-card">
           <div class="profile-card-header"><h2 class="profile-section-title">Score History</h2></div>
           <div class="profile-card-body">
-            {allRounds.length ? <Fragment set:html={buildLineChart(allRounds.map((round: any) => ({ value: Number(round.score), label: String(round.date || ""), detail: `${round.date} — ${formatScoreWithPar(round.score)}` })), true)} /> : <p class="profile-muted">No score history found.</p>}
-            {buildYearlyScoreAverages(allRounds).length ? (
+            {allRounds.length ? <Fragment set:html={buildLineChart(allRounds.map((round) => ({ value: Number(round.score), label: String(round.date || ""), detail: `${round.date} — ${formatScoreWithPar(round.score)}` })), true)} /> : <p class="profile-muted">No score history found.</p>}
+            {yearlyScoreAverages.length ? (
               <div class="profile-year-stats">
-                {buildYearlyScoreAverages(allRounds).map((row) => <span class="profile-year-pill"><strong>{row.year}:</strong> {row.value}</span>)}
+                {yearlyScoreAverages.map((row) => <span class="profile-year-pill"><strong>{row.year}:</strong> {row.value}</span>)}
               </div>
             ) : null}
           </div>
@@ -634,10 +632,10 @@ const courseHoles = courseStatsForPlayer?.holes ? [...courseStatsForPlayer.holes
         <section class="profile-card">
           <div class="profile-card-header"><h2 class="profile-section-title">Handicap History</h2></div>
           <div class="profile-card-body">
-            {effectiveHandicapHistory.length ? <Fragment set:html={buildLineChart(effectiveHandicapHistory.map((row: any) => ({ value: Number(row.handicap), label: String(row.date || ""), detail: `${row.date} — ${row.handicap}` })), true, { step: 1, min: Math.floor(Math.min(...effectiveHandicapHistory.map((row: any) => Number(row.handicap)))) - 1 })} /> : <p class="profile-muted">No handicap history found.</p>}
-            {buildYearlyBestHandicaps(effectiveHandicapHistory).length ? (
+            {effectiveHandicapHistory.length ? <Fragment set:html={buildLineChart(effectiveHandicapHistory.map((row) => ({ value: Number(row.handicap), label: String(row.date || ""), detail: `${row.date} — ${row.handicap}` })), true, { step: 1, min: handicapMin })} /> : <p class="profile-muted">No handicap history found.</p>}
+            {yearlyBestHandicaps.length ? (
               <div class="profile-year-stats">
-                {buildYearlyBestHandicaps(effectiveHandicapHistory).map((row) => <span class="profile-year-pill"><strong>{row.year}:</strong> {row.value}</span>)}
+                {yearlyBestHandicaps.map((row) => <span class="profile-year-pill"><strong>{row.year}:</strong> {row.value}</span>)}
               </div>
             ) : null}
           </div>
@@ -646,10 +644,10 @@ const courseHoles = courseStatsForPlayer?.holes ? [...courseStatsForPlayer.holes
         <section class="profile-card">
           <div class="profile-card-header"><h2 class="profile-section-title">Tag History</h2></div>
           <div class="profile-card-body">
-            {tagHistory.length ? <Fragment set:html={buildLineChart(tagHistory.map((row: any) => ({ value: Number(row.tag), label: String(row.date || ""), detail: `${row.date} — #${row.tag}` })), true, { step: 5, min: 0 })} /> : <p class="profile-muted">No tag history found.</p>}
-            {buildYearlyBestTags(tagHistory).length ? (
+            {tagHistory.length ? <Fragment set:html={buildLineChart(tagHistory.map((row) => ({ value: Number(row.tag), label: String(row.date || ""), detail: `${row.date} — #${row.tag}` })), true, { step: 5, min: 0 })} /> : <p class="profile-muted">No tag history found.</p>}
+            {yearlyBestTags.length ? (
               <div class="profile-year-stats">
-                {buildYearlyBestTags(tagHistory).map((row) => <span class="profile-year-pill"><strong>{row.year}:</strong> #{row.value}</span>)}
+                {yearlyBestTags.map((row) => <span class="profile-year-pill"><strong>{row.year}:</strong> #{row.value}</span>)}
               </div>
             ) : null}
           </div>
@@ -661,7 +659,7 @@ const courseHoles = courseStatsForPlayer?.holes ? [...courseStatsForPlayer.holes
             <div class="profile-card-body">
               <p class="profile-course-summary">{formatRounds(courseStatsForPlayer.rounds)} • Original Layout</p>
               <div class="profile-course-grid">
-                {courseHoles.map((hole: any) => (
+                {courseHoles.map((hole) => (
                   <article class="profile-course-hole">
                     <div class="profile-course-hole-header">
                       <h3 class="profile-course-hole-title">Hole {hole.hole} <span>Par {hole.par}</span></h3>
@@ -671,7 +669,7 @@ const courseHoles = courseStatsForPlayer?.holes ? [...courseStatsForPlayer.holes
                       </div>
                     </div>
                     <div class="profile-course-bar" style={courseBarStyle(hole.segments)}>
-                      {(hole.segments || []).filter((segment: any) => Number(segment?.count || 0) > 0).map((segment: any) => {
+                      {(hole.segments || []).filter((segment) => Number(segment?.count || 0) > 0).map((segment) => {
                         const kind = SEGMENT_CLASSES[String(segment.kind || "par")] || "par";
                         const pct = Number(segment.pct || 0);
                         return <div class={`profile-course-segment profile-course-segment--${kind}`} title={`${segment.label}: ${segment.count} (${pct.toFixed(1)}%)`}>{pct >= 11 ? <span>{segment.count}</span> : null}</div>;
@@ -692,7 +690,7 @@ const courseHoles = courseStatsForPlayer?.holes ? [...courseStatsForPlayer.holes
             <table class="profile-table">
               <thead><tr><th>Date</th><th>Score</th></tr></thead>
               <tbody>
-                {recentRounds.length ? recentRounds.map((round: any) => (
+                {recentRounds.length ? recentRounds.map((round) => (
                   <tr><td>{round.date}</td><td>{formatScoreWithPar(round.score)}</td></tr>
                 )) : <tr><td colspan="2" class="profile-muted">No handicap rounds found.</td></tr>}
               </tbody>
@@ -705,7 +703,7 @@ const courseHoles = courseStatsForPlayer?.holes ? [...courseStatsForPlayer.holes
           <div class="profile-card-body">
             {personalBests.length ? (
               <ul class="profile-link-list">
-                {personalBests.map((item: any) => <li><strong>{item.score}</strong> <a class="profile-link" href={item.href}>{item.date}</a></li>)}
+                {personalBests.map((item) => <li><strong>{item.score}</strong> <a class="profile-link" href={item.href}>{item.date}</a></li>)}
               </ul>
             ) : <p class="profile-muted">No personal best found.</p>}
           </div>
@@ -716,7 +714,7 @@ const courseHoles = courseStatsForPlayer?.holes ? [...courseStatsForPlayer.holes
           <div class="profile-card-body">
             {weeklyWins.length ? (
               <ul class="profile-link-list">
-                {weeklyWins.map((item: any) => <li><a class="profile-link" href={item.href}>{item.date}</a> — {item.label} • {item.score}</li>)}
+                {weeklyWins.map((item) => <li><a class="profile-link" href={item.href}>{item.date}</a> — {item.label} • {item.score}</li>)}
               </ul>
             ) : <p class="profile-muted">No weekly wins recorded.</p>}
           </div>
@@ -727,7 +725,7 @@ const courseHoles = courseStatsForPlayer?.holes ? [...courseStatsForPlayer.holes
           <div class="profile-card-body">
             {bestOverallWins.length ? (
               <ul class="profile-link-list">
-                {bestOverallWins.map((item: any) => <li><a class="profile-link" href={item.href}>{item.date}</a> — {item.label} • {item.score}{item.isTie ? " • Tie" : ""}</li>)}
+                {bestOverallWins.map((item) => <li><a class="profile-link" href={item.href}>{item.date}</a> — {item.label} • {item.score}{item.isTie ? " • Tie" : ""}</li>)}
               </ul>
             ) : <p class="profile-muted">No best overall wins recorded.</p>}
           </div>
@@ -738,7 +736,7 @@ const courseHoles = courseStatsForPlayer?.holes ? [...courseStatsForPlayer.holes
           <div class="profile-card-body">
             {aces.length ? (
               <ul class="profile-link-list">
-                {aces.map((item: any) => <li><a class="profile-link" href={item.href}>{item.date}</a> — {item.label ? `${item.label} • ` : ""}{item.hole ? `Hole ${item.hole}` : "Ace"}</li>)}
+                {aces.map((item) => <li><a class="profile-link" href={item.href}>{item.date}</a> — {item.label ? `${item.label} • ` : ""}{item.hole ? `Hole ${item.hole}` : "Ace"}</li>)}
               </ul>
             ) : <p class="profile-muted">No aces recorded.</p>}
           </div>
