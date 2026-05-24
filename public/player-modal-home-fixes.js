@@ -11,15 +11,8 @@
     style.id = STYLE_ID;
     style.textContent = `
       @media (min-width: 901px) {
-        .home-grid {
-          align-items: start !important;
-        }
-
-        .left-stack,
-        .middle-stack,
-        .right-stack {
-          align-self: start !important;
-        }
+        .home-grid { align-items: start !important; }
+        .left-stack, .middle-stack, .right-stack { align-self: start !important; }
 
         .right-stack {
           min-height: 0 !important;
@@ -39,9 +32,13 @@
           min-height: 0 !important;
           display: grid !important;
           grid-template-rows: repeat(var(--home-event-count), minmax(0, 1fr)) !important;
+          align-items: center !important;
+          gap: 14px !important;
         }
 
         .events-card .event-item {
+          align-self: center !important;
+          width: 100% !important;
           min-height: 0 !important;
         }
       }
@@ -51,10 +48,10 @@
 
   function naturalHeight(element) {
     if (!element) return 0;
-    const previousHeight = element.style.height;
+    const oldHeight = element.style.height;
     element.style.height = "auto";
     const height = Math.ceil(element.getBoundingClientRect().height);
-    element.style.height = previousHeight;
+    element.style.height = oldHeight;
     return height;
   }
 
@@ -69,8 +66,7 @@
     if (window.matchMedia("(max-width: 900px)").matches) {
       if (homeGrid) homeGrid.style.alignItems = "";
       [leftStack, middleStack, rightStack].forEach((stack) => {
-        if (!stack) return;
-        stack.style.alignSelf = "";
+        if (stack) stack.style.alignSelf = "";
       });
       if (rightStack) {
         rightStack.style.height = "";
@@ -81,30 +77,35 @@
         eventsCard.style.alignSelf = "";
         eventsCard.style.height = "";
         eventsCard.style.minHeight = "";
-        eventsCard.style.maxHeight = "";
         eventsCard.style.display = "";
         eventsCard.style.flexDirection = "";
       }
       if (eventsList) {
         eventsList.style.flex = "";
+        eventsList.style.display = "";
         eventsList.style.gridTemplateRows = "";
+        eventsList.style.alignItems = "";
+        eventsList.style.gap = "";
         eventsList.style.minHeight = "";
       }
+      eventsList?.querySelectorAll(".event-item").forEach((item) => {
+        item.style.alignSelf = "";
+        item.style.width = "";
+        item.style.minHeight = "";
+      });
       return;
     }
 
     if (homeGrid) homeGrid.style.alignItems = "start";
-
     [leftStack, middleStack, rightStack].forEach((stack) => {
-      if (!stack) return;
-      stack.style.alignSelf = "start";
+      if (stack) stack.style.alignSelf = "start";
     });
 
     const middleHeight = naturalHeight(middleStack);
     const targetHeight = middleHeight > 0 ? middleHeight : naturalHeight(rightStack);
 
     if (rightStack) {
-      rightStack.style.height = targetHeight ? `${targetHeight}px` : "auto";
+      rightStack.style.height = targetHeight ? targetHeight + "px" : "auto";
       rightStack.style.minHeight = "0";
       rightStack.style.gridTemplateRows = "auto auto minmax(0, 1fr)";
     }
@@ -113,28 +114,33 @@
       eventsCard.style.alignSelf = "stretch";
       eventsCard.style.height = "auto";
       eventsCard.style.minHeight = "0";
-      eventsCard.style.maxHeight = "none";
       eventsCard.style.display = "flex";
       eventsCard.style.flexDirection = "column";
     }
 
     if (eventsList) {
       eventsList.style.flex = "1 1 auto";
+      eventsList.style.display = "grid";
       eventsList.style.gridTemplateRows = "repeat(var(--home-event-count), minmax(0, 1fr))";
+      eventsList.style.alignItems = "center";
+      eventsList.style.gap = "14px";
       eventsList.style.minHeight = "0";
+      eventsList.querySelectorAll(".event-item").forEach((item) => {
+        item.style.alignSelf = "center";
+        item.style.width = "100%";
+        item.style.minHeight = "0";
+      });
     }
   }
 
-  function scheduleHomeLayoutFix() {
+  function runHomeLayoutFix() {
     applyHomeLayoutFix();
-    window.requestAnimationFrame(applyHomeLayoutFix);
-    window.setTimeout(applyHomeLayoutFix, 0);
-    window.setTimeout(applyHomeLayoutFix, 150);
+    requestAnimationFrame(applyHomeLayoutFix);
+    setTimeout(applyHomeLayoutFix, 150);
   }
 
   function updateCourseStatsModalLabel(root = document) {
     if (!(root instanceof Document || root instanceof Element)) return;
-
     root.querySelectorAll(".player-details-accordion-button .player-details-section-label").forEach((label) => {
       if ((label.textContent || "").trim() === "COURSE STATS") {
         label.textContent = "COURSE STATS (SINCE 2024)";
@@ -144,34 +150,29 @@
 
   function start() {
     injectHomeLayoutFix();
-    scheduleHomeLayoutFix();
+    runHomeLayoutFix();
     updateCourseStatsModalLabel(document);
 
     const latestResultCard = document.getElementById("latestResultCard");
     if (latestResultCard && "MutationObserver" in window) {
-      new MutationObserver(scheduleHomeLayoutFix).observe(latestResultCard, {
+      new MutationObserver(runHomeLayoutFix).observe(latestResultCard, {
         attributes: true,
         attributeFilter: ["class", "style"],
       });
     }
 
-    window.addEventListener("resize", scheduleHomeLayoutFix);
+    const eventsList = document.getElementById("eventsList");
+    if (eventsList && "MutationObserver" in window) {
+      new MutationObserver(runHomeLayoutFix).observe(eventsList, {
+        childList: true,
+        subtree: true,
+      });
+    }
+
+    window.addEventListener("resize", runHomeLayoutFix);
 
     const modalBody = document.getElementById("playerDetailsModalBody") || document.body;
-    if (!modalBody) return;
-
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-          if (node instanceof Element) {
-            updateCourseStatsModalLabel(node);
-          }
-        });
-      });
-      updateCourseStatsModalLabel(document);
-    });
-
-    observer.observe(modalBody, {
+    new MutationObserver(() => updateCourseStatsModalLabel(document)).observe(modalBody, {
       childList: true,
       subtree: true,
     });
