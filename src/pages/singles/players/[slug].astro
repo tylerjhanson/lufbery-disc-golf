@@ -17,14 +17,6 @@ function cleanName(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
 
-function playerSlug(value) {
-  return cleanName(value)
-    .toLowerCase()
-    .replace(/&/g, " and ")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
 function normalizePlayerKey(value) {
   return cleanName(value).toLowerCase();
 }
@@ -123,10 +115,18 @@ function visibleCourseHoles(playerStats) {
 }
 
 export function getStaticPaths() {
+  const toSlug = (value) => String(value || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
   const profiles = Object.values(getPlayerProfiles());
   const seen = new Set();
   return profiles
-    .map((profile) => ({ profile, slug: playerSlug(String(profile.name || "")) }))
+    .map((profile) => ({ profile, slug: toSlug(String(profile.name || "")) }))
     .filter(({ slug }) => {
       if (!slug || seen.has(slug)) return false;
       seen.add(slug);
