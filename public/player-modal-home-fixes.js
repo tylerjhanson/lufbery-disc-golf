@@ -42,6 +42,55 @@
           min-height: 0 !important;
         }
       }
+
+      @media (max-width: 700px) {
+        .player-course-stats-summary {
+          font-size: 0.82rem !important;
+          line-height: 1.25 !important;
+        }
+
+        .player-course-stats-hole {
+          padding: 8px 8px !important;
+        }
+
+        .player-course-stats-hole-header {
+          display: flex !important;
+          align-items: baseline !important;
+          flex-direction: row !important;
+          justify-content: space-between !important;
+          gap: 6px !important;
+          margin-bottom: 6px !important;
+        }
+
+        .player-course-stats-hole-title {
+          font-size: 0.9rem !important;
+          white-space: nowrap !important;
+          min-width: 0 !important;
+        }
+
+        .player-course-stats-hole-title span {
+          margin-left: 4px !important;
+          font-size: 0.76rem !important;
+        }
+
+        .player-course-stats-hole-meta {
+          gap: 5px !important;
+          font-size: 0.76rem !important;
+          white-space: nowrap !important;
+          flex: 0 0 auto !important;
+        }
+
+        .player-course-stats-hole-meta strong {
+          font-size: 1em !important;
+        }
+      }
+
+      @media (max-width: 380px) {
+        .player-course-stats-hole-title { font-size: 0.84rem !important; }
+        .player-course-stats-hole-title span,
+        .player-course-stats-hole-meta { font-size: 0.7rem !important; }
+        .player-course-stats-hole-meta { gap: 4px !important; }
+      }
     `;
     document.head.appendChild(style);
   }
