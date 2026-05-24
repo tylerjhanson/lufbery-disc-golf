@@ -285,7 +285,7 @@
 
     return `
       <div class="player-course-stats-summary">
-        ${escapeHtml(formatRounds(playerStats.rounds))} • Difficulty 1 = hardest, 18 = easiest
+        ${escapeHtml(formatRounds(playerStats.rounds))} • Original Layout
       </div>
       <div class="player-course-stats-grid">${holesHtml}</div>
     `;
