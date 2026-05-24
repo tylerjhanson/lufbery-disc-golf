@@ -87,7 +87,12 @@ function pickSheet(workbook) {
   if (names.includes("Event results")) return "Event results";
   return names[0] || "";
 }
-function num(v) { const n = Number(v); return Number.isFinite(n) ? n : null; }
+function num(v) {
+  const text = clean(v);
+  if (!text) return null;
+  const n = Number(text);
+  return Number.isFinite(n) ? n : null;
+}
 function emptyBucket(label) {
   return { label, rounds: 0, holes: PARS.map((par, i) => ({ hole: i + 1, par, rounds: 0, total: 0, counts: Object.fromEntries(SEGMENTS.map(([key]) => [key, 0])) })) };
 }
@@ -141,9 +146,13 @@ function eventRowsFromExport(file, event, warnings) {
     warnings.push({ type: "missing-hole-columns", title: event.title, file: path.relative(root, file), sheetName });
     return [];
   }
+  const totalIndex = headers.findIndex((h) => clean(h).toLowerCase() === "round_total_score");
   return rows.map((row) => {
     const scores = indexes.map((i) => num(row[i]));
-    if (scores.some((score) => score == null)) return null;
+    if (scores.some((score) => score == null || score < 1)) return null;
+    const scoreTotal = scores.reduce((sum, score) => sum + score, 0);
+    const exportTotal = totalIndex === -1 ? null : num(row[totalIndex]);
+    if (exportTotal != null && exportTotal !== scoreTotal) return null;
     return { scores };
   }).filter(Boolean);
 }
