@@ -123,15 +123,21 @@ export function chartHtml(points, options = {}) {
   for (let value = min; value <= max; value += tickStep) ticks.push(value);
 
   const getX = (index) => cleanPoints.length === 1 ? padLeft + innerWidth / 2 : padLeft + (index / (cleanPoints.length - 1)) * innerWidth;
-  const getY = (value) => padTop + ((value - min) / (max - min)) * innerHeight;
+  const getY = (value) => padTop + ((max - value) / (max - min)) * innerHeight;
   const polyline = cleanPoints.map((point, index) => `${getX(index)},${getY(Number(point.value))}`).join(" ");
   const grid = ticks.map((tick) => `<line class="profile-chart-grid" x1="${padLeft}" y1="${getY(tick)}" x2="${width - padRight}" y2="${getY(tick)}"></line><text class="profile-chart-axis" x="${padLeft - 7}" y="${getY(tick) + 4}" text-anchor="end">${Math.round(tick)}</text>`).join("");
-  const dots = cleanPoints.map((point, index) => {
+  const guide = `<line class="profile-chart-guide" x1="${padLeft}" y1="${padTop}" x2="${padLeft}" y2="${height - padBottom}" hidden></line>`;
+  const hotspots = cleanPoints.map((point, index) => {
+    const x = getX(index);
+    const prevX = index === 0 ? padLeft : getX(index - 1);
+    const nextX = index === cleanPoints.length - 1 ? width - padRight : getX(index + 1);
+    const x1 = index === 0 ? padLeft : (prevX + x) / 2;
+    const x2 = index === cleanPoints.length - 1 ? width - padRight : (x + nextX) / 2;
     const title = htmlEscape(point.detail || `${point.label}: ${point.value}`);
-    return `<circle class="profile-chart-dot" cx="${getX(index)}" cy="${getY(Number(point.value))}" r="4" tabindex="0" data-chart-tip="${title}"><title>${title}</title></circle>`;
+    return `<rect class="profile-chart-hotspot" x="${x1}" y="${padTop}" width="${Math.max(4, x2 - x1)}" height="${innerHeight}" data-chart-tip="${title}" data-chart-x="${x}" tabindex="0"><title>${title}</title></rect>`;
   }).join("");
 
-  return `<div class="profile-chart-shell"><svg class="profile-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img">${grid}<polyline class="profile-chart-line" points="${polyline}"></polyline>${dots}</svg></div>`;
+  return `<div class="profile-chart-shell"><svg class="profile-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img">${grid}<polyline class="profile-chart-line" points="${polyline}"></polyline>${guide}${hotspots}</svg></div>`;
 }
 
 function courseBarStyle(segments) {
