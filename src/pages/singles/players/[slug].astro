@@ -54,147 +54,72 @@ function formatRounds(rounds) {
   return `${new Intl.NumberFormat("en-US").format(count)} round${count === 1 ? "" : "s"}`;
 }
 
-function buildYearlyScoreAverages(rounds) {
+function yearAverages(rounds) {
   const buckets = new Map();
   rounds.forEach((round) => {
-    const year = parseDisplayYear(round?.date);
-    const score = Number(round?.score);
-    if (!Number.isFinite(year) || year < 2021 || !Number.isFinite(score)) return;
-    const bucket = buckets.get(year) || [];
-    bucket.push(score);
-    buckets.set(year, bucket);
+    const year = parseDisplayYear(round.date);
+    const score = Number(round.score);
+    if (!Number.isFinite(year) || !Number.isFinite(score)) return;
+    if (!buckets.has(year)) buckets.set(year, []);
+    buckets.get(year).push(score);
   });
-
   return Array.from(buckets.entries())
     .sort((a, b) => a[0] - b[0])
     .map(([year, scores]) => ({
-      year: String(year),
+      year,
       value: (scores.reduce((sum, score) => sum + score, 0) / scores.length).toFixed(1),
     }));
 }
 
-function buildEffectiveHandicapHistory(history, currentHandicap) {
-  const baseHistory = Array.isArray(history)
-    ? history
-        .map((row) => ({ date: String(row?.date || ""), handicap: Number(row?.handicap) }))
-        .filter((row) => row.date && Number.isFinite(row.handicap))
-    : [];
-
-  const current = Number(currentHandicap);
-  if (!Number.isFinite(current)) return baseHistory;
-  if (!baseHistory.length) return [{ date: "Current", handicap: current }];
-
-  const lastPoint = baseHistory[baseHistory.length - 1];
-  if (Number(lastPoint?.handicap) === current) return baseHistory;
-  return [...baseHistory, { date: "Current", handicap: current }];
+function yearlyBest(history, valueKey, minYear = 2023) {
+  const best = new Map();
+  history.forEach((row) => {
+    const year = parseDisplayYear(row.date);
+    const value = Number(row[valueKey]);
+    if (!Number.isFinite(year) || year < minYear || !Number.isFinite(value)) return;
+    const current = best.get(year);
+    if (current == null || value < current) best.set(year, value);
+  });
+  return Array.from(best.entries()).sort((a, b) => a[0] - b[0]).map(([year, value]) => ({ year, value }));
 }
 
-function getLowestHandicap(history, currentHandicap) {
-  const values = Array.isArray(history)
-    ? history.map((row) => Number(row?.handicap)).filter((value) => Number.isFinite(value))
-    : [];
+function lowestHandicap(history, currentHandicap) {
+  const values = history.map((row) => Number(row.handicap)).filter((value) => Number.isFinite(value));
   const current = Number(currentHandicap);
   if (Number.isFinite(current)) values.push(current);
-  return values.length ? String(Math.min(...values)) : "";
+  return values.length ? Math.min(...values) : "";
 }
 
-function buildYearlyBestHandicaps(history) {
-  const bestByYear = new Map();
-  history.forEach((row) => {
-    const year = parseDisplayYear(row?.date);
-    const handicap = Number(row?.handicap);
-    if (!Number.isFinite(year) || year < 2023 || !Number.isFinite(handicap)) return;
-    const current = bestByYear.get(year);
-    if (current == null || handicap < current) bestByYear.set(year, handicap);
-  });
-  return Array.from(bestByYear.entries())
-    .sort((a, b) => a[0] - b[0])
-    .map(([year, value]) => ({ year: String(year), value: String(value) }));
+function courseBarStyle(segments) {
+  const visible = Array.isArray(segments) ? segments.filter((segment) => Number(segment.count || 0) > 0) : [];
+  if (!visible.length) return "grid-template-columns:1fr;";
+  return `grid-template-columns:${visible.map((segment) => `${Math.max(1, Number(segment.count || 0))}fr`).join(" ")};`;
 }
 
-function buildYearlyBestTags(history) {
-  const bestByYear = new Map();
-  history.forEach((row) => {
-    const year = parseDisplayYear(row?.date);
-    const tag = Number(row?.tag);
-    if (!Number.isFinite(year) || year < 2023 || !Number.isFinite(tag)) return;
-    const current = bestByYear.get(year);
-    if (current == null || tag < current) bestByYear.set(year, tag);
-  });
-  return Array.from(bestByYear.entries())
-    .sort((a, b) => a[0] - b[0])
-    .map(([year, value]) => ({ year: String(year), value: String(value) }));
-}
-
-function buildLineChart(points, lowerIsBetter = true, options = {}) {
-  const cleanPoints = points.filter((point) => Number.isFinite(point.value));
-  if (!cleanPoints.length) return "";
-
-  const values = cleanPoints.map((point) => point.value);
-  const width = 640;
-  const height = 210;
-  const padTop = 12;
-  const padRight = 10;
-  const padBottom = 14;
-  const padLeft = 42;
-  const innerWidth = width - padLeft - padRight;
-  const innerHeight = height - padTop - padBottom;
-
-  const fixedStep = Number(options.step);
-  const useFixedStep = Number.isFinite(fixedStep) && fixedStep > 0;
-  let chartMin = Math.min(...values);
-  let chartMax = Math.max(...values);
-
-  if (useFixedStep) {
-    const minBase = Number.isFinite(Number(options.min)) ? Number(options.min) : 0;
-    chartMin = Math.min(minBase, chartMin);
-    chartMin = Math.floor(chartMin / fixedStep) * fixedStep;
-    chartMax = Math.ceil(chartMax / fixedStep) * fixedStep;
-    if (chartMax <= chartMin) chartMax = chartMin + fixedStep;
-  } else {
-    if (chartMin === chartMax) chartMax = chartMin + 1;
-    const range = chartMax - chartMin;
-    const step = range <= 10 ? 1 : range <= 30 ? 5 : 10;
-    chartMin = Math.max(1, Math.floor(chartMin / step) * step);
-    chartMax = Math.ceil(chartMax / step) * step;
-    if (chartMin === chartMax) chartMax = chartMin + step;
-  }
-
-  const tickStep = useFixedStep ? fixedStep : chartMax - chartMin <= 10 ? 1 : chartMax - chartMin <= 30 ? 5 : 10;
-  const ticks = [];
-  for (let value = chartMin; value <= chartMax; value += tickStep) ticks.push(value);
-
-  const getX = (index) => cleanPoints.length === 1 ? padLeft + innerWidth / 2 : padLeft + (index / (cleanPoints.length - 1)) * innerWidth;
-  const getY = (value) => lowerIsBetter
-    ? padTop + ((value - chartMin) / (chartMax - chartMin)) * innerHeight
-    : padTop + ((chartMax - value) / (chartMax - chartMin)) * innerHeight;
-
-  const polyline = cleanPoints.map((point, index) => `${getX(index)},${getY(point.value)}`).join(" ");
-  const dots = cleanPoints
-    .map((point, index) => `<circle class="profile-chart-dot" cx="${getX(index)}" cy="${getY(point.value)}" r="3"><title>${point.detail || `${point.label}: ${point.value}`}</title></circle>`)
-    .join("");
-  const grid = ticks
-    .map((tick) => {
-      const y = getY(tick);
-      return `<line class="profile-chart-grid" x1="${padLeft}" y1="${y}" x2="${width - padRight}" y2="${y}" /><text class="profile-chart-axis" x="${padLeft - 8}" y="${y + 4}" text-anchor="end">${Math.round(tick)}</text>`;
-    })
-    .join("");
-
-  return `<div class="profile-chart-shell"><svg class="profile-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">${grid}<polyline class="profile-chart-line" points="${polyline}" />${dots}</svg></div>`;
-}
-
-function getCourseStatsForPlayer(name) {
-  const players = courseStats?.players || {};
-  const aliases = courseStats?.source?.aliases || {};
+function courseStatsForPlayer(name) {
+  const players = courseStats.players || {};
+  const aliases = courseStats.source?.aliases || {};
   const key = normalizePlayerKey(name);
   const aliasKey = aliases[key] || key;
   return players[aliasKey] || players[key] || null;
 }
 
-function courseBarStyle(segments) {
-  const visible = Array.isArray(segments) ? segments.filter((segment) => Number(segment?.count || 0) > 0) : [];
-  if (!visible.length) return "grid-template-columns:1fr;";
-  return `grid-template-columns:${visible.map((segment) => `${Math.max(1, Number(segment.count || 0))}fr`).join(" ")};`;
+function visibleCourseHoles(playerStats) {
+  if (!playerStats || !Array.isArray(playerStats.holes)) return [];
+  return [...playerStats.holes]
+    .sort((a, b) => Number(a.hole) - Number(b.hole))
+    .map((hole) => {
+      const segments = Array.isArray(hole.segments)
+        ? hole.segments
+            .filter((segment) => Number(segment.count || 0) > 0)
+            .map((segment) => ({
+              ...segment,
+              pctNumber: Number(segment.pct || 0),
+              className: SEGMENT_CLASSES[String(segment.kind || "par")] || "par",
+            }))
+        : [];
+      return { ...hole, segments, barStyle: courseBarStyle(segments) };
+    });
 }
 
 export function getStaticPaths() {
@@ -211,57 +136,30 @@ export function getStaticPaths() {
 }
 
 const { profile } = Astro.props;
-const name = String(profile?.name || "Player");
-const allRounds = Array.isArray(profile?.allRounds) ? profile.allRounds : [];
-const recentRounds = Array.isArray(profile?.recentRounds) ? profile.recentRounds : [];
-const handicapHistory = Array.isArray(profile?.handicapHistory)
-  ? profile.handicapHistory.filter((row) => parseDisplayYear(row?.date) >= 2023)
-  : [];
-const tagHistory = Array.isArray(profile?.tagHistory)
-  ? profile.tagHistory.filter((row) => parseDisplayYear(row?.date) >= 2023)
-  : [];
-const weeklyWins = Array.isArray(profile?.weeklyWins) ? profile.weeklyWins : [];
-const bestOverallWins = Array.isArray(profile?.bestOverallWins) ? profile.bestOverallWins : [];
-const aces = Array.isArray(profile?.aces) ? profile.aces : [];
-const personalBests = Array.isArray(profile?.personalBests) && profile.personalBests.length
-  ? profile.personalBests
-  : profile?.personalBest
-    ? [profile.personalBest]
-    : [];
-const effectiveHandicapHistory = buildEffectiveHandicapHistory(handicapHistory, String(profile?.handicap || ""));
-const handicapMin = effectiveHandicapHistory.length
-  ? Math.floor(Math.min(...effectiveHandicapHistory.map((row) => Number(row.handicap)))) - 1
-  : 0;
-const courseStatsForPlayer = getCourseStatsForPlayer(name);
-const courseHoles = courseStatsForPlayer?.holes ? [...courseStatsForPlayer.holes].sort((a, b) => Number(a.hole) - Number(b.hole)) : [];
-const yearlyScoreAverages = buildYearlyScoreAverages(allRounds);
-const yearlyBestHandicaps = buildYearlyBestHandicaps(effectiveHandicapHistory);
-const yearlyBestTags = buildYearlyBestTags(tagHistory);
+const name = String(profile.name || "Player");
+const allRounds = Array.isArray(profile.allRounds) ? profile.allRounds : [];
+const recentRounds = Array.isArray(profile.recentRounds) ? profile.recentRounds : [];
+const handicapHistory = Array.isArray(profile.handicapHistory) ? profile.handicapHistory.filter((row) => parseDisplayYear(row.date) >= 2023) : [];
+const tagHistory = Array.isArray(profile.tagHistory) ? profile.tagHistory.filter((row) => parseDisplayYear(row.date) >= 2023) : [];
+const weeklyWins = Array.isArray(profile.weeklyWins) ? profile.weeklyWins : [];
+const bestOverallWins = Array.isArray(profile.bestOverallWins) ? profile.bestOverallWins : [];
+const aces = Array.isArray(profile.aces) ? profile.aces : [];
+const personalBests = Array.isArray(profile.personalBests) && profile.personalBests.length ? profile.personalBests : profile.personalBest ? [profile.personalBest] : [];
+const playerCourseStats = courseStatsForPlayer(name);
+const courseHoles = visibleCourseHoles(playerCourseStats);
+const scoreAverages = yearAverages(allRounds);
+const bestHandicaps = yearlyBest(handicapHistory, "handicap", 2023);
+const bestTags = yearlyBest(tagHistory, "tag", 2023);
 ---
 
 <SiteLayout title={`${name} Player Profile`} description={`League player profile and history for ${name}.`} showBrandBar={true}>
   <style is:global>
-    :root {
-      --bg: #f5f7fb;
-      --card: #ffffff;
-      --text: #111827;
-      --muted: #6b7280;
-      --line: #e5e7eb;
-      --line-soft: #eef2f7;
-      --header: #f8fafc;
-      --accent: #2563eb;
-      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-      --radius: 22px;
-    }
-
-    * { box-sizing: border-box; }
-
     body {
       margin: 0;
       padding: 24px;
+      background: linear-gradient(180deg, #f8fafc 0%, var(--bg, #f5f7fb) 100%);
+      color: var(--text, #111827);
       font-family: Inter, Arial, Helvetica, sans-serif;
-      background: linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%);
-      color: var(--text);
     }
 
     .player-profile-wrap {
@@ -272,33 +170,35 @@ const yearlyBestTags = buildYearlyBestTags(tagHistory);
     .profile-back-link {
       display: inline-flex;
       margin-bottom: 14px;
-      color: var(--muted);
+      color: var(--muted, #6b7280);
       font-size: 0.9rem;
       font-weight: 700;
       text-decoration: none;
     }
 
-    .profile-back-link:hover { color: var(--accent); }
+    .profile-card,
+    .profile-header {
+      border: 1px solid var(--line-soft, #eef2f7);
+      border-radius: 22px;
+      background: var(--card, #ffffff);
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    }
 
     .profile-header {
       margin-bottom: 18px;
       padding: 24px;
-      border: 1px solid var(--line-soft);
-      border-radius: var(--radius);
-      background: var(--card);
-      box-shadow: var(--shadow);
     }
 
     .profile-kicker {
       margin: 0 0 8px;
-      color: var(--muted);
+      color: var(--muted, #6b7280);
       font-size: 0.82rem;
       font-weight: 800;
       letter-spacing: 0.06em;
       text-transform: uppercase;
     }
 
-    h1 {
+    .profile-title {
       margin: 0;
       font-size: clamp(2.1rem, 5vw, 4rem);
       line-height: 0.98;
@@ -314,16 +214,16 @@ const yearlyBestTags = buildYearlyBestTags(tagHistory);
 
     .profile-stat {
       padding: 14px;
-      border: 1px solid var(--line-soft);
+      border: 1px solid var(--line-soft, #eef2f7);
       border-radius: 16px;
-      background: var(--header);
+      background: var(--header, #f8fafc);
       min-width: 0;
     }
 
     .profile-stat-label {
       display: block;
       margin-bottom: 5px;
-      color: var(--muted);
+      color: var(--muted, #6b7280);
       font-size: 0.72rem;
       font-weight: 800;
       letter-spacing: 0.04em;
@@ -334,7 +234,6 @@ const yearlyBestTags = buildYearlyBestTags(tagHistory);
       font-size: 1.25rem;
       font-weight: 850;
       line-height: 1.05;
-      word-break: break-word;
     }
 
     .profile-content-grid {
@@ -350,15 +249,15 @@ const yearlyBestTags = buildYearlyBestTags(tagHistory);
     }
 
     .profile-card {
-      border: 1px solid var(--line-soft);
-      border-radius: var(--radius);
-      background: var(--card);
-      box-shadow: var(--shadow);
       overflow: hidden;
     }
 
     .profile-card-header {
       padding: 18px 20px 10px;
+    }
+
+    .profile-card-body {
+      padding: 0 20px 18px;
     }
 
     .profile-section-title {
@@ -370,69 +269,27 @@ const yearlyBestTags = buildYearlyBestTags(tagHistory);
       text-transform: uppercase;
     }
 
-    .profile-card-body {
-      padding: 0 20px 18px;
-    }
-
-    .profile-chart-shell {
-      margin-top: 0;
-      margin-bottom: 12px;
-      padding: 12px;
-      border: 1px solid var(--line-soft);
-      border-radius: 14px;
-      background: var(--header);
-    }
-
-    .profile-chart {
-      display: block;
-      width: 100%;
-      height: 210px;
-      overflow: visible;
-    }
-
-    .profile-chart-grid {
-      stroke: var(--line);
-      stroke-width: 1;
-      opacity: 0.8;
-    }
-
-    .profile-chart-axis {
-      fill: var(--muted);
-      font-family: Inter, Arial, Helvetica, sans-serif;
-      font-size: 12px;
-    }
-
-    .profile-chart-line {
-      fill: none;
-      stroke: var(--accent);
-      stroke-width: 2.5;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      vector-effect: non-scaling-stroke;
-    }
-
-    .profile-chart-dot {
-      fill: var(--card);
-      stroke: var(--accent);
-      stroke-width: 2;
-      vector-effect: non-scaling-stroke;
+    .profile-year-stats,
+    .profile-link-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
     }
 
     .profile-year-stats {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
     }
 
     .profile-year-pill {
-      padding: 7px 10px;
-      border: 1px solid var(--line-soft);
+      padding: 9px 10px;
+      border: 1px solid var(--line-soft, #eef2f7);
       border-radius: 999px;
-      background: var(--card);
-      color: var(--text);
+      background: var(--header, #f8fafc);
       font-size: 0.88rem;
       font-weight: 750;
+      text-align: center;
     }
 
     .profile-table {
@@ -443,7 +300,7 @@ const yearlyBestTags = buildYearlyBestTags(tagHistory);
     .profile-table th,
     .profile-table td {
       padding: 10px 0;
-      border-bottom: 1px solid var(--line-soft);
+      border-bottom: 1px solid var(--line-soft, #eef2f7);
       text-align: left;
       font-size: 0.94rem;
       vertical-align: top;
@@ -455,43 +312,26 @@ const yearlyBestTags = buildYearlyBestTags(tagHistory);
     }
 
     .profile-table th {
-      color: var(--muted);
+      color: var(--muted, #6b7280);
       font-size: 0.78rem;
       font-weight: 800;
     }
 
-    .profile-link-list {
-      display: grid;
-      gap: 9px;
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-
-    .profile-link-list li {
-      line-height: 1.35;
-      font-size: 0.95rem;
-    }
-
     .profile-link {
-      color: var(--accent);
+      color: var(--accent, #2563eb);
       font-weight: 700;
       text-decoration: none;
     }
 
-    .profile-link:hover { text-decoration: underline; }
-
-    .profile-muted {
-      color: var(--muted);
-      font-size: 0.92rem;
-      font-weight: 650;
+    .profile-link:hover {
+      text-decoration: underline;
     }
 
+    .profile-muted,
     .profile-course-summary {
-      margin: 0 0 10px;
-      color: var(--muted);
-      font-size: 0.9rem;
-      font-weight: 800;
+      color: var(--muted, #6b7280);
+      font-size: 0.92rem;
+      font-weight: 650;
     }
 
     .profile-course-grid {
@@ -501,9 +341,9 @@ const yearlyBestTags = buildYearlyBestTags(tagHistory);
 
     .profile-course-hole {
       padding: 9px;
-      border: 1px solid var(--line-soft);
+      border: 1px solid var(--line-soft, #eef2f7);
       border-radius: 13px;
-      background: var(--card);
+      background: var(--card, #ffffff);
     }
 
     .profile-course-hole-header {
@@ -523,7 +363,7 @@ const yearlyBestTags = buildYearlyBestTags(tagHistory);
 
     .profile-course-hole-title span {
       margin-left: 5px;
-      color: var(--muted);
+      color: var(--muted, #6b7280);
       font-size: 0.8rem;
       font-weight: 600;
     }
@@ -532,14 +372,13 @@ const yearlyBestTags = buildYearlyBestTags(tagHistory);
       display: inline-flex;
       gap: 8px;
       white-space: nowrap;
-      color: var(--muted);
+      color: var(--muted, #6b7280);
       font-size: 0.78rem;
       font-weight: 700;
     }
 
     .profile-course-meta strong {
-      color: var(--text);
-      font-size: 1.05em;
+      color: var(--text, #111827);
       font-weight: 850;
     }
 
@@ -549,35 +388,18 @@ const yearlyBestTags = buildYearlyBestTags(tagHistory);
       overflow: hidden;
       border: 2px solid #cfe0ef;
       border-radius: 9px;
-      background: var(--card);
+      background: var(--card, #ffffff);
     }
 
     .profile-course-segment { min-width: 0; position: relative; }
     .profile-course-segment + .profile-course-segment { box-shadow: inset 1px 0 0 rgba(15, 23, 42, 0.1); }
-    .profile-course-segment span {
-      position: absolute;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      font-size: 0.72rem;
-      font-weight: 850;
-      line-height: 1;
-    }
-
+    .profile-course-segment span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 0.72rem; font-weight: 850; line-height: 1; }
     .profile-course-segment--ace { background: #2f6fb6; color: #fff; }
     .profile-course-segment--birdie { background: #6c9bd1; color: #fff; }
-    .profile-course-segment--par { background: var(--card); color: var(--text); }
+    .profile-course-segment--par { background: var(--card, #ffffff); color: var(--text, #111827); }
     .profile-course-segment--bogey { background: #f2d8c8; color: #2e3440; }
     .profile-course-segment--double { background: #efb286; color: #2e3440; }
     .profile-course-segment--triple { background: #eb7b3c; color: #fff; }
-
-    @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) .profile-course-bar { border-color: #334155; }
-      :root:not([data-theme="light"]) .profile-course-segment + .profile-course-segment { box-shadow: inset 1px 0 0 rgba(248, 250, 252, 0.16); }
-    }
-
-    [data-theme="dark"] .profile-course-bar { border-color: #334155; }
-    [data-theme="dark"] .profile-course-segment + .profile-course-segment { box-shadow: inset 1px 0 0 rgba(248, 250, 252, 0.16); }
 
     @media (max-width: 900px) {
       body { padding: 14px; }
@@ -590,11 +412,9 @@ const yearlyBestTags = buildYearlyBestTags(tagHistory);
 
     @media (max-width: 460px) {
       .profile-summary-grid { grid-template-columns: 1fr; }
-      .profile-course-hole-header { gap: 6px; }
       .profile-course-hole-title { font-size: 0.88rem; white-space: nowrap; }
-      .profile-course-hole-title span { font-size: 0.72rem; }
-      .profile-course-meta { gap: 5px; font-size: 0.7rem; }
-      .profile-chart { height: 170px; }
+      .profile-course-hole-title span, .profile-course-meta { font-size: 0.72rem; }
+      .profile-course-meta { gap: 5px; }
     }
   </style>
 
@@ -603,15 +423,15 @@ const yearlyBestTags = buildYearlyBestTags(tagHistory);
 
     <header class="profile-header">
       <p class="profile-kicker">Player Profile</p>
-      <h1>{name}</h1>
+      <h1 class="profile-title">{name}</h1>
 
       <div class="profile-summary-grid">
-        <div class="profile-stat"><span class="profile-stat-label">Current handicap</span><span class="profile-stat-value">{profile?.handicap || "—"}</span></div>
-        <div class="profile-stat"><span class="profile-stat-label">Current tag</span><span class="profile-stat-value">{profile?.hasTag ? profile?.currentTag || "TBD" : "—"}</span></div>
-        <div class="profile-stat"><span class="profile-stat-label">Average score</span><span class="profile-stat-value">{profile?.average || "—"}</span></div>
-        <div class="profile-stat"><span class="profile-stat-label">Best tag</span><span class="profile-stat-value">{profile?.bestTagEver || "—"}</span></div>
-        <div class="profile-stat"><span class="profile-stat-label">Lowest handicap</span><span class="profile-stat-value">{getLowestHandicap(handicapHistory, String(profile?.handicap || "")) || "—"}</span></div>
-        <div class="profile-stat"><span class="profile-stat-label">Course stats</span><span class="profile-stat-value">{courseStatsForPlayer ? formatRounds(courseStatsForPlayer.rounds) : "—"}</span></div>
+        <div class="profile-stat"><span class="profile-stat-label">Current handicap</span><span class="profile-stat-value">{profile.handicap || "—"}</span></div>
+        <div class="profile-stat"><span class="profile-stat-label">Current tag</span><span class="profile-stat-value">{profile.hasTag ? profile.currentTag || "TBD" : "—"}</span></div>
+        <div class="profile-stat"><span class="profile-stat-label">Average score</span><span class="profile-stat-value">{profile.average || "—"}</span></div>
+        <div class="profile-stat"><span class="profile-stat-label">Best tag</span><span class="profile-stat-value">{profile.bestTagEver || "—"}</span></div>
+        <div class="profile-stat"><span class="profile-stat-label">Lowest handicap</span><span class="profile-stat-value">{lowestHandicap(handicapHistory, profile.handicap) || "—"}</span></div>
+        <div class="profile-stat"><span class="profile-stat-label">Course stats</span><span class="profile-stat-value">{playerCourseStats ? formatRounds(playerCourseStats.rounds) : "—"}</span></div>
       </div>
     </header>
 
@@ -620,44 +440,41 @@ const yearlyBestTags = buildYearlyBestTags(tagHistory);
         <section class="profile-card">
           <div class="profile-card-header"><h2 class="profile-section-title">Score History</h2></div>
           <div class="profile-card-body">
-            {allRounds.length ? <Fragment set:html={buildLineChart(allRounds.map((round) => ({ value: Number(round.score), label: String(round.date || ""), detail: `${round.date} — ${formatScoreWithPar(round.score)}` })), true)} /> : <p class="profile-muted">No score history found.</p>}
-            {yearlyScoreAverages.length ? (
+            {scoreAverages.length ? (
               <div class="profile-year-stats">
-                {yearlyScoreAverages.map((row) => <span class="profile-year-pill"><strong>{row.year}:</strong> {row.value}</span>)}
+                {scoreAverages.map((row) => <span class="profile-year-pill"><strong>{row.year}:</strong> {row.value}</span>)}
               </div>
-            ) : null}
+            ) : <p class="profile-muted">No score history found.</p>}
           </div>
         </section>
 
         <section class="profile-card">
           <div class="profile-card-header"><h2 class="profile-section-title">Handicap History</h2></div>
           <div class="profile-card-body">
-            {effectiveHandicapHistory.length ? <Fragment set:html={buildLineChart(effectiveHandicapHistory.map((row) => ({ value: Number(row.handicap), label: String(row.date || ""), detail: `${row.date} — ${row.handicap}` })), true, { step: 1, min: handicapMin })} /> : <p class="profile-muted">No handicap history found.</p>}
-            {yearlyBestHandicaps.length ? (
+            {bestHandicaps.length ? (
               <div class="profile-year-stats">
-                {yearlyBestHandicaps.map((row) => <span class="profile-year-pill"><strong>{row.year}:</strong> {row.value}</span>)}
+                {bestHandicaps.map((row) => <span class="profile-year-pill"><strong>{row.year}:</strong> {row.value}</span>)}
               </div>
-            ) : null}
+            ) : <p class="profile-muted">No handicap history found.</p>}
           </div>
         </section>
 
         <section class="profile-card">
           <div class="profile-card-header"><h2 class="profile-section-title">Tag History</h2></div>
           <div class="profile-card-body">
-            {tagHistory.length ? <Fragment set:html={buildLineChart(tagHistory.map((row) => ({ value: Number(row.tag), label: String(row.date || ""), detail: `${row.date} — #${row.tag}` })), true, { step: 5, min: 0 })} /> : <p class="profile-muted">No tag history found.</p>}
-            {yearlyBestTags.length ? (
+            {bestTags.length ? (
               <div class="profile-year-stats">
-                {yearlyBestTags.map((row) => <span class="profile-year-pill"><strong>{row.year}:</strong> #{row.value}</span>)}
+                {bestTags.map((row) => <span class="profile-year-pill"><strong>{row.year}:</strong> #{row.value}</span>)}
               </div>
-            ) : null}
+            ) : <p class="profile-muted">No tag history found.</p>}
           </div>
         </section>
 
-        {courseStatsForPlayer ? (
+        {playerCourseStats ? (
           <section class="profile-card">
             <div class="profile-card-header"><h2 class="profile-section-title">Course Stats</h2></div>
             <div class="profile-card-body">
-              <p class="profile-course-summary">{formatRounds(courseStatsForPlayer.rounds)} • Original Layout</p>
+              <p class="profile-course-summary">{formatRounds(playerCourseStats.rounds)} • Original Layout</p>
               <div class="profile-course-grid">
                 {courseHoles.map((hole) => (
                   <article class="profile-course-hole">
@@ -668,12 +485,12 @@ const yearlyBestTags = buildYearlyBestTags(tagHistory);
                         <span>Avg <strong>{formatAverage(hole.average)}</strong></span>
                       </div>
                     </div>
-                    <div class="profile-course-bar" style={courseBarStyle(hole.segments)}>
-                      {(hole.segments || []).filter((segment) => Number(segment?.count || 0) > 0).map((segment) => {
-                        const kind = SEGMENT_CLASSES[String(segment.kind || "par")] || "par";
-                        const pct = Number(segment.pct || 0);
-                        return <div class={`profile-course-segment profile-course-segment--${kind}`} title={`${segment.label}: ${segment.count} (${pct.toFixed(1)}%)`}>{pct >= 11 ? <span>{segment.count}</span> : null}</div>;
-                      })}
+                    <div class="profile-course-bar" style={hole.barStyle}>
+                      {hole.segments.map((segment) => (
+                        <div class={`profile-course-segment profile-course-segment--${segment.className}`} title={`${segment.label}: ${segment.count} (${segment.pctNumber.toFixed(1)}%)`}>
+                          {segment.pctNumber >= 11 ? <span>{segment.count}</span> : null}
+                        </div>
+                      ))}
                     </div>
                   </article>
                 ))}
