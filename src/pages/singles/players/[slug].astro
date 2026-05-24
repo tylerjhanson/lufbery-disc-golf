@@ -1,0 +1,564 @@
+---
+import SiteLayout from "../../../layouts/SiteLayout.astro";
+import courseStats from "../../../data/course-stats.generated.json";
+import { getPlayerProfiles } from "../../../lib/data";
+
+const HANDICAP_PAR = 56;
+const SEGMENT_CLASSES = {
+  ace: "ace",
+  birdie: "birdie",
+  par: "par",
+  bogey: "bogey",
+  double: "double",
+  triple: "triple",
+};
+
+function cleanName(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function normalizePlayerKey(value) {
+  return cleanName(value).toLowerCase();
+}
+
+function parseDisplayYear(value) {
+  const parts = String(value || "").split("/");
+  let year = Number(parts[2] || 0);
+  if (year < 100) year += 2000;
+  return year;
+}
+
+function formatScoreWithPar(score) {
+  const numericScore = Number(score);
+  if (!Number.isFinite(numericScore)) return "—";
+  const diff = numericScore - HANDICAP_PAR;
+  if (diff === 0) return `${numericScore} (E)`;
+  return `${numericScore} (${diff > 0 ? "+" : ""}${diff})`;
+}
+
+function formatAverage(value) {
+  const number = Number(value || 0);
+  return Number.isFinite(number) ? number.toFixed(2) : "—";
+}
+
+function formatRounds(rounds) {
+  const count = Number(rounds || 0);
+  return `${new Intl.NumberFormat("en-US").format(count)} round${count === 1 ? "" : "s"}`;
+}
+
+function yearAverages(rounds) {
+  const buckets = new Map();
+  rounds.forEach((round) => {
+    const year = parseDisplayYear(round.date);
+    const score = Number(round.score);
+    if (!Number.isFinite(year) || !Number.isFinite(score)) return;
+    if (!buckets.has(year)) buckets.set(year, []);
+    buckets.get(year).push(score);
+  });
+  return Array.from(buckets.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([year, scores]) => ({
+      year,
+      value: (scores.reduce((sum, score) => sum + score, 0) / scores.length).toFixed(1),
+    }));
+}
+
+function yearlyBest(history, valueKey, minYear = 2023) {
+  const best = new Map();
+  history.forEach((row) => {
+    const year = parseDisplayYear(row.date);
+    const value = Number(row[valueKey]);
+    if (!Number.isFinite(year) || year < minYear || !Number.isFinite(value)) return;
+    const current = best.get(year);
+    if (current == null || value < current) best.set(year, value);
+  });
+  return Array.from(best.entries()).sort((a, b) => a[0] - b[0]).map(([year, value]) => ({ year, value }));
+}
+
+function lowestHandicap(history, currentHandicap) {
+  const values = history.map((row) => Number(row.handicap)).filter((value) => Number.isFinite(value));
+  const current = Number(currentHandicap);
+  if (Number.isFinite(current)) values.push(current);
+  return values.length ? Math.min(...values) : "";
+}
+
+function courseBarStyle(segments) {
+  const visible = Array.isArray(segments) ? segments.filter((segment) => Number(segment.count || 0) > 0) : [];
+  if (!visible.length) return "grid-template-columns:1fr;";
+  return `grid-template-columns:${visible.map((segment) => `${Math.max(1, Number(segment.count || 0))}fr`).join(" ")};`;
+}
+
+function courseStatsForPlayer(name) {
+  const players = courseStats.players || {};
+  const aliases = courseStats.source?.aliases || {};
+  const key = normalizePlayerKey(name);
+  const aliasKey = aliases[key] || key;
+  return players[aliasKey] || players[key] || null;
+}
+
+function visibleCourseHoles(playerStats) {
+  if (!playerStats || !Array.isArray(playerStats.holes)) return [];
+  return [...playerStats.holes]
+    .sort((a, b) => Number(a.hole) - Number(b.hole))
+    .map((hole) => {
+      const segments = Array.isArray(hole.segments)
+        ? hole.segments
+            .filter((segment) => Number(segment.count || 0) > 0)
+            .map((segment) => ({
+              ...segment,
+              pctNumber: Number(segment.pct || 0),
+              className: SEGMENT_CLASSES[String(segment.kind || "par")] || "par",
+            }))
+        : [];
+      return { ...hole, segments, barStyle: courseBarStyle(segments) };
+    });
+}
+
+export function getStaticPaths() {
+  const toSlug = (value) => String(value || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  const profiles = Object.values(getPlayerProfiles());
+  const seen = new Set();
+  return profiles
+    .map((profile) => ({ profile, slug: toSlug(String(profile.name || "")) }))
+    .filter(({ slug }) => {
+      if (!slug || seen.has(slug)) return false;
+      seen.add(slug);
+      return true;
+    })
+    .map(({ profile, slug }) => ({ params: { slug }, props: { profile } }));
+}
+
+const { profile } = Astro.props;
+const name = String(profile.name || "Player");
+const allRounds = Array.isArray(profile.allRounds) ? profile.allRounds : [];
+const recentRounds = Array.isArray(profile.recentRounds) ? profile.recentRounds : [];
+const handicapHistory = Array.isArray(profile.handicapHistory) ? profile.handicapHistory.filter((row) => parseDisplayYear(row.date) >= 2023) : [];
+const tagHistory = Array.isArray(profile.tagHistory) ? profile.tagHistory.filter((row) => parseDisplayYear(row.date) >= 2023) : [];
+const weeklyWins = Array.isArray(profile.weeklyWins) ? profile.weeklyWins : [];
+const bestOverallWins = Array.isArray(profile.bestOverallWins) ? profile.bestOverallWins : [];
+const aces = Array.isArray(profile.aces) ? profile.aces : [];
+const personalBests = Array.isArray(profile.personalBests) && profile.personalBests.length ? profile.personalBests : profile.personalBest ? [profile.personalBest] : [];
+const playerCourseStats = courseStatsForPlayer(name);
+const courseHoles = visibleCourseHoles(playerCourseStats);
+const scoreAverages = yearAverages(allRounds);
+const bestHandicaps = yearlyBest(handicapHistory, "handicap", 2023);
+const bestTags = yearlyBest(tagHistory, "tag", 2023);
+---
+
+<SiteLayout title={`${name} Player Profile`} description={`League player profile and history for ${name}.`} showBrandBar={true}>
+  <style is:global>
+    body {
+      margin: 0;
+      padding: 24px;
+      background: linear-gradient(180deg, #f8fafc 0%, var(--bg, #f5f7fb) 100%);
+      color: var(--text, #111827);
+      font-family: Inter, Arial, Helvetica, sans-serif;
+    }
+
+    .player-profile-wrap {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+    }
+
+    .profile-back-link {
+      display: inline-flex;
+      margin-bottom: 14px;
+      color: var(--muted, #6b7280);
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .profile-card,
+    .profile-header {
+      border: 1px solid var(--line-soft, #eef2f7);
+      border-radius: 22px;
+      background: var(--card, #ffffff);
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    .profile-header {
+      margin-bottom: 18px;
+      padding: 24px;
+    }
+
+    .profile-kicker {
+      margin: 0 0 8px;
+      color: var(--muted, #6b7280);
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .profile-title {
+      margin: 0;
+      font-size: clamp(2.1rem, 5vw, 4rem);
+      line-height: 0.98;
+      letter-spacing: -0.045em;
+    }
+
+    .profile-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    .profile-stat {
+      padding: 14px;
+      border: 1px solid var(--line-soft, #eef2f7);
+      border-radius: 16px;
+      background: var(--header, #f8fafc);
+      min-width: 0;
+    }
+
+    .profile-stat-label {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--muted, #6b7280);
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .profile-stat-value {
+      font-size: 1.25rem;
+      font-weight: 850;
+      line-height: 1.05;
+    }
+
+    .profile-content-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 0.42fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .profile-stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .profile-card {
+      overflow: hidden;
+    }
+
+    .profile-card-header {
+      padding: 18px 20px 10px;
+    }
+
+    .profile-card-body {
+      padding: 0 20px 18px;
+    }
+
+    .profile-section-title {
+      margin: 0;
+      font-size: 0.9rem;
+      font-weight: 850;
+      letter-spacing: 0.04em;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .profile-year-stats,
+    .profile-link-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .profile-year-stats {
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    }
+
+    .profile-year-pill {
+      padding: 9px 10px;
+      border: 1px solid var(--line-soft, #eef2f7);
+      border-radius: 999px;
+      background: var(--header, #f8fafc);
+      font-size: 0.88rem;
+      font-weight: 750;
+      text-align: center;
+    }
+
+    .profile-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .profile-table th,
+    .profile-table td {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line-soft, #eef2f7);
+      text-align: left;
+      font-size: 0.94rem;
+      vertical-align: top;
+    }
+
+    .profile-table th:last-child,
+    .profile-table td:last-child {
+      text-align: right;
+    }
+
+    .profile-table th {
+      color: var(--muted, #6b7280);
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .profile-link {
+      color: var(--accent, #2563eb);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .profile-link:hover {
+      text-decoration: underline;
+    }
+
+    .profile-muted,
+    .profile-course-summary {
+      color: var(--muted, #6b7280);
+      font-size: 0.92rem;
+      font-weight: 650;
+    }
+
+    .profile-course-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .profile-course-hole {
+      padding: 9px;
+      border: 1px solid var(--line-soft, #eef2f7);
+      border-radius: 13px;
+      background: var(--card, #ffffff);
+    }
+
+    .profile-course-hole-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 7px;
+    }
+
+    .profile-course-hole-title {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 850;
+      line-height: 1.2;
+    }
+
+    .profile-course-hole-title span {
+      margin-left: 5px;
+      color: var(--muted, #6b7280);
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .profile-course-meta {
+      display: inline-flex;
+      gap: 8px;
+      white-space: nowrap;
+      color: var(--muted, #6b7280);
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .profile-course-meta strong {
+      color: var(--text, #111827);
+      font-weight: 850;
+    }
+
+    .profile-course-bar {
+      display: grid;
+      min-height: 20px;
+      overflow: hidden;
+      border: 2px solid #cfe0ef;
+      border-radius: 9px;
+      background: var(--card, #ffffff);
+    }
+
+    .profile-course-segment { min-width: 0; position: relative; }
+    .profile-course-segment + .profile-course-segment { box-shadow: inset 1px 0 0 rgba(15, 23, 42, 0.1); }
+    .profile-course-segment span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 0.72rem; font-weight: 850; line-height: 1; }
+    .profile-course-segment--ace { background: #2f6fb6; color: #fff; }
+    .profile-course-segment--birdie { background: #6c9bd1; color: #fff; }
+    .profile-course-segment--par { background: var(--card, #ffffff); color: var(--text, #111827); }
+    .profile-course-segment--bogey { background: #f2d8c8; color: #2e3440; }
+    .profile-course-segment--double { background: #efb286; color: #2e3440; }
+    .profile-course-segment--triple { background: #eb7b3c; color: #fff; }
+
+    @media (max-width: 900px) {
+      body { padding: 14px; }
+      .profile-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .profile-content-grid { grid-template-columns: 1fr; }
+      .profile-header { padding: 20px 16px; }
+      .profile-card-header { padding: 16px 16px 10px; }
+      .profile-card-body { padding: 0 16px 16px; }
+    }
+
+    @media (max-width: 460px) {
+      .profile-summary-grid { grid-template-columns: 1fr; }
+      .profile-course-hole-title { font-size: 0.88rem; white-space: nowrap; }
+      .profile-course-hole-title span, .profile-course-meta { font-size: 0.72rem; }
+      .profile-course-meta { gap: 5px; }
+    }
+  </style>
+
+  <main class="player-profile-wrap">
+    <a class="profile-back-link" href="/singles/handicaps-tags/">← Back to Handicaps & Tags</a>
+
+    <header class="profile-header">
+      <p class="profile-kicker">Player Profile</p>
+      <h1 class="profile-title">{name}</h1>
+
+      <div class="profile-summary-grid">
+        <div class="profile-stat"><span class="profile-stat-label">Current handicap</span><span class="profile-stat-value">{profile.handicap || "—"}</span></div>
+        <div class="profile-stat"><span class="profile-stat-label">Current tag</span><span class="profile-stat-value">{profile.hasTag ? profile.currentTag || "TBD" : "—"}</span></div>
+        <div class="profile-stat"><span class="profile-stat-label">Average score</span><span class="profile-stat-value">{profile.average || "—"}</span></div>
+        <div class="profile-stat"><span class="profile-stat-label">Best tag</span><span class="profile-stat-value">{profile.bestTagEver || "—"}</span></div>
+        <div class="profile-stat"><span class="profile-stat-label">Lowest handicap</span><span class="profile-stat-value">{lowestHandicap(handicapHistory, profile.handicap) || "—"}</span></div>
+        <div class="profile-stat"><span class="profile-stat-label">Course stats</span><span class="profile-stat-value">{playerCourseStats ? formatRounds(playerCourseStats.rounds) : "—"}</span></div>
+      </div>
+    </header>
+
+    <div class="profile-content-grid">
+      <div class="profile-stack">
+        <section class="profile-card">
+          <div class="profile-card-header"><h2 class="profile-section-title">Score History</h2></div>
+          <div class="profile-card-body">
+            {scoreAverages.length ? (
+              <div class="profile-year-stats">
+                {scoreAverages.map((row) => <span class="profile-year-pill"><strong>{row.year}:</strong> {row.value}</span>)}
+              </div>
+            ) : <p class="profile-muted">No score history found.</p>}
+          </div>
+        </section>
+
+        <section class="profile-card">
+          <div class="profile-card-header"><h2 class="profile-section-title">Handicap History</h2></div>
+          <div class="profile-card-body">
+            {bestHandicaps.length ? (
+              <div class="profile-year-stats">
+                {bestHandicaps.map((row) => <span class="profile-year-pill"><strong>{row.year}:</strong> {row.value}</span>)}
+              </div>
+            ) : <p class="profile-muted">No handicap history found.</p>}
+          </div>
+        </section>
+
+        <section class="profile-card">
+          <div class="profile-card-header"><h2 class="profile-section-title">Tag History</h2></div>
+          <div class="profile-card-body">
+            {bestTags.length ? (
+              <div class="profile-year-stats">
+                {bestTags.map((row) => <span class="profile-year-pill"><strong>{row.year}:</strong> #{row.value}</span>)}
+              </div>
+            ) : <p class="profile-muted">No tag history found.</p>}
+          </div>
+        </section>
+
+        {playerCourseStats ? (
+          <section class="profile-card">
+            <div class="profile-card-header"><h2 class="profile-section-title">Course Stats</h2></div>
+            <div class="profile-card-body">
+              <p class="profile-course-summary">{formatRounds(playerCourseStats.rounds)} • Original Layout</p>
+              <div class="profile-course-grid">
+                {courseHoles.map((hole) => (
+                  <article class="profile-course-hole">
+                    <div class="profile-course-hole-header">
+                      <h3 class="profile-course-hole-title">Hole {hole.hole} <span>Par {hole.par}</span></h3>
+                      <div class="profile-course-meta">
+                        <span>Diff. <strong>{hole.difficultyRank || "—"}</strong></span>
+                        <span>Avg <strong>{formatAverage(hole.average)}</strong></span>
+                      </div>
+                    </div>
+                    <div class="profile-course-bar" style={hole.barStyle}>
+                      {hole.segments.map((segment) => (
+                        <div class={`profile-course-segment profile-course-segment--${segment.className}`} title={`${segment.label}: ${segment.count} (${segment.pctNumber.toFixed(1)}%)`}>
+                          {segment.pctNumber >= 11 ? <span>{segment.count}</span> : null}
+                        </div>
+                      ))}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+        ) : null}
+      </div>
+
+      <aside class="profile-stack">
+        <section class="profile-card">
+          <div class="profile-card-header"><h2 class="profile-section-title">Rounds Counting Towards Handicap</h2></div>
+          <div class="profile-card-body">
+            <table class="profile-table">
+              <thead><tr><th>Date</th><th>Score</th></tr></thead>
+              <tbody>
+                {recentRounds.length ? recentRounds.map((round) => (
+                  <tr><td>{round.date}</td><td>{formatScoreWithPar(round.score)}</td></tr>
+                )) : <tr><td colspan="2" class="profile-muted">No handicap rounds found.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="profile-card">
+          <div class="profile-card-header"><h2 class="profile-section-title">Personal Best</h2></div>
+          <div class="profile-card-body">
+            {personalBests.length ? (
+              <ul class="profile-link-list">
+                {personalBests.map((item) => <li><strong>{item.score}</strong> <a class="profile-link" href={item.href}>{item.date}</a></li>)}
+              </ul>
+            ) : <p class="profile-muted">No personal best found.</p>}
+          </div>
+        </section>
+
+        <section class="profile-card">
+          <div class="profile-card-header"><h2 class="profile-section-title">Weekly Wins</h2></div>
+          <div class="profile-card-body">
+            {weeklyWins.length ? (
+              <ul class="profile-link-list">
+                {weeklyWins.map((item) => <li><a class="profile-link" href={item.href}>{item.date}</a> — {item.label} • {item.score}</li>)}
+              </ul>
+            ) : <p class="profile-muted">No weekly wins recorded.</p>}
+          </div>
+        </section>
+
+        <section class="profile-card">
+          <div class="profile-card-header"><h2 class="profile-section-title">Best Overall</h2></div>
+          <div class="profile-card-body">
+            {bestOverallWins.length ? (
+              <ul class="profile-link-list">
+                {bestOverallWins.map((item) => <li><a class="profile-link" href={item.href}>{item.date}</a> — {item.label} • {item.score}{item.isTie ? " • Tie" : ""}</li>)}
+              </ul>
+            ) : <p class="profile-muted">No best overall wins recorded.</p>}
+          </div>
+        </section>
+
+        <section class="profile-card">
+          <div class="profile-card-header"><h2 class="profile-section-title">Aces</h2></div>
+          <div class="profile-card-body">
+            {aces.length ? (
+              <ul class="profile-link-list">
+                {aces.map((item) => <li><a class="profile-link" href={item.href}>{item.date}</a> — {item.label ? `${item.label} • ` : ""}{item.hole ? `Hole ${item.hole}` : "Ace"}</li>)}
+              </ul>
+            ) : <p class="profile-muted">No aces recorded.</p>}
+          </div>
+        </section>
+      </aside>
+    </div>
+  </main>
+</SiteLayout>
