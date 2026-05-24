@@ -56,12 +56,9 @@ const defaultPanelKey = panels[0]?.key || "total";
     <h1>Course Stats</h1>
 
     {panels.length > 1 && (
-      <label class="course-stats__filter" for="course-stats-view">
-        <span>View</span>
-        <select id="course-stats-view" data-course-stats-select>
-          {panels.map((panel) => <option value={panel.key}>{panel.label}</option>)}
-        </select>
-      </label>
+      <select id="course-stats-view" class="course-stats__filter" aria-label="Course stats view" data-course-stats-select>
+        {panels.map((panel) => <option value={panel.key}>{panel.label}</option>)}
+      </select>
     )}
   </header>
 
@@ -74,10 +71,7 @@ const defaultPanelKey = panels[0]?.key || "total";
         data-course-stats-panel={panel.key}
         aria-hidden={panel.key === defaultPanelKey ? "false" : "true"}
       >
-        <div class="panel-header">
-          <h2>{panel.label}</h2>
-          <p>{formatRounds(panel.data.rounds)}</p>
-        </div>
+        <p class="round-count">{formatRounds(panel.data.rounds)}</p>
 
         <div class="hole-grid">
           {panel.holes.map((hole) => (
@@ -180,18 +174,15 @@ const defaultPanelKey = panels[0]?.key || "total";
 </script>
 
 <style>
-  .course-stats { display: grid; gap: 14px; color: var(--text, #172033); }
-  .course-stats__header { display: flex; align-items: end; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+  .course-stats { display: grid; gap: 12px; color: var(--text, #172033); }
+  .course-stats__header { display: grid; gap: 10px; align-items: start; justify-items: start; }
   h1 { margin: 0; font-size: clamp(2rem, 4vw, 3.1rem); line-height: 1; letter-spacing: -.04em; }
-  .course-stats__filter { display: grid; gap: 5px; min-width: 170px; color: var(--muted, #64748b); font-size: .82rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
-  .course-stats__filter select { width: 100%; padding: 9px 11px; border: 1px solid #d7e6f3; border-radius: 10px; background: #fff; color: var(--text, #172033); font: inherit; letter-spacing: 0; text-transform: none; }
+  .course-stats__filter { width: min(100%, 220px); padding: 9px 11px; border: 1px solid #d7e6f3; border-radius: 10px; background: #fff; color: var(--text, #172033); font: inherit; }
   .empty, .hole-card, .table-wrap { border: 1px solid #d7e6f3; border-radius: 14px; background: #f7f9fc; }
   .empty { padding: 12px 14px; color: var(--muted, #64748b); }
-  .panel { display: none; gap: 12px; }
+  .panel { display: none; gap: 10px; }
   .panel.is-active { display: grid; }
-  .panel-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-  .panel-header h2 { margin: 0; font-size: clamp(1.35rem, 2.4vw, 1.9rem); letter-spacing: -.03em; }
-  .panel-header p { margin: 0; color: var(--muted, #64748b); font-weight: 800; }
+  .round-count { margin: 0; color: var(--muted, #64748b); font-weight: 800; }
   .hole-grid { display: grid; gap: 8px; }
   .hole-card { padding: 9px 11px; }
   .hole-header { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 6px; }
@@ -210,24 +201,30 @@ const defaultPanelKey = panels[0]?.key || "total";
   .segment--bogey { background: #f2d8c8; color: #2e3440; }
   .segment--double { background: #efb286; color: #2e3440; }
   .segment--triple { background: #eb7b3c; color: #fff; }
-  .table-wrap { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; min-width: 520px; }
-  th, td { padding: 9px 12px; border-bottom: 1px solid #d7e6f3; text-align: left; }
-  th { color: var(--muted, #64748b); font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; }
-  th button { all: unset; cursor: pointer; font: inherit; color: inherit; }
-  th button::after { content: "↕"; margin-left: 6px; opacity: .45; }
+  .table-wrap { overflow: visible; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 0; }
+  th, td { padding: 8px 9px; border-bottom: 1px solid #d7e6f3; text-align: left; }
+  th { color: var(--muted, #64748b); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
+  th:nth-child(1), td:nth-child(1) { width: 28%; }
+  th:nth-child(2), td:nth-child(2) { width: 15%; }
+  th:nth-child(3), td:nth-child(3) { width: 27%; }
+  th:nth-child(4), td:nth-child(4) { width: 30%; text-align: right; }
+  th:nth-child(4) button { margin-left: auto; }
+  th button { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font: inherit; color: inherit; white-space: nowrap; }
+  th button::after { content: "↕"; opacity: .45; }
   th button[aria-sort="ascending"]::after { content: "↑"; opacity: 1; }
   th button[aria-sort="descending"]::after { content: "↓"; opacity: 1; }
   tr:last-child td { border-bottom: 0; }
   @media (max-width: 760px) {
-    .course-stats { gap: 12px; }
-    .course-stats__header { align-items: stretch; }
+    .course-stats { gap: 11px; }
     .course-stats__filter { width: 100%; }
     .hole-card { padding: 8px 9px; }
     .hole-header { align-items: center; }
     .hole-stats { gap: 9px; }
     .hole-stats span { font-size: .82rem; }
     .score-bar { min-height: 22px; }
-    th, td { padding: 8px 10px; }
+    th, td { padding: 7px 8px; }
+    th { font-size: .72rem; letter-spacing: .02em; }
+    td { font-size: .94rem; }
   }
 </style>
