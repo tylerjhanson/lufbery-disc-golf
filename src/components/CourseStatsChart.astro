@@ -84,14 +84,20 @@ const defaultPanelKey = panels[0]?.key || "total";
           ))}
         </div>
 
-        <div class="table-wrap">
-          <table data-sort-table data-sort-key="hole" data-sort-dir="asc">
+        <div class="table-wrap course-stats-table-wrap">
+          <table class="course-stats-table" data-sort-table data-sort-key="hole" data-sort-dir="asc">
+            <colgroup>
+              <col class="hole-col" />
+              <col class="par-col" />
+              <col class="to-par-col" />
+              <col class="difficulty-col" />
+            </colgroup>
             <thead>
               <tr>
-                <th><button type="button" data-sort-key="hole" aria-sort="ascending">Hole</button></th>
-                <th><button type="button" data-sort-key="par">Par</button></th>
-                <th><button type="button" data-sort-key="toPar">To Par</button></th>
-                <th><button type="button" data-sort-key="difficulty">Difficulty</button></th>
+                <th><button type="button" data-sort-key="hole" aria-sort="ascending"><span class="th-inner">Hole</span></button></th>
+                <th><button type="button" data-sort-key="par"><span class="th-inner">Par</span></button></th>
+                <th><button type="button" data-sort-key="toPar"><span class="th-inner">To Par</span></button></th>
+                <th><button type="button" data-sort-key="difficulty"><span class="th-inner">Difficulty</span></button></th>
               </tr>
             </thead>
             <tbody>
@@ -172,6 +178,7 @@ const defaultPanelKey = panels[0]?.key || "total";
     --course-line-soft: var(--line-soft, #e6edf5);
     --course-muted: var(--muted, #6b7280);
     --course-text: var(--text, #111827);
+    --course-hover: var(--hover, #f9fbff);
     --course-shadow: var(--shadow, 0 10px 30px rgba(15, 23, 42, 0.08));
     --course-bar-border: #cfe0ef;
     --course-separator: rgba(15, 23, 42, 0.1);
@@ -222,20 +229,120 @@ const defaultPanelKey = panels[0]?.key || "total";
   .segment--double { background: #efb286; color: var(--course-orange-text); }
   .segment--triple { background: #eb7b3c; color: var(--course-orange-text); }
   .segment--bogey span, .segment--double span, .segment--triple span { color: var(--course-orange-text); }
-  .table-wrap { overflow: visible; }
-  table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 0; }
-  th, td { padding: 8px 9px; border-bottom: 1px solid var(--course-line); text-align: left; color: var(--course-text); }
-  th { color: var(--course-muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
-  thead th { background: var(--course-bg-strong); }
-  th:nth-child(1), td:nth-child(1) { width: 28%; }
-  th:nth-child(2), td:nth-child(2) { width: 15%; }
-  th:nth-child(3), td:nth-child(3) { width: 27%; }
-  th:nth-child(4), td:nth-child(4) { width: 30%; }
-  th button { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font: inherit; color: inherit; white-space: nowrap; }
-  th button::after { content: "↕"; opacity: .45; }
-  th button[aria-sort="ascending"]::after { content: "↑"; opacity: 1; }
-  th button[aria-sort="descending"]::after { content: "↓"; opacity: 1; }
-  tr:last-child td { border-bottom: 0; }
+
+  .course-stats-table-wrap {
+    padding: 0 10px 8px;
+    overflow-x: visible;
+    overflow-y: auto;
+    border-color: var(--course-line-soft);
+    border-radius: 22px;
+  }
+
+  .course-stats-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;
+    min-width: 0;
+  }
+
+  .course-stats-table .hole-col { width: 34%; }
+  .course-stats-table .par-col { width: 17%; }
+  .course-stats-table .to-par-col { width: 24%; }
+  .course-stats-table .difficulty-col { width: 25%; }
+
+  .course-stats-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--course-bg-strong);
+    color: var(--course-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 10px 5px;
+    border-bottom: 1px solid var(--course-line);
+    user-select: none;
+    text-align: center;
+    white-space: normal;
+    line-height: 1.08;
+  }
+
+  .course-stats-table thead th:first-child {
+    border-top-left-radius: 14px;
+    text-align: left;
+  }
+
+  .course-stats-table thead th:last-child {
+    border-top-right-radius: 14px;
+  }
+
+  .course-stats-table th button {
+    all: unset;
+    width: 100%;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font: inherit;
+    color: inherit;
+    white-space: nowrap;
+  }
+
+  .course-stats-table th:first-child button {
+    justify-content: flex-start;
+  }
+
+  .course-stats-table th button::after {
+    content: "↕";
+    width: 10px;
+    color: #94a3b8;
+    font-size: 0.72rem;
+    flex: 0 0 10px;
+    opacity: 0.65;
+  }
+
+  .course-stats-table th button[aria-sort="ascending"]::after {
+    content: "▲";
+    color: var(--accent, #2563eb);
+    opacity: 1;
+  }
+
+  .course-stats-table th button[aria-sort="descending"]::after {
+    content: "▼";
+    color: var(--accent, #2563eb);
+    opacity: 1;
+  }
+
+  .course-stats-table tbody td {
+    padding: 10px 5px;
+    border-bottom: 1px solid var(--course-line-soft);
+    color: var(--course-text);
+    font-size: 0.94rem;
+    text-align: center;
+    vertical-align: middle;
+    line-height: 1.1;
+    white-space: normal;
+  }
+
+  .course-stats-table tbody tr:nth-child(even) td {
+    background: #fcfdff;
+  }
+
+  .course-stats-table tbody tr:hover td {
+    background: var(--course-hover);
+  }
+
+  .course-stats-table tbody td:first-child {
+    text-align: left;
+    font-weight: 600;
+  }
+
+  .course-stats-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
 
   @media (min-width: 980px) {
     .panel.is-active {
@@ -263,8 +370,29 @@ const defaultPanelKey = panels[0]?.key || "total";
     .hole-header h3 span { font-size: .82rem; }
     .hole-stats span { font-size: .82rem; }
     .score-bar { min-height: 22px; }
-    th, td { padding: 7px 8px; }
-    th { font-size: .72rem; letter-spacing: .02em; }
-    td { font-size: .94rem; }
+    .course-stats-table-wrap {
+      padding: 0 2px 6px;
+      border-radius: 14px;
+    }
+    .course-stats-table .hole-col { width: 32%; }
+    .course-stats-table .par-col { width: 16%; }
+    .course-stats-table .to-par-col { width: 25%; }
+    .course-stats-table .difficulty-col { width: 27%; }
+    .course-stats-table thead th {
+      font-size: 0.58rem;
+      padding: 6px 2px;
+      letter-spacing: 0;
+      line-height: 1.04;
+    }
+    .course-stats-table th button::after {
+      width: 8px;
+      font-size: 0.62rem;
+      flex-basis: 8px;
+    }
+    .course-stats-table tbody td {
+      font-size: 0.78rem;
+      padding: 7px 2px;
+      line-height: 1.06;
+    }
   }
 </style>
