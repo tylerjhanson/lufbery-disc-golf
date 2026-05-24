@@ -136,6 +136,7 @@
         font-size: 0.96rem;
         font-weight: 800;
         line-height: 1.2;
+        min-width: 0;
       }
 
       .player-course-stats-hole-title span {
@@ -153,6 +154,7 @@
         font-size: 0.82rem;
         line-height: 1.2;
         white-space: nowrap;
+        flex: 0 0 auto;
       }
 
       .player-course-stats-hole-meta strong {
@@ -211,14 +213,54 @@
       .player-course-stats-segment--triple { background: #eb7b3c; color: #fff; }
 
       @media (max-width: 700px) {
+        .player-course-stats-summary {
+          font-size: 0.82rem;
+          line-height: 1.25;
+        }
+
+        .player-course-stats-hole {
+          padding: 8px 8px;
+        }
+
         .player-course-stats-hole-header {
-          align-items: flex-start;
-          flex-direction: column;
-          gap: 4px;
+          align-items: baseline;
+          flex-direction: row;
+          gap: 6px;
+          margin-bottom: 6px;
+        }
+
+        .player-course-stats-hole-title {
+          font-size: 0.9rem;
+          white-space: nowrap;
+        }
+
+        .player-course-stats-hole-title span {
+          margin-left: 4px;
+          font-size: 0.76rem;
         }
 
         .player-course-stats-hole-meta {
-          gap: 10px;
+          gap: 5px;
+          font-size: 0.76rem;
+        }
+
+        .player-course-stats-hole-meta strong {
+          font-size: 1em;
+        }
+      }
+
+      @media (max-width: 380px) {
+        .player-course-stats-hole-title {
+          font-size: 0.84rem;
+        }
+
+        .player-course-stats-hole-title span,
+        .player-course-stats-hole-meta {
+          font-size: 0.7rem;
+        }
+
+        .player-course-stats-hole-meta {
+          gap: 4px;
         }
       }
     `;
