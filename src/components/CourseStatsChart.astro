@@ -174,37 +174,53 @@ const defaultPanelKey = panels[0]?.key || "total";
 </script>
 
 <style>
-  .course-stats { display: grid; gap: 12px; color: var(--text, #172033); }
+  :global(body) {
+    background: linear-gradient(180deg, #f8fafc 0%, #f5f7fb 100%);
+  }
+
+  .course-stats {
+    --course-card: #ffffff;
+    --course-bg: #f5f7fb;
+    --course-line: #e5e7eb;
+    --course-line-soft: #eef2f7;
+    --course-muted: var(--muted, #6b7280);
+    --course-text: var(--text, #111827);
+    --course-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    display: grid;
+    gap: 12px;
+    color: var(--course-text);
+  }
+
   .course-stats__header { display: grid; gap: 10px; align-items: start; justify-items: start; }
   h1 { margin: 0; font-size: clamp(2rem, 4vw, 3.1rem); line-height: 1; letter-spacing: -.04em; }
-  .course-stats__filter { width: min(100%, 220px); padding: 9px 11px; border: 1px solid #d7e6f3; border-radius: 10px; background: #fff; color: var(--text, #172033); font: inherit; }
-  .empty, .hole-card, .table-wrap { border: 1px solid #d7e6f3; border-radius: 14px; background: #f7f9fc; }
-  .empty { padding: 12px 14px; color: var(--muted, #64748b); }
+  .course-stats__filter { width: min(100%, 220px); padding: 9px 11px; border: 1px solid var(--course-line-soft); border-radius: 10px; background: var(--course-card); color: var(--course-text); font: inherit; }
+  .empty, .hole-card, .table-wrap { border: 1px solid var(--course-line); border-radius: 14px; background: var(--course-card); box-shadow: var(--course-shadow); }
+  .empty { padding: 12px 14px; color: var(--course-muted); }
   .panel { display: none; gap: 10px; }
   .panel.is-active { display: grid; }
-  .round-count { margin: 0; color: var(--muted, #64748b); font-weight: 800; }
+  .round-count { margin: 0; color: var(--course-muted); font-weight: 800; }
   .hole-grid { display: grid; gap: 8px; }
   .hole-card { padding: 9px 11px; }
   .hole-header { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 6px; }
   .hole-header h3 { margin: 0; font-size: clamp(1rem, 1.4vw, 1.18rem); letter-spacing: -.02em; }
-  .hole-header h3 span { margin-left: 7px; color: var(--muted, #64748b); font-size: .82em; font-weight: 800; letter-spacing: 0; }
+  .hole-header h3 span { margin-left: 7px; color: var(--course-muted); font-size: .82em; font-weight: 800; letter-spacing: 0; }
   .hole-stats { display: flex; gap: 12px; white-space: nowrap; }
-  .hole-stats span { color: var(--muted, #64748b); font-size: .9rem; }
-  .hole-stats strong { color: var(--text, #172033); font-size: 1.15em; }
-  .score-bar { display: grid; min-height: 24px; overflow: hidden; border: 2px solid #cfe0ef; border-radius: 10px; background: #fff; }
+  .hole-stats span { color: var(--course-muted); font-size: .9rem; }
+  .hole-stats strong { color: var(--course-text); font-size: 1.15em; }
+  .score-bar { display: grid; min-height: 24px; overflow: hidden; border: 2px solid #cfe0ef; border-radius: 10px; background: var(--course-card); }
   .segment { position: relative; min-width: 0; }
   .segment + .segment { box-shadow: inset 1px 0 0 rgba(15, 23, 42, .1); }
   .segment span { position: absolute; inset: 0; display: grid; place-items: center; font-size: .78rem; font-weight: 800; }
   .segment--ace { background: #2f6fb6; color: #fff; }
   .segment--birdie { background: #6c9bd1; color: #fff; }
-  .segment--par { background: #fff; color: #172033; }
+  .segment--par { background: var(--course-card); color: var(--course-text); }
   .segment--bogey { background: #f2d8c8; color: #2e3440; }
   .segment--double { background: #efb286; color: #2e3440; }
   .segment--triple { background: #eb7b3c; color: #fff; }
   .table-wrap { overflow: visible; }
   table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 0; }
-  th, td { padding: 8px 9px; border-bottom: 1px solid #d7e6f3; text-align: left; }
-  th { color: var(--muted, #64748b); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
+  th, td { padding: 8px 9px; border-bottom: 1px solid var(--course-line); text-align: left; }
+  th { color: var(--course-muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
   th:nth-child(1), td:nth-child(1) { width: 28%; }
   th:nth-child(2), td:nth-child(2) { width: 15%; }
   th:nth-child(3), td:nth-child(3) { width: 27%; }
