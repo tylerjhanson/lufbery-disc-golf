@@ -126,7 +126,7 @@ export function chartHtml(points, options = {}) {
   const getY = (value) => padTop + ((max - value) / (max - min)) * innerHeight;
   const polyline = cleanPoints.map((point, index) => `${getX(index)},${getY(Number(point.value))}`).join(" ");
   const grid = ticks.map((tick) => `<line class="profile-chart-grid" x1="${padLeft}" y1="${getY(tick)}" x2="${width - padRight}" y2="${getY(tick)}"></line><text class="profile-chart-axis" x="${padLeft - 7}" y="${getY(tick) + 4}" text-anchor="end">${Math.round(tick)}</text>`).join("");
-  const guide = `<line class="profile-chart-guide" x1="${padLeft}" y1="${padTop}" x2="${padLeft}" y2="${height - padBottom}" hidden></line>`;
+  const guide = `<line class="profile-chart-guide" x1="${padLeft}" y1="${padTop}" x2="${padLeft}" y2="${height - padBottom}" style="display:none;"></line>`;
   const hotspots = cleanPoints.map((point, index) => {
     const x = getX(index);
     const prevX = index === 0 ? padLeft : getX(index - 1);
