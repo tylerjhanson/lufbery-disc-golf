@@ -1,0 +1,13 @@
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import CourseStatsChart from "../../components/CourseStatsChart.astro";
+import courseStats from "../../data/course-stats.generated.json";
+---
+
+<SiteLayout
+  title="Course Stats"
+  description="Hole-by-hole scoring averages and score distributions for Lufbery league rounds on the original layout."
+  showBrandBar={true}
+>
+  <CourseStatsChart stats={courseStats} />
+</SiteLayout>
