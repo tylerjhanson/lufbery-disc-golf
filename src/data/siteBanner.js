@@ -2,7 +2,7 @@ export const siteBanner = {
   enabled: true,
 
   // Change this ID whenever you want dismissed visitors to see the banner again.
-  id: "2026-05-24-player-history-feature-updated",
+  id: "2026-05-24-player-history-feature-updated-2",
 
   label: "Website Update",
   message:
