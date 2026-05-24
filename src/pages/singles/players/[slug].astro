@@ -101,7 +101,7 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
     .profile-chart-trend { stroke: #9ca3af; stroke-width: 2; stroke-dasharray: 4 5; opacity: 0.42; vector-effect: non-scaling-stroke; }
     .profile-chart-guide { stroke: var(--muted, #6b7280); stroke-width: 2; stroke-dasharray: 4 4; opacity: 0.85; vector-effect: non-scaling-stroke; pointer-events: none; }
     .profile-chart-hotspot { fill: transparent; cursor: crosshair; outline: none; -webkit-tap-highlight-color: transparent; }
-    .profile-chart-tooltip { position: fixed; z-index: 9999; pointer-events: none; padding: 7px 9px; border-radius: 9px; background: rgba(15, 23, 42, 0.93); color: #fff; font-size: 0.78rem; font-weight: 800; opacity: 0; transform: translate(-50%, -120%); transition: opacity 0.12s ease; }
+    .profile-chart-tooltip { position: fixed; z-index: 9999; pointer-events: none; max-width: calc(100vw - 24px); padding: 7px 9px; border-radius: 9px; background: rgba(15, 23, 42, 0.93); color: #fff; font-size: 0.78rem; font-weight: 800; opacity: 0; transform: translate(0, -120%); transition: opacity 0.12s ease; white-space: nowrap; }
     .profile-chart-tooltip.is-visible { opacity: 1; }
     .profile-course-filter { min-width: 118px; border: 1px solid var(--line-soft, #e5e7eb); border-radius: 999px; background: var(--card, #fff); color: var(--text, #111827); font: inherit; font-size: 0.84rem; font-weight: 800; padding: 7px 28px 7px 10px; }
     .profile-course-panel[hidden] { display: none; }
@@ -278,6 +278,16 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
         });
         return best;
       }
+      function placeTooltip(x, y) {
+        if (!tooltip) return;
+        const margin = 10;
+        const width = tooltip.offsetWidth || 0;
+        const height = tooltip.offsetHeight || 0;
+        const nextX = Math.min(Math.max(x, margin), Math.max(margin, window.innerWidth - width - margin));
+        const nextY = Math.min(Math.max(y, margin + height), Math.max(margin + height, window.innerHeight - margin));
+        tooltip.style.left = `${nextX}px`;
+        tooltip.style.top = `${nextY}px`;
+      }
       function show(target, clientX) {
         if (!tooltip || !target) return;
         const text = target.dataset.chartTip;
@@ -292,9 +302,8 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
         }
         const rect = target.getBoundingClientRect();
         tooltip.textContent = text;
-        tooltip.style.left = `${clientX || rect.left + rect.width / 2}px`;
-        tooltip.style.top = `${rect.top}px`;
         tooltip.classList.add("is-visible");
+        placeTooltip(clientX || rect.left + rect.width / 2, rect.top);
       }
       function showCourseTip(segment, clientX, clientY) {
         if (!tooltip || !segment) return;
@@ -303,9 +312,8 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
         const rect = segment.getBoundingClientRect();
         clearTimeout(courseTipTimer);
         tooltip.textContent = text;
-        tooltip.style.left = `${clientX || rect.left + rect.width / 2}px`;
-        tooltip.style.top = `${clientY || rect.top}px`;
         tooltip.classList.add("is-visible");
+        placeTooltip(clientX || rect.left + rect.width / 2, clientY || rect.top);
       }
       function hide() {
         clearTimeout(courseTipTimer);
