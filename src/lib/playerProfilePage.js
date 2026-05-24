@@ -134,7 +134,7 @@ export function chartHtml(points, options = {}) {
     const x1 = index === 0 ? padLeft : (prevX + x) / 2;
     const x2 = index === cleanPoints.length - 1 ? width - padRight : (x + nextX) / 2;
     const title = htmlEscape(point.detail || `${point.label}: ${point.value}`);
-    return `<rect class="profile-chart-hotspot" x="${x1}" y="${padTop}" width="${Math.max(4, x2 - x1)}" height="${innerHeight}" data-chart-tip="${title}" data-chart-x="${x}" tabindex="0"><title>${title}</title></rect>`;
+    return `<rect class="profile-chart-hotspot" x="${x1}" y="${padTop}" width="${Math.max(4, x2 - x1)}" height="${innerHeight}" data-chart-tip="${title}" data-chart-x="${x}"><title>${title}</title></rect>`;
   }).join("");
 
   return `<div class="profile-chart-shell"><svg class="profile-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img">${grid}<polyline class="profile-chart-line" points="${polyline}"></polyline>${guide}${hotspots}</svg></div>`;
