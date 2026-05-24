@@ -44,9 +44,11 @@ function linkedEvents() {
     const title = clean(row[0]);
     const url = row.find((c) => /udisc\.com/i.test(c)) || "";
     const parts = parseDate(title);
+    const text = `${title} ${url}`.toLowerCase();
     let reason = "";
     if (!parts) reason = "No parseable date";
     else if (parts.year < MIN_YEAR) reason = `Before ${MIN_YEAR}`;
+    else if (/\b(sticks|stones)\b/i.test(text)) reason = "Alternate course layout";
     return { title, url, date: displayDate(parts), dateKey: dateKey(parts), year: parts?.year ?? null, excludedReason: reason };
   });
 }
@@ -274,7 +276,7 @@ function main() {
   );
   const output = {
     generatedAt: new Date().toISOString(),
-    source: { weeklyResultsPath: path.relative(root, WKRES), exportsDir: path.relative(root, EXPORTS), includedMinYear: MIN_YEAR, countedHoles: PARS.length, holePars: PARS, originalLayoutOnly: true, linkedWeeklyEventsOnly: true, round2Excluded: true, extraHolesExcluded: true, linkedWeeklyEvents: events.filter((event) => !event.excludedReason).length, exportFilesFound: files.length, includedEvents: includedEvents.length, includedRounds: total.rounds, includedPlayers: Object.keys(players).length, playerAliasesPath: fs.existsSync(ALIASES) ? path.relative(root, ALIASES) : "", aliases, excludedEvents, warnings },
+    source: { weeklyResultsPath: path.relative(root, WKRES), exportsDir: path.relative(root, EXPORTS), includedMinYear: MIN_YEAR, countedHoles: PARS.length, holePars: PARS, originalCourseLayoutOnly: true, linkedWeeklyEventsOnly: true, round2Excluded: true, extraHolesExcluded: true, linkedWeeklyEvents: events.filter((event) => !event.excludedReason).length, exportFilesFound: files.length, includedEvents: includedEvents.length, includedRounds: total.rounds, includedPlayers: Object.keys(players).length, playerAliasesPath: fs.existsSync(ALIASES) ? path.relative(root, ALIASES) : "", aliases, excludedEvents, warnings },
     years,
     total: finishBucket(total),
     byYear: Object.fromEntries(years.map((year) => [year, finishBucket(byYear.get(year))])),
