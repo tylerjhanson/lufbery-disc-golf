@@ -11,7 +11,9 @@ const root = path.resolve(__dirname, "..");
 
 const WKRES = path.join(root, "src", "data", "wkres.csv");
 const EXPORTS = path.join(root, "src", "data", "udisc-exports");
+const ALIASES = path.join(root, "src", "data", "player-aliases.json");
 const OUT = path.join(root, "src", "data", "course-stats.generated.json");
+const PUBLIC_OUT = path.join(root, "public", "data", "course-stats.generated.json");
 const PARS = [3, 3, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 3, 3, 3, 3];
 const MIN_YEAR = 2024;
 const SEGMENTS = [
@@ -25,6 +27,8 @@ const SEGMENTS = [
 
 function clean(v) { return String(v ?? "").replace(/\s+/g, " ").trim(); }
 function readCsv(file) { return parse(fs.readFileSync(file, "utf8"), { bom: true, skip_empty_lines: false }).map((row) => row.map(clean)); }
+function normalizeKey(value) { return clean(value).toLowerCase(); }
+function normalizeHeader(value) { return normalizeKey(value).replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, ""); }
 function isTitleRow(row) { return clean(row[0]).includes(" - ") && row.some((c) => /udisc\.com/i.test(c)); }
 function parseDate(title) {
   const m = clean(title).match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
@@ -74,6 +78,20 @@ function exportIndex() {
   }
   return { files, byDate, unindexed };
 }
+function readAliases() {
+  if (!fs.existsSync(ALIASES)) return {};
+  try {
+    const raw = JSON.parse(fs.readFileSync(ALIASES, "utf8"));
+    return Object.fromEntries(Object.entries(raw).map(([from, to]) => [normalizeKey(from), normalizeKey(to)]));
+  } catch (error) {
+    console.warn(`Could not read ${path.relative(root, ALIASES)}:`, error.message);
+    return {};
+  }
+}
+function canonicalPlayerKey(value, aliases) {
+  const key = normalizeKey(value);
+  return aliases[key] || key;
+}
 function sheetRows(workbook, sheetName) {
   const sheet = workbook.Sheets[sheetName];
   if (!sheet) return { headers: [], rows: [] };
@@ -95,6 +113,9 @@ function num(v) {
 }
 function emptyBucket(label) {
   return { label, rounds: 0, holes: PARS.map((par, i) => ({ hole: i + 1, par, rounds: 0, total: 0, counts: Object.fromEntries(SEGMENTS.map(([key]) => [key, 0])) })) };
+}
+function emptyPlayerBucket(name) {
+  return { ...emptyBucket(name), name };
 }
 function segment(score, par) {
   const diff = score - par;
@@ -135,7 +156,19 @@ function finishBucket(bucket) {
   });
   return { label: bucket.label, rounds: bucket.rounds, holes };
 }
-function eventRowsFromExport(file, event, warnings) {
+function finishPlayerBucket(bucket) {
+  const finished = finishBucket(bucket);
+  return { name: bucket.name, key: normalizeKey(bucket.name), rounds: finished.rounds, holes: finished.holes };
+}
+function findNameIndex(headers) {
+  const normalized = headers.map(normalizeHeader);
+  for (const wanted of ["player_name", "player", "name"]) {
+    const index = normalized.findIndex((header) => header === wanted);
+    if (index !== -1) return index;
+  }
+  return 0;
+}
+function eventRowsFromExport(file, event, warnings, aliases) {
   const workbook = XLSX.read(fs.readFileSync(file), { type: "buffer", cellDates: false });
   const sheetName = pickSheet(workbook);
   if (!sheetName) return [];
@@ -146,47 +179,67 @@ function eventRowsFromExport(file, event, warnings) {
     warnings.push({ type: "missing-hole-columns", title: event.title, file: path.relative(root, file), sheetName });
     return [];
   }
+  const nameIndex = findNameIndex(headers);
   const totalIndex = headers.findIndex((h) => clean(h).toLowerCase() === "round_total_score");
   return rows.map((row) => {
+    const name = clean(row[nameIndex]);
+    const key = canonicalPlayerKey(name, aliases);
     const scores = indexes.map((i) => num(row[i]));
+    if (!name || !key) return null;
     if (scores.some((score) => score == null || score < 1)) return null;
     const scoreTotal = scores.reduce((sum, score) => sum + score, 0);
     const exportTotal = totalIndex === -1 ? null : num(row[totalIndex]);
     if (exportTotal != null && exportTotal !== scoreTotal) return null;
-    return { scores };
+    return { name, key, scores };
   }).filter(Boolean);
 }
 function main() {
   const events = linkedEvents();
+  const aliases = readAliases();
   const { files, byDate, unindexed } = exportIndex();
   const warnings = unindexed.map((file) => ({ type: "unindexed-export", file, message: "No yyyy-mm-dd date found in filename." }));
   const excludedEvents = [];
   const total = emptyBucket("All years");
   const byYear = new Map();
+  const byPlayer = new Map();
   const includedEvents = [];
   for (const event of events) {
     if (event.excludedReason) { excludedEvents.push({ ...event, reason: event.excludedReason }); continue; }
     const matches = byDate.get(event.dateKey) || [];
     if (!matches.length) { warnings.push({ type: "missing-export", title: event.title, date: event.date, message: `No export file found for ${event.dateKey}.` }); continue; }
     if (matches.length > 1) warnings.push({ type: "multiple-exports", title: event.title, date: event.date, files: matches.map((f) => path.relative(root, f)) });
-    const rows = eventRowsFromExport(matches[0], event, warnings);
+    const rows = eventRowsFromExport(matches[0], event, warnings, aliases);
     if (!rows.length) { warnings.push({ type: "no-counted-rounds", title: event.title, date: event.date, file: path.relative(root, matches[0]) }); continue; }
     const yearKey = String(event.year);
     if (!byYear.has(yearKey)) byYear.set(yearKey, emptyBucket(yearKey));
-    for (const row of rows) { addRound(total, row.scores); addRound(byYear.get(yearKey), row.scores); }
+    for (const row of rows) {
+      addRound(total, row.scores);
+      addRound(byYear.get(yearKey), row.scores);
+      if (!byPlayer.has(row.key)) byPlayer.set(row.key, emptyPlayerBucket(row.name));
+      addRound(byPlayer.get(row.key), row.scores);
+    }
     includedEvents.push({ title: event.title, date: event.date, year: event.year, url: event.url, file: path.relative(root, matches[0]), rounds: rows.length });
   }
   const years = [...byYear.keys()].sort((a, b) => Number(b) - Number(a));
+  const players = Object.fromEntries(
+    [...byPlayer.entries()]
+      .map(([key, bucket]) => [key, finishPlayerBucket(bucket)])
+      .sort((a, b) => a[1].name.localeCompare(b[1].name, undefined, { sensitivity: "base" }))
+  );
   const output = {
     generatedAt: new Date().toISOString(),
-    source: { weeklyResultsPath: path.relative(root, WKRES), exportsDir: path.relative(root, EXPORTS), includedMinYear: MIN_YEAR, holePars: PARS, originalLayoutOnly: true, round2Excluded: true, linkedWeeklyEvents: events.filter((event) => !event.excludedReason).length, exportFilesFound: files.length, includedEvents: includedEvents.length, includedRounds: total.rounds, excludedEvents, warnings },
+    source: { weeklyResultsPath: path.relative(root, WKRES), exportsDir: path.relative(root, EXPORTS), includedMinYear: MIN_YEAR, holePars: PARS, originalLayoutOnly: true, round2Excluded: true, linkedWeeklyEvents: events.filter((event) => !event.excludedReason).length, exportFilesFound: files.length, includedEvents: includedEvents.length, includedRounds: total.rounds, includedPlayers: Object.keys(players).length, playerAliasesPath: fs.existsSync(ALIASES) ? path.relative(root, ALIASES) : "", aliases, excludedEvents, warnings },
     years,
     total: finishBucket(total),
     byYear: Object.fromEntries(years.map((year) => [year, finishBucket(byYear.get(year))])),
+    players,
     events: includedEvents,
   };
+  const json = `${JSON.stringify(output, null, 2)}\n`;
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
-  fs.writeFileSync(OUT, `${JSON.stringify(output, null, 2)}\n`);
-  console.log(`Generated ${path.relative(root, OUT)} from ${includedEvents.length} event(s), ${total.rounds} round(s).`);
+  fs.writeFileSync(OUT, json);
+  fs.mkdirSync(path.dirname(PUBLIC_OUT), { recursive: true });
+  fs.writeFileSync(PUBLIC_OUT, json);
+  console.log(`Generated ${path.relative(root, OUT)} and ${path.relative(root, PUBLIC_OUT)} from ${includedEvents.length} event(s), ${total.rounds} round(s), ${Object.keys(players).length} player(s).`);
 }
 main();
