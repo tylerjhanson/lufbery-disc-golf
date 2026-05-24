@@ -46,6 +46,9 @@ const weeklyWins = Array.isArray(profile.weeklyWins) ? profile.weeklyWins : [];
 const bestOverallWins = Array.isArray(profile.bestOverallWins) ? profile.bestOverallWins : [];
 const aces = Array.isArray(profile.aces) ? profile.aces : [];
 const personalBests = Array.isArray(profile.personalBests) && profile.personalBests.length ? profile.personalBests : profile.personalBest ? [profile.personalBest] : [];
+const personalBestTitle = personalBests.length > 1 ? "Personal Bests" : "Personal Best";
+const lowestHandicapValue = lowestHandicap(handicapHistory, profile.handicap);
+const lowestHandicapDisplay = lowestHandicapValue === "" ? "—" : String(lowestHandicapValue);
 const playerCourseStats = courseStatsForPlayer(courseStats, name);
 const courseViews = buildCourseViews(playerCourseStats);
 const scoreAverages = yearAverages(allRounds);
@@ -119,6 +122,7 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
     .profile-course-segment--bogey { background: #f2d8c8; color: #2e3440; }
     .profile-course-segment--double { background: #efb286; color: #2e3440; }
     .profile-course-segment--triple { background: #eb7b3c; color: #2e3440; }
+    .profile-course-segment--bogey span, .profile-course-segment--double span, .profile-course-segment--triple span { color: #1f2937 !important; text-shadow: none; }
 
     html[data-theme="dark"] .profile-chart-shell, html[data-theme="dark"] .profile-stat, html[data-theme="dark"] .profile-year-pill { background: var(--header, #111827); }
     html[data-theme="dark"] .profile-chart-grid { stroke: #334155; }
@@ -128,6 +132,7 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
     html[data-theme="dark"] .profile-course-bar { border-color: #334155; }
     html[data-theme="dark"] .profile-course-segment + .profile-course-segment { box-shadow: inset 1px 0 0 rgba(248, 250, 252, 0.16); }
     html[data-theme="dark"] .profile-course-segment--bogey, html[data-theme="dark"] .profile-course-segment--double, html[data-theme="dark"] .profile-course-segment--triple { color: #1f2937; }
+    html[data-theme="dark"] .profile-course-segment--bogey span, html[data-theme="dark"] .profile-course-segment--double span, html[data-theme="dark"] .profile-course-segment--triple span { color: #1f2937 !important; text-shadow: none; }
     @media (prefers-color-scheme: dark) {
       html[data-theme="system"] .profile-chart-shell, html[data-theme="system"] .profile-stat, html[data-theme="system"] .profile-year-pill { background: var(--header, #111827); }
       html[data-theme="system"] .profile-chart-grid { stroke: #334155; }
@@ -137,6 +142,7 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
       html[data-theme="system"] .profile-course-bar { border-color: #334155; }
       html[data-theme="system"] .profile-course-segment + .profile-course-segment { box-shadow: inset 1px 0 0 rgba(248, 250, 252, 0.16); }
       html[data-theme="system"] .profile-course-segment--bogey, html[data-theme="system"] .profile-course-segment--double, html[data-theme="system"] .profile-course-segment--triple { color: #1f2937; }
+      html[data-theme="system"] .profile-course-segment--bogey span, html[data-theme="system"] .profile-course-segment--double span, html[data-theme="system"] .profile-course-segment--triple span { color: #1f2937 !important; text-shadow: none; }
     }
 
     @media (max-width: 900px) {
@@ -170,7 +176,7 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
       <div class="profile-summary-grid">
         <div class="profile-stat-group">
           <div class="profile-stat"><span class="profile-stat-label">Current handicap</span><span class="profile-stat-value">{profile.handicap || "—"}</span></div>
-          <div class="profile-stat"><span class="profile-stat-label">Lowest handicap</span><span class="profile-stat-value">{lowestHandicap(handicapHistory, profile.handicap) || "—"}</span></div>
+          <div class="profile-stat"><span class="profile-stat-label">Lowest handicap</span><span class="profile-stat-value">{lowestHandicapDisplay}</span></div>
         </div>
         <div class="profile-stat-group">
           <div class="profile-stat"><span class="profile-stat-label">Current tag</span><span class="profile-stat-value">{profile.hasTag ? profile.currentTag || "TBD" : "—"}</span></div>
@@ -201,7 +207,7 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
           <div class="profile-card-body"><table class="profile-table"><thead><tr><th>Date</th><th>Score</th></tr></thead><tbody>{recentRounds.length ? recentRounds.map((round, index) => <tr class={index === droppedIndex ? "profile-dropped-round" : ""}><td>{round.date}</td><td>{formatScoreWithPar(round.score)}</td></tr>) : <tr><td colspan="2" class="profile-muted">No handicap rounds found.</td></tr>}</tbody></table></div>
         </section>
         <section class="profile-card" data-mobile-collapse data-default-open>
-          <div class="profile-card-header"><h2 class="profile-section-title">Personal Best</h2><button class="profile-mobile-toggle" type="button" aria-label="Toggle section">⌄</button></div>
+          <div class="profile-card-header"><h2 class="profile-section-title">{personalBestTitle}</h2><button class="profile-mobile-toggle" type="button" aria-label="Toggle section">⌄</button></div>
           <div class="profile-card-body">{personalBests.length ? <ul class="profile-link-list">{personalBests.map((item) => <li><strong>{item.score}</strong> <a class="profile-link" href={item.href}>{item.date}</a></li>)}</ul> : <p class="profile-muted">No personal best found.</p>}</div>
         </section>
         <section class="profile-card" data-mobile-collapse>
