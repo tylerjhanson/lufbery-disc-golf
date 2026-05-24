@@ -214,13 +214,29 @@ const defaultPanelKey = panels[0]?.key || "total";
   th:nth-child(1), td:nth-child(1) { width: 28%; }
   th:nth-child(2), td:nth-child(2) { width: 15%; }
   th:nth-child(3), td:nth-child(3) { width: 27%; }
-  th:nth-child(4), td:nth-child(4) { width: 30%; text-align: right; }
-  th:nth-child(4) button { margin-left: auto; }
+  th:nth-child(4), td:nth-child(4) { width: 30%; }
   th button { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font: inherit; color: inherit; white-space: nowrap; }
   th button::after { content: "↕"; opacity: .45; }
   th button[aria-sort="ascending"]::after { content: "↑"; opacity: 1; }
   th button[aria-sort="descending"]::after { content: "↓"; opacity: 1; }
   tr:last-child td { border-bottom: 0; }
+
+  @media (min-width: 980px) {
+    .panel.is-active {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
+      grid-template-areas:
+        "round round"
+        "holes table";
+      gap: 14px 18px;
+      align-items: start;
+    }
+
+    .round-count { grid-area: round; }
+    .hole-grid { grid-area: holes; }
+    .table-wrap { grid-area: table; }
+  }
+
   @media (max-width: 760px) {
     .course-stats { gap: 11px; }
     .course-stats__filter { width: 100%; }
