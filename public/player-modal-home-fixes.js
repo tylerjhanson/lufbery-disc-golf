@@ -22,24 +22,23 @@
         }
 
         .right-stack {
-          height: auto !important;
           min-height: 0 !important;
-          grid-template-rows: auto auto auto !important;
+          grid-template-rows: auto auto minmax(0, 1fr) !important;
         }
 
         .right-stack > .events-card,
         .events-card {
-          align-self: start !important;
-          height: auto !important;
+          align-self: stretch !important;
           min-height: 0 !important;
-          max-height: none !important;
-          display: block !important;
+          display: flex !important;
+          flex-direction: column !important;
         }
 
         .events-card .event-list {
-          flex: 0 0 auto !important;
-          grid-template-rows: none !important;
+          flex: 1 1 auto !important;
           min-height: 0 !important;
+          display: grid !important;
+          grid-template-rows: repeat(var(--home-event-count), minmax(0, 1fr)) !important;
         }
 
         .events-card .event-item {
@@ -50,6 +49,15 @@
     document.head.appendChild(style);
   }
 
+  function naturalHeight(element) {
+    if (!element) return 0;
+    const previousHeight = element.style.height;
+    element.style.height = "auto";
+    const height = Math.ceil(element.getBoundingClientRect().height);
+    element.style.height = previousHeight;
+    return height;
+  }
+
   function applyHomeLayoutFix() {
     const homeGrid = document.querySelector(".home-grid");
     const leftStack = document.querySelector(".left-stack");
@@ -58,7 +66,32 @@
     const eventsCard = document.getElementById("upcomingEventsCard") || document.querySelector(".events-card");
     const eventsList = document.getElementById("eventsList") || document.querySelector(".events-card .event-list");
 
-    if (window.matchMedia("(max-width: 900px)").matches) return;
+    if (window.matchMedia("(max-width: 900px)").matches) {
+      if (homeGrid) homeGrid.style.alignItems = "";
+      [leftStack, middleStack, rightStack].forEach((stack) => {
+        if (!stack) return;
+        stack.style.alignSelf = "";
+      });
+      if (rightStack) {
+        rightStack.style.height = "";
+        rightStack.style.minHeight = "";
+        rightStack.style.gridTemplateRows = "";
+      }
+      if (eventsCard) {
+        eventsCard.style.alignSelf = "";
+        eventsCard.style.height = "";
+        eventsCard.style.minHeight = "";
+        eventsCard.style.maxHeight = "";
+        eventsCard.style.display = "";
+        eventsCard.style.flexDirection = "";
+      }
+      if (eventsList) {
+        eventsList.style.flex = "";
+        eventsList.style.gridTemplateRows = "";
+        eventsList.style.minHeight = "";
+      }
+      return;
+    }
 
     if (homeGrid) homeGrid.style.alignItems = "start";
 
@@ -67,23 +100,27 @@
       stack.style.alignSelf = "start";
     });
 
+    const middleHeight = naturalHeight(middleStack);
+    const targetHeight = middleHeight > 0 ? middleHeight : naturalHeight(rightStack);
+
     if (rightStack) {
-      rightStack.style.height = "auto";
+      rightStack.style.height = targetHeight ? `${targetHeight}px` : "auto";
       rightStack.style.minHeight = "0";
-      rightStack.style.gridTemplateRows = "auto auto auto";
+      rightStack.style.gridTemplateRows = "auto auto minmax(0, 1fr)";
     }
 
     if (eventsCard) {
-      eventsCard.style.alignSelf = "start";
+      eventsCard.style.alignSelf = "stretch";
       eventsCard.style.height = "auto";
       eventsCard.style.minHeight = "0";
       eventsCard.style.maxHeight = "none";
-      eventsCard.style.display = "block";
+      eventsCard.style.display = "flex";
+      eventsCard.style.flexDirection = "column";
     }
 
     if (eventsList) {
-      eventsList.style.flex = "0 0 auto";
-      eventsList.style.gridTemplateRows = "none";
+      eventsList.style.flex = "1 1 auto";
+      eventsList.style.gridTemplateRows = "repeat(var(--home-event-count), minmax(0, 1fr))";
       eventsList.style.minHeight = "0";
     }
   }
