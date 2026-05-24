@@ -1,0 +1,125 @@
+---
+const { stats } = Astro.props;
+const years = Array.isArray(stats?.years) ? stats.years : [];
+const panels = [
+  { key: "total", label: "All years", data: stats?.total },
+  ...years.map((year) => ({ key: String(year), label: String(year), data: stats?.byYear?.[year] })),
+].filter((panel) => panel.data && Array.isArray(panel.data.holes));
+const warnings = Array.isArray(stats?.source?.warnings) ? stats.source.warnings : [];
+const generatedAt = stats?.generatedAt
+  ? new Date(stats.generatedAt).toLocaleString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+  : "Not generated yet";
+function formatPlusMinus(value) {
+  const number = Number(value || 0);
+  if (number === 0) return "E";
+  return number > 0 ? `+${number.toFixed(2)}` : number.toFixed(2);
+}
+function barStyle(segments) {
+  const visible = (segments || []).filter((segment) => Number(segment.count) > 0);
+  return visible.length ? `grid-template-columns:${visible.map((segment) => `${Math.max(1, Number(segment.count))}fr`).join(" ")};` : "grid-template-columns:1fr;";
+}
+---
+
+<section class="course-stats">
+  <header class="course-stats__header">
+    <p class="eyebrow">Original Layout • 2024-present</p>
+    <h1>Course Stats</h1>
+    <p class="intro">Hole-by-hole averages and scoring distributions generated from UDisc exports linked on the Weekly Results page. Round 2 scores from 2-round events are excluded.</p>
+  </header>
+
+  <div class="summary-grid">
+    <div><span>Generated</span><strong>{generatedAt}</strong></div>
+    <div><span>Events counted</span><strong>{stats?.source?.includedEvents ?? 0}</strong></div>
+    <div><span>Rounds counted</span><strong>{stats?.source?.includedRounds ?? 0}</strong></div>
+    <div><span>Exports found</span><strong>{stats?.source?.exportFilesFound ?? 0}</strong></div>
+  </div>
+
+  {warnings.length > 0 && (
+    <details class="notice">
+      <summary>{warnings.length} generator warning{warnings.length === 1 ? "" : "s"}</summary>
+      <ul>{warnings.slice(0, 25).map((warning) => <li>{warning.message || warning.title || warning.file || warning.type}</li>)}</ul>
+    </details>
+  )}
+
+  {panels.length === 0 ? (
+    <div class="empty">Add UDisc exports to <code>src/data/udisc-exports/</code>, then run <code>npm run generate-course-stats</code>.</div>
+  ) : (
+    panels.map((panel) => (
+      <section class="panel">
+        <div class="panel-header">
+          <h2>{panel.label}</h2>
+          <p>{panel.data.rounds} counted round{panel.data.rounds === 1 ? "" : "s"}</p>
+        </div>
+
+        <div class="hole-grid">
+          {panel.data.holes.map((hole) => (
+            <article class="hole-card">
+              <div class="hole-header">
+                <div><h3>Hole {hole.hole}</h3><span>Par {hole.par}</span></div>
+                <div class="hole-stats">
+                  <span>Difficulty <strong>{hole.difficultyRank || "—"}</strong></span>
+                  <span>Avg <strong>{Number(hole.average || 0).toFixed(2)}</strong></span>
+                  <span>To par <strong>{formatPlusMinus(hole.plusMinus)}</strong></span>
+                </div>
+              </div>
+              <div class="score-bar" style={barStyle(hole.segments)}>
+                {(hole.segments || []).map((segment) => (
+                  <div class={`segment segment--${segment.kind}`} title={`${segment.label}: ${segment.count} (${Number(segment.pct || 0).toFixed(1)}%)`}>
+                    {Number(segment.pct || 0) >= 7 && <span>{segment.count}</span>}
+                  </div>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Hole</th><th>Par</th><th>Avg</th><th>To Par</th><th>Difficulty</th><th>Rounds</th></tr></thead>
+            <tbody>{panel.data.holes.map((hole) => <tr><td>{hole.hole}</td><td>{hole.par}</td><td>{Number(hole.average || 0).toFixed(2)}</td><td>{formatPlusMinus(hole.plusMinus)}</td><td>{hole.difficultyRank || "—"}</td><td>{hole.rounds}</td></tr>)}</tbody>
+          </table>
+        </div>
+      </section>
+    ))
+  )}
+</section>
+
+<style>
+  .course-stats { display: grid; gap: 16px; color: var(--text, #172033); }
+  .eyebrow { margin: 0 0 6px; color: var(--muted, #64748b); font-size: .82rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+  h1 { margin: 0; font-size: clamp(2rem, 4vw, 3.1rem); line-height: 1; letter-spacing: -.04em; }
+  .intro { max-width: 760px; margin: 10px 0 0; color: var(--muted, #64748b); line-height: 1.55; }
+  .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  .summary-grid > div, .notice, .empty, .hole-card, .table-wrap { border: 1px solid #d7e6f3; border-radius: 16px; background: #f7f9fc; }
+  .summary-grid > div { padding: 12px 14px; display: grid; gap: 4px; }
+  .summary-grid span { color: var(--muted, #64748b); font-size: .82rem; font-weight: 700; }
+  .summary-grid strong { font-size: clamp(1rem, 1.5vw, 1.35rem); }
+  .notice, .empty { padding: 12px 14px; color: var(--muted, #64748b); }
+  .panel { display: grid; gap: 14px; }
+  .panel-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .panel-header h2 { margin: 0; font-size: clamp(1.45rem, 2.5vw, 2rem); letter-spacing: -.03em; }
+  .panel-header p { margin: 0; color: var(--muted, #64748b); }
+  .hole-grid { display: grid; gap: 10px; }
+  .hole-card { padding: 12px 14px; }
+  .hole-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+  .hole-header h3 { margin: 0; font-size: clamp(1.1rem, 1.5vw, 1.35rem); letter-spacing: -.03em; }
+  .hole-header span, .hole-stats span { color: var(--muted, #64748b); }
+  .hole-stats { display: flex; gap: 14px; white-space: nowrap; }
+  .hole-stats strong { color: var(--text, #172033); font-size: 1.28em; }
+  .score-bar { display: grid; min-height: 36px; overflow: hidden; border: 2px solid #cfe0ef; border-radius: 12px; background: #fff; }
+  .segment { position: relative; min-width: 0; }
+  .segment + .segment { box-shadow: inset 1px 0 0 rgba(15, 23, 42, .1); }
+  .segment span { position: absolute; inset: 0; display: grid; place-items: center; font-size: .9rem; font-weight: 800; }
+  .segment--ace { background: #2f6fb6; color: #fff; }
+  .segment--birdie { background: #6c9bd1; color: #fff; }
+  .segment--par { background: #fff; color: #172033; }
+  .segment--bogey { background: #f2d8c8; color: #2e3440; }
+  .segment--double { background: #efb286; color: #2e3440; }
+  .segment--triple { background: #eb7b3c; color: #fff; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 640px; }
+  th, td { padding: 10px 12px; border-bottom: 1px solid #d7e6f3; text-align: left; }
+  th { color: var(--muted, #64748b); font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; }
+  tr:last-child td { border-bottom: 0; }
+  @media (max-width: 760px) { .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hole-header { flex-direction: column; align-items: stretch; } .hole-stats { justify-content: space-between; white-space: normal; } .score-bar { min-height: 46px; } }
+</style>
