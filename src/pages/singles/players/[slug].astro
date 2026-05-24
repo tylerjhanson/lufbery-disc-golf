@@ -158,13 +158,14 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
       .profile-content-grid { display: flex; flex-direction: column; gap: 14px; }
       .profile-sidebar { order: -1; width: 100%; }
       .profile-main { width: 100%; }
-      .profile-card-header { padding: 15px 14px 9px; cursor: pointer; }
+      .profile-card-header { min-height: 62px; padding: 0 14px; cursor: pointer; align-items: center; }
+      .profile-section-title { line-height: 1; }
       .profile-card-body { padding: 0 14px 14px; }
       .profile-chart { height: 172px; }
       .profile-course-hole-title { font-size: 0.88rem; white-space: nowrap; }
       .profile-course-hole-title span, .profile-course-meta { font-size: 0.72rem; }
       .profile-course-meta { gap: 5px; }
-      .profile-mobile-toggle { display: inline-flex; align-items: center; justify-content: center; border: 0; background: transparent; color: var(--muted, #6b7280); font-size: 1.1rem; font-weight: 900; line-height: 1; padding: 4px; }
+      .profile-mobile-toggle { display: inline-flex; align-items: center; justify-content: center; align-self: center; width: 34px; height: 34px; flex: 0 0 34px; border: 0; background: transparent; color: var(--muted, #6b7280); font-size: 1.1rem; font-weight: 900; line-height: 1; padding: 0; }
       .profile-card.is-collapsed .profile-card-body { display: none; }
       .profile-card.is-collapsed .profile-mobile-toggle { transform: rotate(-90deg); }
     }
