@@ -33,6 +33,42 @@ const buttonClass = ["player-button", className].filter(Boolean).join(" ");
 
 <script is:inline>
   (() => {
+    function applyHomeEventHeightFix() {
+      const homeGrid = document.querySelector(".home-grid");
+      const rightStack = document.querySelector(".right-stack");
+      const eventsCard = document.getElementById("upcomingEventsCard") || document.querySelector(".events-card");
+      const eventsList = document.getElementById("eventsList") || document.querySelector(".events-card .event-list");
+
+      if (homeGrid) {
+        homeGrid.style.alignItems = "start";
+      }
+
+      if (rightStack) {
+        rightStack.style.alignSelf = "start";
+        rightStack.style.height = "auto";
+        rightStack.style.gridTemplateRows = "auto auto auto";
+      }
+
+      if (eventsCard) {
+        eventsCard.style.alignSelf = "start";
+        eventsCard.style.height = "auto";
+        eventsCard.style.minHeight = "0";
+        eventsCard.style.display = "block";
+      }
+
+      if (eventsList) {
+        eventsList.style.flex = "0 0 auto";
+        eventsList.style.gridTemplateRows = "none";
+        eventsList.style.minHeight = "0";
+      }
+    }
+
+    function scheduleHomeEventHeightFix() {
+      applyHomeEventHeightFix();
+      requestAnimationFrame(applyHomeEventHeightFix);
+      window.setTimeout(applyHomeEventHeightFix, 0);
+    }
+
     const scripts = [
       ["playerCourseStatsModalScript", "/player-course-stats-modal.js"],
       ["playerModalHomeFixesScript", "/player-modal-home-fixes.js"],
@@ -46,5 +82,21 @@ const buttonClass = ["player-button", className].filter(Boolean).join(" ");
       script.defer = true;
       document.head.appendChild(script);
     });
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", scheduleHomeEventHeightFix, { once: true });
+    } else {
+      scheduleHomeEventHeightFix();
+    }
+
+    window.addEventListener("load", scheduleHomeEventHeightFix, { once: true });
+
+    const latestResultCard = document.getElementById("latestResultCard");
+    if (latestResultCard && "MutationObserver" in window) {
+      new MutationObserver(scheduleHomeEventHeightFix).observe(latestResultCard, {
+        attributes: true,
+        attributeFilter: ["class", "style"],
+      });
+    }
   })();
 </script>
