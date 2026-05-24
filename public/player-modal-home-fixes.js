@@ -13,29 +13,83 @@
       @media (min-width: 901px) {
         .home-grid { align-items: start !important; }
         .left-stack, .middle-stack, .right-stack { align-self: start !important; }
+
         .right-stack {
           min-height: 0 !important;
           grid-template-rows: auto auto minmax(0, 1fr) !important;
         }
-        .right-stack > .events-card, .events-card {
+
+        .right-stack > .events-card,
+        .events-card {
           align-self: stretch !important;
           min-height: 0 !important;
           display: flex !important;
           flex-direction: column !important;
         }
+
         .events-card .event-list {
           flex: 1 1 auto !important;
           min-height: 0 !important;
-          display: flex !important;
-          flex-direction: column !important;
-          justify-content: space-between !important;
+          display: grid !important;
+          grid-template-rows: repeat(var(--home-event-count), minmax(0, 1fr)) !important;
+          align-items: center !important;
           gap: 14px !important;
-          grid-template-rows: none !important;
         }
+
         .events-card .event-item {
-          flex: 0 0 auto !important;
+          align-self: center !important;
+          width: 100% !important;
           min-height: 0 !important;
         }
+      }
+
+      @media (max-width: 700px) {
+        .player-course-stats-summary {
+          font-size: 0.82rem !important;
+          line-height: 1.25 !important;
+        }
+
+        .player-course-stats-hole {
+          padding: 8px 8px !important;
+        }
+
+        .player-course-stats-hole-header {
+          display: flex !important;
+          align-items: baseline !important;
+          flex-direction: row !important;
+          justify-content: space-between !important;
+          gap: 6px !important;
+          margin-bottom: 6px !important;
+        }
+
+        .player-course-stats-hole-title {
+          font-size: 0.9rem !important;
+          white-space: nowrap !important;
+          min-width: 0 !important;
+        }
+
+        .player-course-stats-hole-title span {
+          margin-left: 4px !important;
+          font-size: 0.76rem !important;
+        }
+
+        .player-course-stats-hole-meta {
+          gap: 5px !important;
+          font-size: 0.76rem !important;
+          white-space: nowrap !important;
+          flex: 0 0 auto !important;
+        }
+
+        .player-course-stats-hole-meta strong {
+          font-size: 1em !important;
+        }
+      }
+
+      @media (max-width: 380px) {
+        .player-course-stats-hole-title { font-size: 0.84rem !important; }
+        .player-course-stats-hole-title span,
+        .player-course-stats-hole-meta { font-size: 0.7rem !important; }
+        .player-course-stats-hole-meta { gap: 4px !important; }
       }
     `;
     document.head.appendChild(style);
@@ -58,7 +112,38 @@
     const eventsCard = document.getElementById("upcomingEventsCard") || document.querySelector(".events-card");
     const eventsList = document.getElementById("eventsList") || document.querySelector(".events-card .event-list");
 
-    if (window.matchMedia("(max-width: 900px)").matches) return;
+    if (window.matchMedia("(max-width: 900px)").matches) {
+      if (homeGrid) homeGrid.style.alignItems = "";
+      [leftStack, middleStack, rightStack].forEach((stack) => {
+        if (stack) stack.style.alignSelf = "";
+      });
+      if (rightStack) {
+        rightStack.style.height = "";
+        rightStack.style.minHeight = "";
+        rightStack.style.gridTemplateRows = "";
+      }
+      if (eventsCard) {
+        eventsCard.style.alignSelf = "";
+        eventsCard.style.height = "";
+        eventsCard.style.minHeight = "";
+        eventsCard.style.display = "";
+        eventsCard.style.flexDirection = "";
+      }
+      if (eventsList) {
+        eventsList.style.flex = "";
+        eventsList.style.display = "";
+        eventsList.style.gridTemplateRows = "";
+        eventsList.style.alignItems = "";
+        eventsList.style.gap = "";
+        eventsList.style.minHeight = "";
+      }
+      eventsList?.querySelectorAll(".event-item").forEach((item) => {
+        item.style.alignSelf = "";
+        item.style.width = "";
+        item.style.minHeight = "";
+      });
+      return;
+    }
 
     if (homeGrid) homeGrid.style.alignItems = "start";
     [leftStack, middleStack, rightStack].forEach((stack) => {
@@ -78,21 +163,20 @@
       eventsCard.style.alignSelf = "stretch";
       eventsCard.style.height = "auto";
       eventsCard.style.minHeight = "0";
-      eventsCard.style.maxHeight = "none";
       eventsCard.style.display = "flex";
       eventsCard.style.flexDirection = "column";
     }
 
     if (eventsList) {
       eventsList.style.flex = "1 1 auto";
-      eventsList.style.display = "flex";
-      eventsList.style.flexDirection = "column";
-      eventsList.style.justifyContent = "space-between";
+      eventsList.style.display = "grid";
+      eventsList.style.gridTemplateRows = "repeat(var(--home-event-count), minmax(0, 1fr))";
+      eventsList.style.alignItems = "center";
       eventsList.style.gap = "14px";
-      eventsList.style.gridTemplateRows = "none";
       eventsList.style.minHeight = "0";
       eventsList.querySelectorAll(".event-item").forEach((item) => {
-        item.style.flex = "0 0 auto";
+        item.style.alignSelf = "center";
+        item.style.width = "100%";
         item.style.minHeight = "0";
       });
     }
@@ -123,6 +207,14 @@
       new MutationObserver(runHomeLayoutFix).observe(latestResultCard, {
         attributes: true,
         attributeFilter: ["class", "style"],
+      });
+    }
+
+    const eventsList = document.getElementById("eventsList");
+    if (eventsList && "MutationObserver" in window) {
+      new MutationObserver(runHomeLayoutFix).observe(eventsList, {
+        childList: true,
+        subtree: true,
       });
     }
 
