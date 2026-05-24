@@ -4,6 +4,18 @@
 
   const STYLE_ID = "player-modal-home-fixes-style";
 
+  let applyingHomeFix = false;
+
+  function setImportant(element, property, value) {
+    if (!element) return;
+    element.style.setProperty(property, value, "important");
+  }
+
+  function clearInline(element, properties) {
+    if (!element) return;
+    properties.forEach((property) => element.style.removeProperty(property));
+  }
+
   function injectHomeLayoutFix() {
     if (document.getElementById(STYLE_ID)) return;
 
@@ -11,8 +23,15 @@
     style.id = STYLE_ID;
     style.textContent = `
       @media (min-width: 901px) {
-        .home-grid { align-items: start !important; }
-        .left-stack, .middle-stack, .right-stack { align-self: start !important; }
+        .home-grid {
+          align-items: start !important;
+        }
+
+        .left-stack,
+        .middle-stack,
+        .right-stack {
+          align-self: start !important;
+        }
 
         .right-stack {
           min-height: 0 !important;
@@ -23,6 +42,7 @@
         .events-card {
           align-self: stretch !important;
           min-height: 0 !important;
+          max-height: none !important;
           display: flex !important;
           flex-direction: column !important;
         }
@@ -40,6 +60,7 @@
           align-self: center !important;
           width: 100% !important;
           min-height: 0 !important;
+          max-height: none !important;
         }
       }
 
@@ -98,94 +119,107 @@
   function naturalHeight(element) {
     if (!element) return 0;
     const oldHeight = element.style.height;
+    const oldMinHeight = element.style.minHeight;
+    const oldMaxHeight = element.style.maxHeight;
     element.style.height = "auto";
+    element.style.minHeight = "0";
+    element.style.maxHeight = "none";
     const height = Math.ceil(element.getBoundingClientRect().height);
     element.style.height = oldHeight;
+    element.style.minHeight = oldMinHeight;
+    element.style.maxHeight = oldMaxHeight;
     return height;
   }
 
+  function getGapPx(element) {
+    if (!element) return 0;
+    const styles = window.getComputedStyle(element);
+    return Number.parseFloat(styles.rowGap || styles.gap || "0") || 0;
+  }
+
   function applyHomeLayoutFix() {
-    const homeGrid = document.querySelector(".home-grid");
-    const leftStack = document.querySelector(".left-stack");
-    const middleStack = document.querySelector(".middle-stack");
-    const rightStack = document.querySelector(".right-stack");
-    const eventsCard = document.getElementById("upcomingEventsCard") || document.querySelector(".events-card");
-    const eventsList = document.getElementById("eventsList") || document.querySelector(".events-card .event-list");
+    if (applyingHomeFix) return;
+    applyingHomeFix = true;
 
-    if (window.matchMedia("(max-width: 900px)").matches) {
-      if (homeGrid) homeGrid.style.alignItems = "";
-      [leftStack, middleStack, rightStack].forEach((stack) => {
-        if (stack) stack.style.alignSelf = "";
-      });
-      if (rightStack) {
-        rightStack.style.height = "";
-        rightStack.style.minHeight = "";
-        rightStack.style.gridTemplateRows = "";
+    try {
+      const homeGrid = document.querySelector(".home-grid");
+      const leftStack = document.querySelector(".left-stack");
+      const middleStack = document.querySelector(".middle-stack");
+      const rightStack = document.querySelector(".right-stack");
+      const eventsCard = document.getElementById("upcomingEventsCard") || document.querySelector(".events-card");
+      const eventsList = document.getElementById("eventsList") || document.querySelector(".events-card .event-list");
+
+      if (window.matchMedia("(max-width: 900px)").matches) {
+        if (homeGrid) homeGrid.style.alignItems = "";
+        [leftStack, middleStack, rightStack].forEach((stack) => {
+          if (stack) stack.style.alignSelf = "";
+        });
+        if (rightStack) {
+          clearInline(rightStack, ["height", "min-height", "grid-template-rows"]);
+        }
+        if (eventsCard) {
+          clearInline(eventsCard, ["align-self", "height", "min-height", "max-height", "display", "flex-direction"]);
+        }
+        if (eventsList) {
+          clearInline(eventsList, ["flex", "display", "grid-template-rows", "align-items", "gap", "min-height"]);
+        }
+        eventsList?.querySelectorAll(".event-item").forEach((item) => {
+          clearInline(item, ["align-self", "width", "min-height", "max-height"]);
+        });
+        return;
       }
-      if (eventsCard) {
-        eventsCard.style.alignSelf = "";
-        eventsCard.style.height = "";
-        eventsCard.style.minHeight = "";
-        eventsCard.style.display = "";
-        eventsCard.style.flexDirection = "";
-      }
+
+      if (!middleStack || !rightStack || !eventsCard) return;
+
+      setImportant(homeGrid, "align-items", "start");
+      [leftStack, middleStack, rightStack].forEach((stack) => setImportant(stack, "align-self", "start"));
+
+      const middleHeight = naturalHeight(middleStack);
+      const rightChildren = Array.from(rightStack.children);
+      const cardsBeforeEvents = rightChildren.filter((child) => child !== eventsCard);
+      const usedHeight = cardsBeforeEvents.reduce(
+        (total, child) => total + Math.ceil(child.getBoundingClientRect().height),
+        0
+      );
+      const gapTotal = getGapPx(rightStack) * Math.max(rightChildren.length - 1, 0);
+      const targetEventsHeight = Math.max(0, middleHeight - usedHeight - gapTotal);
+
+      setImportant(rightStack, "height", middleHeight ? `${Math.ceil(middleHeight)}px` : "auto");
+      setImportant(rightStack, "min-height", "0");
+      setImportant(rightStack, "grid-template-rows", "auto auto minmax(0, 1fr)");
+
+      setImportant(eventsCard, "align-self", "stretch");
+      setImportant(eventsCard, "height", targetEventsHeight ? `${Math.ceil(targetEventsHeight)}px` : "auto");
+      setImportant(eventsCard, "min-height", "0");
+      setImportant(eventsCard, "max-height", "none");
+      setImportant(eventsCard, "display", "flex");
+      setImportant(eventsCard, "flex-direction", "column");
+
       if (eventsList) {
-        eventsList.style.flex = "";
-        eventsList.style.display = "";
-        eventsList.style.gridTemplateRows = "";
-        eventsList.style.alignItems = "";
-        eventsList.style.gap = "";
-        eventsList.style.minHeight = "";
+        setImportant(eventsList, "flex", "1 1 auto");
+        setImportant(eventsList, "display", "grid");
+        setImportant(eventsList, "grid-template-rows", "repeat(var(--home-event-count), minmax(0, 1fr))");
+        setImportant(eventsList, "align-items", "center");
+        setImportant(eventsList, "gap", "14px");
+        setImportant(eventsList, "min-height", "0");
+        eventsList.querySelectorAll(".event-item").forEach((item) => {
+          setImportant(item, "align-self", "center");
+          setImportant(item, "width", "100%");
+          setImportant(item, "min-height", "0");
+          setImportant(item, "max-height", "none");
+        });
       }
-      eventsList?.querySelectorAll(".event-item").forEach((item) => {
-        item.style.alignSelf = "";
-        item.style.width = "";
-        item.style.minHeight = "";
-      });
-      return;
-    }
-
-    if (homeGrid) homeGrid.style.alignItems = "start";
-    [leftStack, middleStack, rightStack].forEach((stack) => {
-      if (stack) stack.style.alignSelf = "start";
-    });
-
-    const middleHeight = naturalHeight(middleStack);
-    const targetHeight = middleHeight > 0 ? middleHeight : naturalHeight(rightStack);
-
-    if (rightStack) {
-      rightStack.style.height = targetHeight ? targetHeight + "px" : "auto";
-      rightStack.style.minHeight = "0";
-      rightStack.style.gridTemplateRows = "auto auto minmax(0, 1fr)";
-    }
-
-    if (eventsCard) {
-      eventsCard.style.alignSelf = "stretch";
-      eventsCard.style.height = "auto";
-      eventsCard.style.minHeight = "0";
-      eventsCard.style.display = "flex";
-      eventsCard.style.flexDirection = "column";
-    }
-
-    if (eventsList) {
-      eventsList.style.flex = "1 1 auto";
-      eventsList.style.display = "grid";
-      eventsList.style.gridTemplateRows = "repeat(var(--home-event-count), minmax(0, 1fr))";
-      eventsList.style.alignItems = "center";
-      eventsList.style.gap = "14px";
-      eventsList.style.minHeight = "0";
-      eventsList.querySelectorAll(".event-item").forEach((item) => {
-        item.style.alignSelf = "center";
-        item.style.width = "100%";
-        item.style.minHeight = "0";
-      });
+    } finally {
+      applyingHomeFix = false;
     }
   }
 
   function runHomeLayoutFix() {
     applyHomeLayoutFix();
     requestAnimationFrame(applyHomeLayoutFix);
+    setTimeout(applyHomeLayoutFix, 0);
     setTimeout(applyHomeLayoutFix, 150);
+    setTimeout(applyHomeLayoutFix, 400);
   }
 
   function updateCourseStatsModalLabel(root = document) {
@@ -203,22 +237,36 @@
     updateCourseStatsModalLabel(document);
 
     const latestResultCard = document.getElementById("latestResultCard");
-    if (latestResultCard && "MutationObserver" in window) {
-      new MutationObserver(runHomeLayoutFix).observe(latestResultCard, {
-        attributes: true,
-        attributeFilter: ["class", "style"],
+    const eventsCard = document.getElementById("upcomingEventsCard") || document.querySelector(".events-card");
+    const eventsList = document.getElementById("eventsList") || document.querySelector(".events-card .event-list");
+    const rightStack = document.querySelector(".right-stack");
+
+    if ("MutationObserver" in window) {
+      const observerOptions = { attributes: true, attributeFilter: ["class", "style"] };
+      if (latestResultCard) new MutationObserver(runHomeLayoutFix).observe(latestResultCard, observerOptions);
+      if (eventsCard) new MutationObserver(runHomeLayoutFix).observe(eventsCard, observerOptions);
+      if (rightStack) new MutationObserver(runHomeLayoutFix).observe(rightStack, observerOptions);
+      if (eventsList) {
+        new MutationObserver(runHomeLayoutFix).observe(eventsList, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ["class", "style"],
+        });
+      }
+    }
+
+    if ("ResizeObserver" in window) {
+      const resizeObserver = new ResizeObserver(runHomeLayoutFix);
+      [latestResultCard, document.querySelector(".middle-stack"), rightStack, eventsCard].forEach((element) => {
+        if (element) resizeObserver.observe(element);
       });
     }
 
-    const eventsList = document.getElementById("eventsList");
-    if (eventsList && "MutationObserver" in window) {
-      new MutationObserver(runHomeLayoutFix).observe(eventsList, {
-        childList: true,
-        subtree: true,
-      });
-    }
-
+    window.addEventListener("load", runHomeLayoutFix);
     window.addEventListener("resize", runHomeLayoutFix);
+    window.addEventListener("pageshow", runHomeLayoutFix);
+    document.addEventListener("astro:page-load", runHomeLayoutFix);
 
     const modalBody = document.getElementById("playerDetailsModalBody") || document.body;
     new MutationObserver(() => updateCourseStatsModalLabel(document)).observe(modalBody, {
