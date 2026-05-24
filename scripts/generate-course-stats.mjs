@@ -15,7 +15,7 @@ const ALIASES = path.join(root, "src", "data", "player-aliases.json");
 const OUT = path.join(root, "src", "data", "course-stats.generated.json");
 const PUBLIC_OUT = path.join(root, "public", "data", "course-stats.generated.json");
 const PARS = [3, 3, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 3, 3, 3, 3];
-const MIN_YEAR = 2024;
+const MIN_YEAR = 2021;
 const SEGMENTS = [
   ["aceEagle", "Ace/Eagle", "ace"],
   ["birdie", "Birdie", "birdie"],
@@ -168,20 +168,51 @@ function findNameIndex(headers) {
   }
   return 0;
 }
+function findHoleIndexes(headers, startHole, endHole) {
+  const normalizedHeaders = headers.map((header) => clean(header).toLowerCase());
+  const indexes = [];
+  for (let hole = startHole; hole <= endHole; hole += 1) {
+    indexes.push(normalizedHeaders.findIndex((header) => header === `hole_${hole}`));
+  }
+  return indexes;
+}
+function findExtraHoleIndexes(headers) {
+  return headers
+    .map((header, index) => {
+      const match = clean(header).toLowerCase().match(/^hole_(\d+)$/);
+      if (!match) return null;
+      const hole = Number(match[1]);
+      return hole > PARS.length ? { hole, index } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.hole - b.hole);
+}
 function eventRowsFromExport(file, event, warnings, aliases) {
   const workbook = XLSX.read(fs.readFileSync(file), { type: "buffer", cellDates: false });
   const sheetName = pickSheet(workbook);
   if (!sheetName) return [];
   if (workbook.SheetNames.includes("Round 2")) warnings.push({ type: "round-2-excluded", title: event.title, file: path.relative(root, file), message: "Workbook contains Round 2; only Round 1 was counted." });
   const { headers, rows } = sheetRows(workbook, sheetName);
-  const indexes = PARS.map((_, i) => headers.findIndex((h) => clean(h).toLowerCase() === `hole_${i + 1}`));
+  const indexes = findHoleIndexes(headers, 1, PARS.length);
   if (indexes.some((i) => i === -1)) {
     warnings.push({ type: "missing-hole-columns", title: event.title, file: path.relative(root, file), sheetName });
     return [];
   }
+  const extraHoleIndexes = findExtraHoleIndexes(headers);
+  if (extraHoleIndexes.length) {
+    warnings.push({
+      type: "extra-holes-excluded",
+      title: event.title,
+      file: path.relative(root, file),
+      sheetName,
+      holes: extraHoleIndexes.map((hole) => hole.hole),
+      message: `Only holes 1-${PARS.length} were counted; extra hole columns were excluded from stats and totals.`,
+    });
+  }
   const nameIndex = findNameIndex(headers);
   const totalIndex = headers.findIndex((h) => clean(h).toLowerCase() === "round_total_score");
-  return rows.map((row) => {
+  let adjustedTotalRows = 0;
+  const countedRows = rows.map((row) => {
     const name = clean(row[nameIndex]);
     const key = canonicalPlayerKey(name, aliases);
     const scores = indexes.map((i) => num(row[i]));
@@ -189,9 +220,26 @@ function eventRowsFromExport(file, event, warnings, aliases) {
     if (scores.some((score) => score == null || score < 1)) return null;
     const scoreTotal = scores.reduce((sum, score) => sum + score, 0);
     const exportTotal = totalIndex === -1 ? null : num(row[totalIndex]);
-    if (exportTotal != null && exportTotal !== scoreTotal) return null;
+    if (exportTotal != null && exportTotal !== scoreTotal) {
+      const extraScores = extraHoleIndexes.map(({ index }) => num(row[index])).filter((score) => score != null && score >= 1);
+      const fullExportScoreTotal = scoreTotal + extraScores.reduce((sum, score) => sum + score, 0);
+      if (extraScores.length && exportTotal === fullExportScoreTotal) adjustedTotalRows += 1;
+      else return null;
+    }
     return { name, key, scores };
   }).filter(Boolean);
+
+  if (adjustedTotalRows) {
+    warnings.push({
+      type: "round-total-adjusted-for-excluded-extra-holes",
+      title: event.title,
+      file: path.relative(root, file),
+      rows: adjustedTotalRows,
+      message: `${adjustedTotalRows} row(s) had exported totals that included extra hole columns; stats used only holes 1-${PARS.length}.`,
+    });
+  }
+
+  return countedRows;
 }
 function main() {
   const events = linkedEvents();
@@ -228,7 +276,7 @@ function main() {
   );
   const output = {
     generatedAt: new Date().toISOString(),
-    source: { weeklyResultsPath: path.relative(root, WKRES), exportsDir: path.relative(root, EXPORTS), includedMinYear: MIN_YEAR, holePars: PARS, originalLayoutOnly: true, round2Excluded: true, linkedWeeklyEvents: events.filter((event) => !event.excludedReason).length, exportFilesFound: files.length, includedEvents: includedEvents.length, includedRounds: total.rounds, includedPlayers: Object.keys(players).length, playerAliasesPath: fs.existsSync(ALIASES) ? path.relative(root, ALIASES) : "", aliases, excludedEvents, warnings },
+    source: { weeklyResultsPath: path.relative(root, WKRES), exportsDir: path.relative(root, EXPORTS), includedMinYear: MIN_YEAR, countedHoles: PARS.length, holePars: PARS, originalLayoutOnly: true, round2Excluded: true, extraHolesExcluded: true, linkedWeeklyEvents: events.filter((event) => !event.excludedReason).length, exportFilesFound: files.length, includedEvents: includedEvents.length, includedRounds: total.rounds, includedPlayers: Object.keys(players).length, playerAliasesPath: fs.existsSync(ALIASES) ? path.relative(root, ALIASES) : "", aliases, excludedEvents, warnings },
     years,
     total: finishBucket(total),
     byYear: Object.fromEntries(years.map((year) => [year, finishBucket(byYear.get(year))])),
