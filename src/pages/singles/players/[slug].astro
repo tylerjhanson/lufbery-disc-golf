@@ -46,6 +46,14 @@ function formatRounds(rounds) {
   return `${new Intl.NumberFormat("en-US").format(count)} round${count === 1 ? "" : "s"}`;
 }
 
+function htmlEscape(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;");
+}
+
 function yearAverages(rounds) {
   const buckets = new Map();
   rounds.forEach((round) => {
@@ -82,6 +90,52 @@ function lowestHandicap(history, currentHandicap) {
   return values.length ? Math.min(...values) : "";
 }
 
+function chartHtml(points, options = {}) {
+  const cleanPoints = points.filter((point) => Number.isFinite(Number(point.value)));
+  if (!cleanPoints.length) return "";
+
+  const width = 640;
+  const height = 210;
+  const padLeft = 38;
+  const padRight = 12;
+  const padTop = 14;
+  const padBottom = 16;
+  const innerWidth = width - padLeft - padRight;
+  const innerHeight = height - padTop - padBottom;
+  const values = cleanPoints.map((point) => Number(point.value));
+  let min = Math.min(...values);
+  let max = Math.max(...values);
+  const step = Number(options.step || 0);
+
+  if (step > 0) {
+    min = Math.floor((Number.isFinite(Number(options.min)) ? Math.min(Number(options.min), min) : min) / step) * step;
+    max = Math.ceil(max / step) * step;
+    if (max <= min) max = min + step;
+  } else {
+    if (min === max) max = min + 1;
+    const range = max - min;
+    const autoStep = range <= 10 ? 1 : range <= 30 ? 5 : 10;
+    min = Math.floor(min / autoStep) * autoStep;
+    max = Math.ceil(max / autoStep) * autoStep;
+    if (max <= min) max = min + autoStep;
+  }
+
+  const tickStep = step > 0 ? step : max - min <= 10 ? 1 : max - min <= 30 ? 5 : 10;
+  const ticks = [];
+  for (let value = min; value <= max; value += tickStep) ticks.push(value);
+
+  const getX = (index) => cleanPoints.length === 1 ? padLeft + innerWidth / 2 : padLeft + (index / (cleanPoints.length - 1)) * innerWidth;
+  const getY = (value) => padTop + ((value - min) / (max - min)) * innerHeight;
+  const polyline = cleanPoints.map((point, index) => `${getX(index)},${getY(Number(point.value))}`).join(" ");
+  const grid = ticks.map((tick) => `<line class="profile-chart-grid" x1="${padLeft}" y1="${getY(tick)}" x2="${width - padRight}" y2="${getY(tick)}"></line><text class="profile-chart-axis" x="${padLeft - 7}" y="${getY(tick) + 4}" text-anchor="end">${Math.round(tick)}</text>`).join("");
+  const dots = cleanPoints.map((point, index) => {
+    const title = htmlEscape(point.detail || `${point.label}: ${point.value}`);
+    return `<circle class="profile-chart-dot" cx="${getX(index)}" cy="${getY(Number(point.value))}" r="4" tabindex="0" data-chart-tip="${title}"><title>${title}</title></circle>`;
+  }).join("");
+
+  return `<div class="profile-chart-shell"><svg class="profile-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img">${grid}<polyline class="profile-chart-line" points="${polyline}"></polyline>${dots}</svg></div>`;
+}
+
 function courseBarStyle(segments) {
   const visible = Array.isArray(segments) ? segments.filter((segment) => Number(segment.count || 0) > 0) : [];
   if (!visible.length) return "grid-template-columns:1fr;";
@@ -112,6 +166,32 @@ function visibleCourseHoles(playerStats) {
         : [];
       return { ...hole, segments, barStyle: courseBarStyle(segments) };
     });
+}
+
+function buildCourseViews(playerStats) {
+  if (!playerStats) return [];
+  const views = [{ value: "all", label: "All years", rounds: playerStats.rounds, holes: visibleCourseHoles(playerStats) }];
+  const years = Array.isArray(playerStats.years) ? playerStats.years : Object.keys(playerStats.byYear || {}).sort((a, b) => Number(b) - Number(a));
+  years.forEach((year) => {
+    const yearStats = playerStats.byYear?.[year];
+    if (!yearStats) return;
+    views.push({ value: String(year), label: String(year), rounds: yearStats.rounds, holes: visibleCourseHoles(yearStats) });
+  });
+  return views;
+}
+
+function droppedRecentRoundIndex(rounds) {
+  if (!Array.isArray(rounds) || !(rounds.length === 4 || rounds.length === 5)) return -1;
+  let maxScore = -Infinity;
+  let maxIndex = -1;
+  rounds.forEach((round, index) => {
+    const score = Number(round.score);
+    if (Number.isFinite(score) && score > maxScore) {
+      maxScore = score;
+      maxIndex = index;
+    }
+  });
+  return maxIndex;
 }
 
 export function getStaticPaths() {
@@ -146,10 +226,14 @@ const bestOverallWins = Array.isArray(profile.bestOverallWins) ? profile.bestOve
 const aces = Array.isArray(profile.aces) ? profile.aces : [];
 const personalBests = Array.isArray(profile.personalBests) && profile.personalBests.length ? profile.personalBests : profile.personalBest ? [profile.personalBest] : [];
 const playerCourseStats = courseStatsForPlayer(name);
-const courseHoles = visibleCourseHoles(playerCourseStats);
+const courseViews = buildCourseViews(playerCourseStats);
 const scoreAverages = yearAverages(allRounds);
 const bestHandicaps = yearlyBest(handicapHistory, "handicap", 2023);
 const bestTags = yearlyBest(tagHistory, "tag", 2023);
+const droppedIndex = droppedRecentRoundIndex(recentRounds);
+const scoreChart = chartHtml(allRounds.map((round) => ({ value: Number(round.score), label: String(round.date || ""), detail: `${round.date} — ${formatScoreWithPar(round.score)}` })));
+const handicapChart = chartHtml(handicapHistory.map((row) => ({ value: Number(row.handicap), label: String(row.date || ""), detail: `${row.date} — ${row.handicap}` })), { step: 1, min: Math.floor(Math.min(...handicapHistory.map((row) => Number(row.handicap)).filter((v) => Number.isFinite(v)), 0)) - 1 });
+const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), label: String(row.date || ""), detail: `${row.date} — #${row.tag}` })), { step: 5, min: 0 });
 ---
 
 <SiteLayout title={`${name} Player Profile`} description={`League player profile and history for ${name}.`} showBrandBar={true}>
@@ -162,235 +246,51 @@ const bestTags = yearlyBest(tagHistory, "tag", 2023);
       font-family: Inter, Arial, Helvetica, sans-serif;
     }
 
-    .player-profile-wrap {
-      width: min(1180px, 100%);
-      margin: 0 auto;
-    }
-
-    .profile-back-link {
-      display: inline-flex;
-      margin-bottom: 14px;
-      color: var(--muted, #6b7280);
-      font-size: 0.9rem;
-      font-weight: 700;
-      text-decoration: none;
-    }
-
-    .profile-card,
-    .profile-header {
-      border: 1px solid var(--line-soft, #eef2f7);
-      border-radius: 22px;
-      background: var(--card, #ffffff);
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-    }
-
-    .profile-header {
-      margin-bottom: 18px;
-      padding: 24px;
-    }
-
-    .profile-kicker {
-      margin: 0 0 8px;
-      color: var(--muted, #6b7280);
-      font-size: 0.82rem;
-      font-weight: 800;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-
-    .profile-title {
-      margin: 0;
-      font-size: clamp(2.1rem, 5vw, 4rem);
-      line-height: 0.98;
-      letter-spacing: -0.045em;
-    }
-
-    .profile-summary-grid {
-      display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 22px;
-    }
-
-    .profile-stat {
-      padding: 14px;
-      border: 1px solid var(--line-soft, #eef2f7);
-      border-radius: 16px;
-      background: var(--header, #f8fafc);
-      min-width: 0;
-    }
-
-    .profile-stat-label {
-      display: block;
-      margin-bottom: 5px;
-      color: var(--muted, #6b7280);
-      font-size: 0.72rem;
-      font-weight: 800;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    .profile-stat-value {
-      font-size: 1.25rem;
-      font-weight: 850;
-      line-height: 1.05;
-    }
-
-    .profile-content-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(300px, 0.42fr);
-      gap: 18px;
-      align-items: start;
-    }
-
-    .profile-stack {
-      display: grid;
-      gap: 18px;
-    }
-
-    .profile-card {
-      overflow: hidden;
-    }
-
-    .profile-card-header {
-      padding: 18px 20px 10px;
-    }
-
-    .profile-card-body {
-      padding: 0 20px 18px;
-    }
-
-    .profile-section-title {
-      margin: 0;
-      font-size: 0.9rem;
-      font-weight: 850;
-      letter-spacing: 0.04em;
-      line-height: 1.2;
-      text-transform: uppercase;
-    }
-
-    .profile-year-stats,
-    .profile-link-list {
-      display: grid;
-      gap: 8px;
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-
-    .profile-year-stats {
-      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-    }
-
-    .profile-year-pill {
-      padding: 9px 10px;
-      border: 1px solid var(--line-soft, #eef2f7);
-      border-radius: 999px;
-      background: var(--header, #f8fafc);
-      font-size: 0.88rem;
-      font-weight: 750;
-      text-align: center;
-    }
-
-    .profile-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .profile-table th,
-    .profile-table td {
-      padding: 10px 0;
-      border-bottom: 1px solid var(--line-soft, #eef2f7);
-      text-align: left;
-      font-size: 0.94rem;
-      vertical-align: top;
-    }
-
-    .profile-table th:last-child,
-    .profile-table td:last-child {
-      text-align: right;
-    }
-
-    .profile-table th {
-      color: var(--muted, #6b7280);
-      font-size: 0.78rem;
-      font-weight: 800;
-    }
-
-    .profile-link {
-      color: var(--accent, #2563eb);
-      font-weight: 700;
-      text-decoration: none;
-    }
-
-    .profile-link:hover {
-      text-decoration: underline;
-    }
-
-    .profile-muted,
-    .profile-course-summary {
-      color: var(--muted, #6b7280);
-      font-size: 0.92rem;
-      font-weight: 650;
-    }
-
-    .profile-course-grid {
-      display: grid;
-      gap: 8px;
-    }
-
-    .profile-course-hole {
-      padding: 9px;
-      border: 1px solid var(--line-soft, #eef2f7);
-      border-radius: 13px;
-      background: var(--card, #ffffff);
-    }
-
-    .profile-course-hole-header {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 7px;
-    }
-
-    .profile-course-hole-title {
-      margin: 0;
-      font-size: 0.95rem;
-      font-weight: 850;
-      line-height: 1.2;
-    }
-
-    .profile-course-hole-title span {
-      margin-left: 5px;
-      color: var(--muted, #6b7280);
-      font-size: 0.8rem;
-      font-weight: 600;
-    }
-
-    .profile-course-meta {
-      display: inline-flex;
-      gap: 8px;
-      white-space: nowrap;
-      color: var(--muted, #6b7280);
-      font-size: 0.78rem;
-      font-weight: 700;
-    }
-
-    .profile-course-meta strong {
-      color: var(--text, #111827);
-      font-weight: 850;
-    }
-
-    .profile-course-bar {
-      display: grid;
-      min-height: 20px;
-      overflow: hidden;
-      border: 2px solid #cfe0ef;
-      border-radius: 9px;
-      background: var(--card, #ffffff);
-    }
-
+    .player-profile-wrap { width: min(1180px, 100%); margin: 0 auto; }
+    .profile-back-link { display: inline-flex; margin-bottom: 14px; color: var(--muted, #6b7280); font-size: 0.9rem; font-weight: 700; text-decoration: none; }
+    .profile-card, .profile-header { border: 1px solid var(--line-soft, #eef2f7); border-radius: 22px; background: var(--card, #fff); box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08); }
+    .profile-header { margin-bottom: 18px; padding: 24px; }
+    .profile-title { margin: 0; font-size: clamp(2.1rem, 5vw, 4rem); line-height: 0.98; letter-spacing: -0.045em; }
+    .profile-summary-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 22px; }
+    .profile-stat { padding: 14px; border: 1px solid var(--line-soft, #eef2f7); border-radius: 16px; background: var(--header, #f8fafc); min-width: 0; }
+    .profile-stat-label { display: block; margin-bottom: 5px; color: var(--muted, #6b7280); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+    .profile-stat-value { font-size: 1.25rem; font-weight: 850; line-height: 1.05; }
+    .profile-content-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 0.42fr); gap: 18px; align-items: start; }
+    .profile-stack { display: grid; gap: 18px; }
+    .profile-card { overflow: hidden; }
+    .profile-card-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 20px 10px; }
+    .profile-card-body { padding: 0 20px 18px; }
+    .profile-section-title { margin: 0; font-size: 0.9rem; font-weight: 850; letter-spacing: 0.04em; line-height: 1.2; text-transform: uppercase; }
+    .profile-year-stats, .profile-link-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+    .profile-year-stats { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+    .profile-year-pill { padding: 9px 10px; border: 1px solid var(--line-soft, #eef2f7); border-radius: 999px; background: var(--header, #f8fafc); font-size: 0.88rem; font-weight: 750; text-align: center; }
+    .profile-table { width: 100%; border-collapse: collapse; }
+    .profile-table th, .profile-table td { padding: 10px 0; border-bottom: 1px solid var(--line-soft, #eef2f7); text-align: left; font-size: 0.94rem; vertical-align: top; }
+    .profile-table th:last-child, .profile-table td:last-child { text-align: right; }
+    .profile-table th { color: var(--muted, #6b7280); font-size: 0.78rem; font-weight: 800; }
+    .profile-dropped-round td { color: var(--muted, #6b7280); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+    .profile-link { color: var(--accent, #2563eb); font-weight: 700; text-decoration: none; }
+    .profile-link:hover { text-decoration: underline; }
+    .profile-muted, .profile-course-summary { color: var(--muted, #6b7280); font-size: 0.92rem; font-weight: 650; }
+    .profile-chart-shell { margin-bottom: 12px; padding: 10px; border: 1px solid var(--line-soft, #eef2f7); border-radius: 14px; background: var(--header, #f8fafc); }
+    .profile-chart { display: block; width: 100%; height: 210px; overflow: visible; }
+    .profile-chart-grid { stroke: var(--line-soft, #e5e7eb); stroke-width: 1; }
+    .profile-chart-axis { fill: var(--muted, #6b7280); font: 12px Inter, Arial, sans-serif; }
+    .profile-chart-line { fill: none; stroke: var(--accent, #2563eb); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+    .profile-chart-dot { fill: var(--card, #fff); stroke: var(--accent, #2563eb); stroke-width: 2.25; cursor: pointer; vector-effect: non-scaling-stroke; }
+    .profile-chart-dot:focus { outline: none; stroke-width: 4; }
+    .profile-chart-tooltip { position: fixed; z-index: 9999; pointer-events: none; padding: 7px 9px; border-radius: 9px; background: rgba(15, 23, 42, 0.93); color: #fff; font-size: 0.78rem; font-weight: 800; opacity: 0; transform: translate(-50%, -120%); transition: opacity 0.12s ease; }
+    .profile-chart-tooltip.is-visible { opacity: 1; }
+    .profile-course-filter { min-width: 118px; border: 1px solid var(--line-soft, #e5e7eb); border-radius: 999px; background: var(--card, #fff); color: var(--text, #111827); font: inherit; font-size: 0.84rem; font-weight: 800; padding: 7px 28px 7px 10px; }
+    .profile-course-panel[hidden] { display: none; }
+    .profile-course-grid { display: grid; gap: 8px; }
+    .profile-course-hole { padding: 9px; border: 1px solid var(--line-soft, #eef2f7); border-radius: 13px; background: var(--card, #ffffff); }
+    .profile-course-hole-header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 7px; }
+    .profile-course-hole-title { margin: 0; font-size: 0.95rem; font-weight: 850; line-height: 1.2; }
+    .profile-course-hole-title span { margin-left: 5px; color: var(--muted, #6b7280); font-size: 0.8rem; font-weight: 600; }
+    .profile-course-meta { display: inline-flex; gap: 8px; white-space: nowrap; color: var(--muted, #6b7280); font-size: 0.78rem; font-weight: 700; }
+    .profile-course-meta strong { color: var(--text, #111827); font-weight: 850; }
+    .profile-course-bar { display: grid; min-height: 20px; overflow: hidden; border: 2px solid #cfe0ef; border-radius: 9px; background: var(--card, #ffffff); }
     .profile-course-segment { min-width: 0; position: relative; }
     .profile-course-segment + .profile-course-segment { box-shadow: inset 1px 0 0 rgba(15, 23, 42, 0.1); }
     .profile-course-segment span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 0.72rem; font-weight: 850; line-height: 1; }
@@ -403,15 +303,17 @@ const bestTags = yearlyBest(tagHistory, "tag", 2023);
 
     @media (max-width: 900px) {
       body { padding: 14px; }
-      .profile-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .profile-content-grid { grid-template-columns: 1fr; }
-      .profile-header { padding: 20px 16px; }
-      .profile-card-header { padding: 16px 16px 10px; }
-      .profile-card-body { padding: 0 16px 16px; }
-    }
-
-    @media (max-width: 460px) {
-      .profile-summary-grid { grid-template-columns: 1fr; }
+      .profile-header { padding: 18px 14px; }
+      .profile-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .profile-stat { padding: 10px 11px; border-radius: 14px; }
+      .profile-stat-label { font-size: 0.67rem; }
+      .profile-stat-value { font-size: 1.08rem; }
+      .profile-content-grid { display: flex; flex-direction: column; gap: 14px; }
+      .profile-sidebar { order: -1; width: 100%; }
+      .profile-main { width: 100%; }
+      .profile-card-header { padding: 15px 14px 9px; }
+      .profile-card-body { padding: 0 14px 14px; }
+      .profile-chart { height: 172px; }
       .profile-course-hole-title { font-size: 0.88rem; white-space: nowrap; }
       .profile-course-hole-title span, .profile-course-meta { font-size: 0.72rem; }
       .profile-course-meta { gap: 5px; }
@@ -422,7 +324,6 @@ const bestTags = yearlyBest(tagHistory, "tag", 2023);
     <a class="profile-back-link" href="/singles/handicaps-tags/">← Back to Handicaps & Tags</a>
 
     <header class="profile-header">
-      <p class="profile-kicker">Player Profile</p>
       <h1 class="profile-title">{name}</h1>
 
       <div class="profile-summary-grid">
@@ -431,134 +332,120 @@ const bestTags = yearlyBest(tagHistory, "tag", 2023);
         <div class="profile-stat"><span class="profile-stat-label">Average score</span><span class="profile-stat-value">{profile.average || "—"}</span></div>
         <div class="profile-stat"><span class="profile-stat-label">Best tag</span><span class="profile-stat-value">{profile.bestTagEver || "—"}</span></div>
         <div class="profile-stat"><span class="profile-stat-label">Lowest handicap</span><span class="profile-stat-value">{lowestHandicap(handicapHistory, profile.handicap) || "—"}</span></div>
-        <div class="profile-stat"><span class="profile-stat-label">Course stats</span><span class="profile-stat-value">{playerCourseStats ? formatRounds(playerCourseStats.rounds) : "—"}</span></div>
       </div>
     </header>
 
     <div class="profile-content-grid">
-      <div class="profile-stack">
+      <div class="profile-stack profile-main">
         <section class="profile-card">
           <div class="profile-card-header"><h2 class="profile-section-title">Score History</h2></div>
           <div class="profile-card-body">
-            {scoreAverages.length ? (
-              <div class="profile-year-stats">
-                {scoreAverages.map((row) => <span class="profile-year-pill"><strong>{row.year}:</strong> {row.value}</span>)}
-              </div>
-            ) : <p class="profile-muted">No score history found.</p>}
+            {scoreChart ? <Fragment set:html={scoreChart} /> : <p class="profile-muted">No score history found.</p>}
+            {scoreAverages.length ? <div class="profile-year-stats">{scoreAverages.map((row) => <span class="profile-year-pill"><strong>{row.year}:</strong> {row.value}</span>)}</div> : null}
           </div>
         </section>
 
         <section class="profile-card">
           <div class="profile-card-header"><h2 class="profile-section-title">Handicap History</h2></div>
           <div class="profile-card-body">
-            {bestHandicaps.length ? (
-              <div class="profile-year-stats">
-                {bestHandicaps.map((row) => <span class="profile-year-pill"><strong>{row.year}:</strong> {row.value}</span>)}
-              </div>
-            ) : <p class="profile-muted">No handicap history found.</p>}
+            {handicapChart ? <Fragment set:html={handicapChart} /> : <p class="profile-muted">No handicap history found.</p>}
+            {bestHandicaps.length ? <div class="profile-year-stats">{bestHandicaps.map((row) => <span class="profile-year-pill"><strong>{row.year}:</strong> {row.value}</span>)}</div> : null}
           </div>
         </section>
 
         <section class="profile-card">
           <div class="profile-card-header"><h2 class="profile-section-title">Tag History</h2></div>
           <div class="profile-card-body">
-            {bestTags.length ? (
-              <div class="profile-year-stats">
-                {bestTags.map((row) => <span class="profile-year-pill"><strong>{row.year}:</strong> #{row.value}</span>)}
-              </div>
-            ) : <p class="profile-muted">No tag history found.</p>}
+            {tagChart ? <Fragment set:html={tagChart} /> : <p class="profile-muted">No tag history found.</p>}
+            {bestTags.length ? <div class="profile-year-stats">{bestTags.map((row) => <span class="profile-year-pill"><strong>{row.year}:</strong> #{row.value}</span>)}</div> : null}
           </div>
         </section>
 
-        {playerCourseStats ? (
-          <section class="profile-card">
-            <div class="profile-card-header"><h2 class="profile-section-title">Course Stats</h2></div>
+        {courseViews.length ? (
+          <section class="profile-card" data-course-stats-card>
+            <div class="profile-card-header">
+              <h2 class="profile-section-title">Course Stats</h2>
+              {courseViews.length > 1 ? (
+                <select class="profile-course-filter" aria-label="Filter player course stats by year">
+                  {courseViews.map((view) => <option value={view.value}>{view.label}</option>)}
+                </select>
+              ) : null}
+            </div>
             <div class="profile-card-body">
-              <p class="profile-course-summary">{formatRounds(playerCourseStats.rounds)} • Original Layout</p>
-              <div class="profile-course-grid">
-                {courseHoles.map((hole) => (
-                  <article class="profile-course-hole">
-                    <div class="profile-course-hole-header">
-                      <h3 class="profile-course-hole-title">Hole {hole.hole} <span>Par {hole.par}</span></h3>
-                      <div class="profile-course-meta">
-                        <span>Diff. <strong>{hole.difficultyRank || "—"}</strong></span>
-                        <span>Avg <strong>{formatAverage(hole.average)}</strong></span>
-                      </div>
-                    </div>
-                    <div class="profile-course-bar" style={hole.barStyle}>
-                      {hole.segments.map((segment) => (
-                        <div class={`profile-course-segment profile-course-segment--${segment.className}`} title={`${segment.label}: ${segment.count} (${segment.pctNumber.toFixed(1)}%)`}>
-                          {segment.pctNumber >= 11 ? <span>{segment.count}</span> : null}
+              {courseViews.map((view, index) => (
+                <div class="profile-course-panel" data-course-panel={view.value} hidden={index !== 0}>
+                  <p class="profile-course-summary">{formatRounds(view.rounds)} • Original Layout</p>
+                  <div class="profile-course-grid">
+                    {view.holes.map((hole) => (
+                      <article class="profile-course-hole">
+                        <div class="profile-course-hole-header">
+                          <h3 class="profile-course-hole-title">Hole {hole.hole} <span>Par {hole.par}</span></h3>
+                          <div class="profile-course-meta"><span>Diff. <strong>{hole.difficultyRank || "—"}</strong></span><span>Avg <strong>{formatAverage(hole.average)}</strong></span></div>
                         </div>
-                      ))}
-                    </div>
-                  </article>
-                ))}
-              </div>
+                        <div class="profile-course-bar" style={hole.barStyle}>
+                          {hole.segments.map((segment) => <div class={`profile-course-segment profile-course-segment--${segment.className}`} title={`${segment.label}: ${segment.count} (${segment.pctNumber.toFixed(1)}%)`}>{segment.pctNumber >= 11 ? <span>{segment.count}</span> : null}</div>)}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </section>
         ) : null}
       </div>
 
-      <aside class="profile-stack">
+      <aside class="profile-stack profile-sidebar">
         <section class="profile-card">
           <div class="profile-card-header"><h2 class="profile-section-title">Rounds Counting Towards Handicap</h2></div>
           <div class="profile-card-body">
             <table class="profile-table">
               <thead><tr><th>Date</th><th>Score</th></tr></thead>
               <tbody>
-                {recentRounds.length ? recentRounds.map((round) => (
-                  <tr><td>{round.date}</td><td>{formatScoreWithPar(round.score)}</td></tr>
-                )) : <tr><td colspan="2" class="profile-muted">No handicap rounds found.</td></tr>}
+                {recentRounds.length ? recentRounds.map((round, index) => <tr class={index === droppedIndex ? "profile-dropped-round" : ""}><td>{round.date}</td><td>{formatScoreWithPar(round.score)}</td></tr>) : <tr><td colspan="2" class="profile-muted">No handicap rounds found.</td></tr>}
               </tbody>
             </table>
           </div>
         </section>
 
-        <section class="profile-card">
-          <div class="profile-card-header"><h2 class="profile-section-title">Personal Best</h2></div>
-          <div class="profile-card-body">
-            {personalBests.length ? (
-              <ul class="profile-link-list">
-                {personalBests.map((item) => <li><strong>{item.score}</strong> <a class="profile-link" href={item.href}>{item.date}</a></li>)}
-              </ul>
-            ) : <p class="profile-muted">No personal best found.</p>}
-          </div>
-        </section>
-
-        <section class="profile-card">
-          <div class="profile-card-header"><h2 class="profile-section-title">Weekly Wins</h2></div>
-          <div class="profile-card-body">
-            {weeklyWins.length ? (
-              <ul class="profile-link-list">
-                {weeklyWins.map((item) => <li><a class="profile-link" href={item.href}>{item.date}</a> — {item.label} • {item.score}</li>)}
-              </ul>
-            ) : <p class="profile-muted">No weekly wins recorded.</p>}
-          </div>
-        </section>
-
-        <section class="profile-card">
-          <div class="profile-card-header"><h2 class="profile-section-title">Best Overall</h2></div>
-          <div class="profile-card-body">
-            {bestOverallWins.length ? (
-              <ul class="profile-link-list">
-                {bestOverallWins.map((item) => <li><a class="profile-link" href={item.href}>{item.date}</a> — {item.label} • {item.score}{item.isTie ? " • Tie" : ""}</li>)}
-              </ul>
-            ) : <p class="profile-muted">No best overall wins recorded.</p>}
-          </div>
-        </section>
-
-        <section class="profile-card">
-          <div class="profile-card-header"><h2 class="profile-section-title">Aces</h2></div>
-          <div class="profile-card-body">
-            {aces.length ? (
-              <ul class="profile-link-list">
-                {aces.map((item) => <li><a class="profile-link" href={item.href}>{item.date}</a> — {item.label ? `${item.label} • ` : ""}{item.hole ? `Hole ${item.hole}` : "Ace"}</li>)}
-              </ul>
-            ) : <p class="profile-muted">No aces recorded.</p>}
-          </div>
-        </section>
+        <section class="profile-card"><div class="profile-card-header"><h2 class="profile-section-title">Personal Best</h2></div><div class="profile-card-body">{personalBests.length ? <ul class="profile-link-list">{personalBests.map((item) => <li><strong>{item.score}</strong> <a class="profile-link" href={item.href}>{item.date}</a></li>)}</ul> : <p class="profile-muted">No personal best found.</p>}</div></section>
+        <section class="profile-card"><div class="profile-card-header"><h2 class="profile-section-title">Weekly Wins</h2></div><div class="profile-card-body">{weeklyWins.length ? <ul class="profile-link-list">{weeklyWins.map((item) => <li><a class="profile-link" href={item.href}>{item.date}</a> — {item.label} • {item.score}</li>)}</ul> : <p class="profile-muted">No weekly wins recorded.</p>}</div></section>
+        <section class="profile-card"><div class="profile-card-header"><h2 class="profile-section-title">Best Overall</h2></div><div class="profile-card-body">{bestOverallWins.length ? <ul class="profile-link-list">{bestOverallWins.map((item) => <li><a class="profile-link" href={item.href}>{item.date}</a> — {item.label} • {item.score}{item.isTie ? " • Tie" : ""}</li>)}</ul> : <p class="profile-muted">No best overall wins recorded.</p>}</div></section>
+        <section class="profile-card"><div class="profile-card-header"><h2 class="profile-section-title">Aces</h2></div><div class="profile-card-body">{aces.length ? <ul class="profile-link-list">{aces.map((item) => <li><a class="profile-link" href={item.href}>{item.date}</a> — {item.label ? `${item.label} • ` : ""}{item.hole ? `Hole ${item.hole}` : "Ace"}</li>)}</ul> : <p class="profile-muted">No aces recorded.</p>}</div></section>
       </aside>
     </div>
+    <div class="profile-chart-tooltip" aria-hidden="true"></div>
   </main>
+
+  <script is:inline>
+    (() => {
+      document.querySelectorAll("[data-course-stats-card]").forEach((card) => {
+        const select = card.querySelector(".profile-course-filter");
+        if (!select) return;
+        const panels = Array.from(card.querySelectorAll("[data-course-panel]"));
+        select.addEventListener("change", () => {
+          panels.forEach((panel) => { panel.hidden = panel.dataset.coursePanel !== select.value; });
+        });
+      });
+
+      const tooltip = document.querySelector(".profile-chart-tooltip");
+      if (!tooltip) return;
+      function show(target) {
+        const text = target?.dataset?.chartTip;
+        if (!text) return;
+        const rect = target.getBoundingClientRect();
+        tooltip.textContent = text;
+        tooltip.style.left = `${rect.left + rect.width / 2}px`;
+        tooltip.style.top = `${rect.top}px`;
+        tooltip.classList.add("is-visible");
+      }
+      function hide() { tooltip.classList.remove("is-visible"); }
+      document.addEventListener("mouseover", (event) => { if (event.target?.classList?.contains("profile-chart-dot")) show(event.target); });
+      document.addEventListener("focusin", (event) => { if (event.target?.classList?.contains("profile-chart-dot")) show(event.target); });
+      document.addEventListener("click", (event) => { if (event.target?.classList?.contains("profile-chart-dot")) show(event.target); });
+      document.addEventListener("mouseout", (event) => { if (event.target?.classList?.contains("profile-chart-dot")) hide(); });
+      document.addEventListener("focusout", (event) => { if (event.target?.classList?.contains("profile-chart-dot")) hide(); });
+      window.addEventListener("scroll", hide, { passive: true });
+    })();
+  </script>
 </SiteLayout>
