@@ -1,0 +1,19 @@
+{
+  "generatedAt": null,
+  "source": {
+    "weeklyResultsPath": "src/data/wkres.csv",
+    "exportsDir": "src/data/udisc-exports",
+    "includedMinYear": 2024,
+    "round2Excluded": true,
+    "linkedWeeklyEvents": 0,
+    "exportFilesFound": 0,
+    "includedEvents": 0,
+    "includedRounds": 0,
+    "excludedEvents": [],
+    "warnings": []
+  },
+  "years": [],
+  "total": { "label": "All years", "rounds": 0, "holes": [] },
+  "byYear": {},
+  "events": []
+}
