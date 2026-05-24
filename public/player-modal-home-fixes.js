@@ -226,7 +226,7 @@
     if (!(root instanceof Document || root instanceof Element)) return;
     root.querySelectorAll(".player-details-accordion-button .player-details-section-label").forEach((label) => {
       if ((label.textContent || "").trim() === "COURSE STATS") {
-        label.textContent = "COURSE STATS (SINCE 2024)";
+        label.textContent = "COURSE STATS (SINCE 2021)";
       }
     });
   }
