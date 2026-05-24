@@ -16,6 +16,7 @@ const OUT = path.join(root, "src", "data", "course-stats.generated.json");
 const PUBLIC_OUT = path.join(root, "public", "data", "course-stats.generated.json");
 const PARS = [3, 3, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 3, 3, 3, 3];
 const MIN_YEAR = 2021;
+const LEGACY_EXPORT_YEARS = new Set([2021, 2022, 2023]);
 const SEGMENTS = [
   ["aceEagle", "Ace/Eagle", "ace"],
   ["birdie", "Birdie", "birdie"],
@@ -37,6 +38,11 @@ function parseDate(title) {
   if (year < 100) year += 2000;
   return { month: Number(m[1]), day: Number(m[2]), year };
 }
+function parseDateKey(key) {
+  const m = clean(key).match(/^(20\d{2})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  return { year: Number(m[1]), month: Number(m[2]), day: Number(m[3]) };
+}
 function dateKey(parts) { return parts ? `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}` : ""; }
 function displayDate(parts) { return parts ? `${parts.month}/${parts.day}/${parts.year}` : ""; }
 function linkedEvents() {
@@ -49,7 +55,7 @@ function linkedEvents() {
     if (!parts) reason = "No parseable date";
     else if (parts.year < MIN_YEAR) reason = `Before ${MIN_YEAR}`;
     else if (/\b(sticks|stones)\b/i.test(text)) reason = "Alternate course layout";
-    return { title, url, date: displayDate(parts), dateKey: dateKey(parts), year: parts?.year ?? null, excludedReason: reason };
+    return { title, url, date: displayDate(parts), dateKey: dateKey(parts), year: parts?.year ?? null, excludedReason: reason, source: "weekly-results" };
   });
 }
 function walk(dir) {
@@ -241,6 +247,39 @@ function eventRowsFromExport(file, event, warnings, aliases) {
 
   return countedRows;
 }
+function addRowsToStats({ rows, event, file, total, byYear, byPlayer, includedEvents }) {
+  const yearKey = String(event.year);
+  if (!byYear.has(yearKey)) byYear.set(yearKey, emptyBucket(yearKey));
+  for (const row of rows) {
+    addRound(total, row.scores);
+    addRound(byYear.get(yearKey), row.scores);
+    if (!byPlayer.has(row.key)) byPlayer.set(row.key, emptyPlayerBucket(row.name));
+    addRound(byPlayer.get(row.key), row.scores);
+  }
+  includedEvents.push({
+    title: event.title,
+    date: event.date,
+    year: event.year,
+    url: event.url || "",
+    file: path.relative(root, file),
+    rounds: rows.length,
+    source: event.source || "weekly-results",
+  });
+}
+function legacyExportEventFromFile(file) {
+  const key = fileDateKey(file);
+  const parts = parseDateKey(key);
+  if (!parts || !LEGACY_EXPORT_YEARS.has(parts.year)) return null;
+  return {
+    title: `${displayDate(parts)} - UDisc Export`,
+    url: "",
+    date: displayDate(parts),
+    dateKey: key,
+    year: parts.year,
+    excludedReason: "",
+    source: "legacy-export",
+  };
+}
 function main() {
   const events = linkedEvents();
   const aliases = readAliases();
@@ -251,23 +290,35 @@ function main() {
   const byYear = new Map();
   const byPlayer = new Map();
   const includedEvents = [];
+  const countedDateKeys = new Set();
+
   for (const event of events) {
     if (event.excludedReason) { excludedEvents.push({ ...event, reason: event.excludedReason }); continue; }
     const matches = byDate.get(event.dateKey) || [];
     if (!matches.length) { warnings.push({ type: "missing-export", title: event.title, date: event.date, message: `No export file found for ${event.dateKey}.` }); continue; }
     if (matches.length > 1) warnings.push({ type: "multiple-exports", title: event.title, date: event.date, files: matches.map((f) => path.relative(root, f)) });
-    const rows = eventRowsFromExport(matches[0], event, warnings, aliases);
-    if (!rows.length) { warnings.push({ type: "no-counted-rounds", title: event.title, date: event.date, file: path.relative(root, matches[0]) }); continue; }
-    const yearKey = String(event.year);
-    if (!byYear.has(yearKey)) byYear.set(yearKey, emptyBucket(yearKey));
-    for (const row of rows) {
-      addRound(total, row.scores);
-      addRound(byYear.get(yearKey), row.scores);
-      if (!byPlayer.has(row.key)) byPlayer.set(row.key, emptyPlayerBucket(row.name));
-      addRound(byPlayer.get(row.key), row.scores);
-    }
-    includedEvents.push({ title: event.title, date: event.date, year: event.year, url: event.url, file: path.relative(root, matches[0]), rounds: rows.length });
+    const file = matches[0];
+    const rows = eventRowsFromExport(file, event, warnings, aliases);
+    if (!rows.length) { warnings.push({ type: "no-counted-rounds", title: event.title, date: event.date, file: path.relative(root, file) }); continue; }
+    addRowsToStats({ rows, event, file, total, byYear, byPlayer, includedEvents });
+    countedDateKeys.add(event.dateKey);
   }
+
+  const legacyCandidates = [...byDate.entries()]
+    .map(([key, matches]) => ({ key, matches, event: legacyExportEventFromFile(matches[0]) }))
+    .filter((item) => item.event)
+    .sort((a, b) => a.key.localeCompare(b.key));
+
+  for (const { key, matches, event } of legacyCandidates) {
+    if (countedDateKeys.has(key)) continue;
+    if (matches.length > 1) warnings.push({ type: "multiple-legacy-exports", title: event.title, date: event.date, files: matches.map((f) => path.relative(root, f)), message: "Multiple legacy exports found for this date; only the first file was counted." });
+    const file = matches[0];
+    const rows = eventRowsFromExport(file, event, warnings, aliases);
+    if (!rows.length) { warnings.push({ type: "no-counted-legacy-rounds", title: event.title, date: event.date, file: path.relative(root, file) }); continue; }
+    addRowsToStats({ rows, event, file, total, byYear, byPlayer, includedEvents });
+    countedDateKeys.add(key);
+  }
+
   const years = [...byYear.keys()].sort((a, b) => Number(b) - Number(a));
   const players = Object.fromEntries(
     [...byPlayer.entries()]
@@ -276,7 +327,7 @@ function main() {
   );
   const output = {
     generatedAt: new Date().toISOString(),
-    source: { weeklyResultsPath: path.relative(root, WKRES), exportsDir: path.relative(root, EXPORTS), includedMinYear: MIN_YEAR, countedHoles: PARS.length, holePars: PARS, originalCourseLayoutOnly: true, linkedWeeklyEventsOnly: true, round2Excluded: true, extraHolesExcluded: true, linkedWeeklyEvents: events.filter((event) => !event.excludedReason).length, exportFilesFound: files.length, includedEvents: includedEvents.length, includedRounds: total.rounds, includedPlayers: Object.keys(players).length, playerAliasesPath: fs.existsSync(ALIASES) ? path.relative(root, ALIASES) : "", aliases, excludedEvents, warnings },
+    source: { weeklyResultsPath: path.relative(root, WKRES), exportsDir: path.relative(root, EXPORTS), includedMinYear: MIN_YEAR, legacyExportYears: [...LEGACY_EXPORT_YEARS].sort(), countedHoles: PARS.length, holePars: PARS, originalCourseLayoutOnly: true, linkedWeeklyEventsOnly: false, legacyExportsIncludedWithoutWeeklyResultsLinks: includedEvents.filter((event) => event.source === "legacy-export").length, round2Excluded: true, extraHolesExcluded: true, linkedWeeklyEvents: events.filter((event) => !event.excludedReason).length, exportFilesFound: files.length, includedEvents: includedEvents.length, includedRounds: total.rounds, includedPlayers: Object.keys(players).length, playerAliasesPath: fs.existsSync(ALIASES) ? path.relative(root, ALIASES) : "", aliases, excludedEvents, warnings },
     years,
     total: finishBucket(total),
     byYear: Object.fromEntries(years.map((year) => [year, finishBucket(byYear.get(year))])),
