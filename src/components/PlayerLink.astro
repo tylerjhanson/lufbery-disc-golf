@@ -10,41 +10,32 @@ function cleanName(value: string) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
 
-function getPlayerKey(value: string) {
-  return cleanName(value).toLowerCase();
+function playerSlug(value: string) {
+  return cleanName(value)
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 const displayName = cleanName(name);
-const playerKey = getPlayerKey(displayName);
-const buttonClass = ["player-button", className].filter(Boolean).join(" ");
+const href = displayName ? `/singles/players/${playerSlug(displayName)}/` : "";
+const linkClass = ["player-button", className].filter(Boolean).join(" ");
 ---
 
 {displayName && (
-  <button
-    type="button"
-    class={buttonClass}
-    data-player-key={playerKey}
-    data-player-name={displayName}
-    aria-label={`View player details for ${displayName}`}
-  >
+  <a class={linkClass} href={href} aria-label={`View player profile for ${displayName}`}>
     {displayName}
-  </button>
+  </a>
 )}
 
 <script is:inline>
   (() => {
-    const scripts = [
-      ["playerCourseStatsModalScript", "/player-course-stats-modal.js?v=20260524c"],
-      ["playerModalHomeFixesScript", "/player-modal-home-fixes.js?v=20260524c"],
-    ];
-
-    scripts.forEach(([id, src]) => {
-      if (document.getElementById(id)) return;
-      const script = document.createElement("script");
-      script.id = id;
-      script.src = src;
-      script.defer = true;
-      document.head.appendChild(script);
-    });
+    if (document.getElementById("playerModalHomeFixesScript")) return;
+    const script = document.createElement("script");
+    script.id = "playerModalHomeFixesScript";
+    script.src = "/player-modal-home-fixes.js?v=20260524c";
+    script.defer = true;
+    document.head.appendChild(script);
   })();
 </script>
