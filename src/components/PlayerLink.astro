@@ -30,3 +30,14 @@ const buttonClass = ["player-button", className].filter(Boolean).join(" ");
     {displayName}
   </button>
 )}
+
+<script is:inline>
+  (() => {
+    if (document.getElementById("playerCourseStatsModalScript")) return;
+    const script = document.createElement("script");
+    script.id = "playerCourseStatsModalScript";
+    script.src = "/player-course-stats-modal.js";
+    script.defer = true;
+    document.head.appendChild(script);
+  })();
+</script>
