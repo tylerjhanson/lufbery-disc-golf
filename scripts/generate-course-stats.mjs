@@ -2,8 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse } from "csv-parse/sync";
-import * as XLSX from "xlsx";
+import XLSXPackage from "xlsx";
 
+const XLSX = XLSXPackage?.default ?? XLSXPackage;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, "..");
@@ -130,7 +131,7 @@ function finishBucket(bucket) {
   return { label: bucket.label, rounds: bucket.rounds, holes };
 }
 function eventRowsFromExport(file, event, warnings) {
-  const workbook = XLSX.readFile(file, { cellDates: false });
+  const workbook = XLSX.read(fs.readFileSync(file), { type: "buffer", cellDates: false });
   const sheetName = pickSheet(workbook);
   if (!sheetName) return [];
   if (workbook.SheetNames.includes("Round 2")) warnings.push({ type: "round-2-excluded", title: event.title, file: path.relative(root, file), message: "Workbook contains Round 2; only Round 1 was counted." });
