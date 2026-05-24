@@ -88,6 +88,23 @@ export function lowestHandicap(history, currentHandicap) {
   return values.length ? Math.min(...values) : "";
 }
 
+function trendLineSvg(points, getX, getY) {
+  if (points.length < 2) return "";
+  const values = points.map((point) => Number(point.value));
+  const n = values.length;
+  const sumX = values.reduce((sum, _value, index) => sum + index, 0);
+  const sumY = values.reduce((sum, value) => sum + value, 0);
+  const sumXX = values.reduce((sum, _value, index) => sum + index * index, 0);
+  const sumXY = values.reduce((sum, value, index) => sum + index * value, 0);
+  const denominator = n * sumXX - sumX * sumX;
+  if (!denominator) return "";
+  const slope = (n * sumXY - sumX * sumY) / denominator;
+  const intercept = (sumY - slope * sumX) / n;
+  const startValue = intercept;
+  const endValue = slope * (n - 1) + intercept;
+  return `<line class="profile-chart-trend" x1="${getX(0)}" y1="${getY(startValue)}" x2="${getX(n - 1)}" y2="${getY(endValue)}"></line>`;
+}
+
 export function chartHtml(points, options = {}) {
   const cleanPoints = points.filter((point) => Number.isFinite(Number(point.value)));
   if (!cleanPoints.length) return "";
@@ -126,6 +143,7 @@ export function chartHtml(points, options = {}) {
   const getY = (value) => padTop + ((max - value) / (max - min)) * innerHeight;
   const polyline = cleanPoints.map((point, index) => `${getX(index)},${getY(Number(point.value))}`).join(" ");
   const grid = ticks.map((tick) => `<line class="profile-chart-grid" x1="${padLeft}" y1="${getY(tick)}" x2="${width - padRight}" y2="${getY(tick)}"></line><text class="profile-chart-axis" x="${padLeft - 7}" y="${getY(tick) + 4}" text-anchor="end">${Math.round(tick)}</text>`).join("");
+  const trend = trendLineSvg(cleanPoints, getX, getY);
   const guide = `<line class="profile-chart-guide" x1="${padLeft}" y1="${padTop}" x2="${padLeft}" y2="${height - padBottom}" style="display:none;"></line>`;
   const hotspots = cleanPoints.map((point, index) => {
     const x = getX(index);
@@ -137,7 +155,7 @@ export function chartHtml(points, options = {}) {
     return `<rect class="profile-chart-hotspot" x="${x1}" y="${padTop}" width="${Math.max(4, x2 - x1)}" height="${innerHeight}" data-chart-tip="${title}" data-chart-x="${x}"><title>${title}</title></rect>`;
   }).join("");
 
-  return `<div class="profile-chart-shell"><svg class="profile-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img">${grid}<polyline class="profile-chart-line" points="${polyline}"></polyline>${guide}${hotspots}</svg></div>`;
+  return `<div class="profile-chart-shell"><svg class="profile-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img">${grid}${trend}<polyline class="profile-chart-line" points="${polyline}"></polyline>${guide}${hotspots}</svg></div>`;
 }
 
 function courseBarStyle(segments) {
