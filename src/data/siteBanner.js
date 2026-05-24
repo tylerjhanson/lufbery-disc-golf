@@ -6,7 +6,7 @@ export const siteBanner = {
 
   label: "Website Update",
   message:
-    "Click on your name anywhere on the site and check out your league history including scores, tags, wins, aces, hole score details, and more! All rounds since 2021 on the original layout are included.",
+    "Click on your name to view your Lufbery league history including scores, tags, wins, aces, hole score details, and more! All rounds since 2021 on the original layout.",
 
   dismissible: true,
 };
