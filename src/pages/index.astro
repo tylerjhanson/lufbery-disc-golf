@@ -579,25 +579,28 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
       }
     }
     @media (min-width: 901px) {
-  .left-stack {
-    grid-template-rows: minmax(0, 1fr);
-    height: 100%;
-  }
+      .left-stack {
+        grid-template-rows: minmax(0, 1fr);
+        height: 100%;
+      }
 
-  .latest-result-card {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-  }
+      .latest-result-card {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
 
-  .latest-result-card .result-collapse {
-    flex: 1 1 auto;
-  }
+      .latest-result-card .result-collapse {
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: none;
+        overflow: hidden;
+      }
 
-  .latest-result-card .result-actions {
-    margin-top: auto;
-  }
-}
+      .latest-result-card .result-actions {
+        margin-top: 12px;
+      }
+    }
     .latest-result-card {
       min-width: 0;
     }
@@ -927,6 +930,14 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
 
       .events-card :global(.event-list) {
         grid-template-rows: none;
+      }
+
+      .events-card {
+        --home-event-count: 4;
+      }
+
+      :global(.event-list .event-item:nth-of-type(n + 5)) {
+        display: none;
       }
 
       .mobile-quick-row {
