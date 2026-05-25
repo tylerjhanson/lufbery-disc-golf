@@ -126,7 +126,7 @@
         ${data.droppedScores.length ? `<p><strong>Dropped score:</strong> ${formatScoreList(data.droppedScores)}</p>` : ""}
         <p><strong>Scores used:</strong> ${formatScoreList(data.usedScores)}</p>
         <p><strong>Average:</strong> ${data.average.toFixed(1)}</p>
-        <p><strong>Calculation:</strong> (${data.average.toFixed(1)} - 53) × 0.8 = ${data.rawCalculation.toFixed(1)}</p>
+        <p><strong>Calculation:</strong> (${data.average.toFixed(1)} - 53) × 0.8 = ${data.rawCalculation.toFixed(2)}</p>
         <p><strong>Rounded handicap:</strong> ${data.rounded}</p>
       </div>
     `;
