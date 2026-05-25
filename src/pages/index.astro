@@ -578,6 +578,11 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
         display: block;
       }
     }
+
+    .latest-result-card {
+      min-width: 0;
+    }
+
     @media (min-width: 901px) {
       .left-stack {
         grid-template-rows: minmax(0, 1fr);
@@ -588,21 +593,18 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
         display: flex;
         flex-direction: column;
         height: 100%;
+        min-height: 0;
       }
 
       .latest-result-card .result-collapse {
-        flex: 1 1 auto;
+        flex: 0 0 auto;
         min-height: 0;
-        max-height: none;
         overflow: hidden;
       }
 
       .latest-result-card .result-actions {
-        margin-top: 12px;
+        margin-top: auto;
       }
-    }
-    .latest-result-card {
-      min-width: 0;
     }
 
     .result-title-link,
@@ -638,7 +640,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
     .result-collapse {
       position: relative;
       overflow: hidden;
-      max-height: 458px;
+      max-height: var(--result-collapse-max, 458px);
       transition: max-height 0.22s ease;
     }
 
@@ -1313,10 +1315,36 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
         toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
       }
 
+      function isDesktopLayout() {
+        return window.matchMedia("(min-width: 901px)").matches;
+      }
+
+      function setDesktopCollapsedHeight() {
+        collapse.style.removeProperty("--result-collapse-max");
+
+        if (!isDesktopLayout()) return false;
+
+        const rows = Array.from(collapse.querySelectorAll(".result-main-table tbody tr, .result-working-table tbody tr"));
+        const visibleRows = 10;
+
+        if (rows.length <= visibleRows) return false;
+
+        const collapseTop = collapse.getBoundingClientRect().top;
+        const lastVisibleRowBottom = rows[visibleRows - 1].getBoundingClientRect().bottom;
+        const collapsedHeight = Math.ceil(lastVisibleRowBottom - collapseTop + 2);
+
+        if (collapsedHeight > 0) {
+          collapse.style.setProperty("--result-collapse-max", `${collapsedHeight}px`);
+        }
+
+        return true;
+      }
+
       function updateToggleState() {
         card.classList.remove("is-expanded");
 
-        const overflowing = collapse.scrollHeight > collapse.clientHeight + 4;
+        const hasDesktopRowLimit = setDesktopCollapsedHeight();
+        const overflowing = hasDesktopRowLimit || collapse.scrollHeight > collapse.clientHeight + 4;
 
         card.classList.toggle("has-overflow", overflowing);
 
@@ -1695,7 +1723,7 @@ function buildGeneratedEvents(count = EVENT_LIMIT) {
       }
 
       renderEvents(getFallbackEvents());
-fetchEvents();
+      fetchEvents();
     })();
   </script>
 
