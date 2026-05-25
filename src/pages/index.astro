@@ -343,7 +343,7 @@ function applyHomeEventOverride(date: Date, event: HomeEvent): HomeEvent | null 
   };
 }
 
-function buildFallbackUpcomingEvents(startDate = new Date(), count = 4): HomeEvent[] {
+function buildFallbackUpcomingEvents(startDate = new Date(), count = 5): HomeEvent[] {
   const events: HomeEvent[] = [];
   const start = makeUtcNoonDate(
     startDate.getUTCFullYear(),
@@ -439,7 +439,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
     }
 
     .events-card {
-      --home-event-count: 4;
+      --home-event-count: 5;
       display: flex;
       flex-direction: column;
       min-height: 0;
@@ -480,7 +480,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
       min-height: 0;
     }
 
-    :global(.event-list .event-item:nth-of-type(n + 5)) {
+    :global(.event-list .event-item:nth-of-type(n + 6)) {
       display: none;
     }
 
@@ -578,7 +578,26 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
         display: block;
       }
     }
+    @media (min-width: 901px) {
+  .left-stack {
+    grid-template-rows: minmax(0, 1fr);
+    height: 100%;
+  }
 
+  .latest-result-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .latest-result-card .result-collapse {
+    flex: 1 1 auto;
+  }
+
+  .latest-result-card .result-actions {
+    margin-top: auto;
+  }
+}
     .latest-result-card {
       min-width: 0;
     }
@@ -1336,7 +1355,7 @@ const fallbackUpcomingEvents = buildFallbackUpcomingEvents();
       if (!eventsList) return;
 
       const CALENDAR_CACHE_KEY = "fa_home_upcoming_events_v3";
-      const EVENT_LIMIT = 4;
+      const EVENT_LIMIT = 5;
       const DEFAULT_SCHEDULE_URL = "https://udisc.com/leagues/lufbery-league-NS86wI/schedule";
       const scheduleUrl = eventsList.getAttribute("data-schedule-url") || DEFAULT_SCHEDULE_URL;
       const CACHE_MAX_AGE_MS = 12 * 60 * 60 * 1000;
