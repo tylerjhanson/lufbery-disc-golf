@@ -4,9 +4,9 @@ export const siteBanner = {
   // Change this ID whenever you want dismissed visitors to see the banner again.
   id: "2026-05-24-player-history-feature-updated-2",
 
-  label: "Website Update",
+  label: "Update",
   message:
-    "Click on your name to view your Lufbery league history including scores, tags, wins, aces, hole score details, and more! All rounds since 2021 on the original layout.",
+    "Click on your name to view your Lufbery league history including scores, tags, wins, aces, hole score details, and more! All league rounds since 2021 on the original layout.",
 
   dismissible: true,
 };
