@@ -1,4 +1,6 @@
 export default function handicapHelpIntegration() {
+  const assetVersion = String(Date.now());
+
   return {
     name: "handicap-help-loader",
     hooks: {
@@ -6,17 +8,23 @@ export default function handicapHelpIntegration() {
         injectScript(
           "page",
           `
-if (!document.querySelector('link[href="/handicap-help-dark-mode.css"]')) {
+const handicapHelpAssetVersion = "${assetVersion}";
+const handicapHelpStylesheetHref = `/handicap-help-dark-mode.css?v=${handicapHelpAssetVersion}`;
+const handicapHelpScriptSrc = `/handicap-help.js?v=${handicapHelpAssetVersion}`;
+
+if (!document.querySelector('link[data-handicap-help-stylesheet]')) {
   const stylesheet = document.createElement("link");
   stylesheet.rel = "stylesheet";
-  stylesheet.href = "/handicap-help-dark-mode.css";
+  stylesheet.href = handicapHelpStylesheetHref;
+  stylesheet.dataset.handicapHelpStylesheet = "true";
   document.head.append(stylesheet);
 }
 
-if (!document.querySelector('script[src="/handicap-help.js"]')) {
+if (!document.querySelector('script[data-handicap-help-script]')) {
   const script = document.createElement("script");
-  script.src = "/handicap-help.js";
+  script.src = handicapHelpScriptSrc;
   script.defer = true;
+  script.dataset.handicapHelpScript = "true";
   document.body.append(script);
 }
           `
