@@ -99,7 +99,7 @@
 
     const baseExplanation = `
       <p>Your handicap is based on your most recent handicap-eligible rounds.</p>
-      <p>You need at least <strong>3 rounds</strong> to have a handicap counting <strong>up to 5 scores</strong>. If you have 4 or 5 scores, your highest score is dropped.</p> If you have 4 or 5 scores, your highest score is dropped.</p>
+      <p>You need at least <strong>3 rounds</strong> to have a handicap counting <strong>up to 5 scores</strong>. If you have 4 or 5 scores, your highest score is dropped.</p>
       <p>The remaining scores are averaged, then calculated as <strong>(average score - 53) × 0.8</strong>. The result is rounded to the nearest whole number.</p>
     `;
 
