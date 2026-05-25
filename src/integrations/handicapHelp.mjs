@@ -6,6 +6,13 @@ export default function handicapHelpIntegration() {
         injectScript(
           "page",
           `
+if (!document.querySelector('link[href="/handicap-help-dark-mode.css"]')) {
+  const stylesheet = document.createElement("link");
+  stylesheet.rel = "stylesheet";
+  stylesheet.href = "/handicap-help-dark-mode.css";
+  document.head.append(stylesheet);
+}
+
 if (!document.querySelector('script[src="/handicap-help.js"]')) {
   const script = document.createElement("script");
   script.src = "/handicap-help.js";
