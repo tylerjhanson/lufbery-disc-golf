@@ -9,8 +9,8 @@ export default function handicapHelpIntegration() {
           "page",
           `
 const handicapHelpAssetVersion = "${assetVersion}";
-const handicapHelpStylesheetHref = `/handicap-help-dark-mode.css?v=${handicapHelpAssetVersion}`;
-const handicapHelpScriptSrc = `/handicap-help.js?v=${handicapHelpAssetVersion}`;
+const handicapHelpStylesheetHref = "/handicap-help-dark-mode.css?v=" + handicapHelpAssetVersion;
+const handicapHelpScriptSrc = "/handicap-help.js?v=" + handicapHelpAssetVersion;
 
 if (!document.querySelector('link[data-handicap-help-stylesheet]')) {
   const stylesheet = document.createElement("link");
