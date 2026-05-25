@@ -32,8 +32,8 @@ const panels = [
       ...panel,
       holes,
       tableHoles: [...holes].sort((a, b) =>
-        (Number(a.hole || 0) - Number(b.hole || 0)) ||
-        (Number(a.difficultyRank || 0) - Number(b.difficultyRank || 0))
+        (Number(a.difficultyRank || 0) - Number(b.difficultyRank || 0)) ||
+        (Number(a.hole || 0) - Number(b.hole || 0))
       ),
     };
   });
@@ -85,7 +85,7 @@ const defaultPanelKey = panels[0]?.key || "total";
         </div>
 
         <div class="table-wrap course-stats-table-wrap">
-          <table class="course-stats-table" data-sort-table data-sort-key="hole" data-sort-dir="asc">
+          <table class="course-stats-table" data-sort-table data-sort-key="difficulty" data-sort-dir="asc">
             <colgroup>
               <col class="hole-col" />
               <col class="par-col" />
@@ -94,10 +94,10 @@ const defaultPanelKey = panels[0]?.key || "total";
             </colgroup>
             <thead>
               <tr>
-                <th><button type="button" data-sort-key="hole" aria-sort="ascending"><span class="th-inner">Hole</span></button></th>
-                <th><button type="button" data-sort-key="par"><span class="th-inner">Par</span></button></th>
-                <th><button type="button" data-sort-key="toPar"><span class="th-inner">To Par</span></button></th>
-                <th><button type="button" data-sort-key="difficulty"><span class="th-inner">Difficulty</span></button></th>
+                <th class="sortable"><button type="button" data-sort-key="hole"><span class="th-inner">Hole <span class="sort-indicator"></span></span></button></th>
+                <th class="sortable"><button type="button" data-sort-key="par"><span class="th-inner">Par <span class="sort-indicator"></span></span></button></th>
+                <th class="sortable"><button type="button" data-sort-key="toPar"><span class="th-inner">To Par <span class="sort-indicator"></span></span></button></th>
+                <th class="sortable"><button type="button" data-sort-key="difficulty" aria-sort="ascending"><span class="th-inner">Difficulty <span class="sort-indicator"></span></span></button></th>
               </tr>
             </thead>
             <tbody>
@@ -141,6 +141,21 @@ const defaultPanelKey = panels[0]?.key || "total";
     const tbody = table.querySelector("tbody");
     const buttons = Array.from(table.querySelectorAll("button[data-sort-key]"));
 
+    function updateIndicators(activeKey, direction) {
+      buttons.forEach((button) => {
+        const indicator = button.querySelector(".sort-indicator");
+        if (!indicator) return;
+
+        if (button.dataset.sortKey === activeKey) {
+          indicator.textContent = direction === "asc" ? "▲" : "▼";
+          indicator.style.color = "#2563eb";
+        } else {
+          indicator.textContent = "";
+          indicator.style.color = "#94a3b8";
+        }
+      });
+    }
+
     function sortRows(key, direction) {
       const multiplier = direction === "asc" ? 1 : -1;
       const rows = Array.from(tbody?.querySelectorAll("tr") || []);
@@ -150,7 +165,10 @@ const defaultPanelKey = panels[0]?.key || "total";
         return ((aValue - bValue) || (Number(a.dataset.hole || 0) - Number(b.dataset.hole || 0))) * multiplier;
       });
       rows.forEach((row) => tbody?.appendChild(row));
+      updateIndicators(key, direction);
     }
+
+    updateIndicators(table.dataset.sortKey || "difficulty", table.dataset.sortDir || "asc");
 
     buttons.forEach((button) => {
       button.addEventListener("click", () => {
@@ -173,7 +191,7 @@ const defaultPanelKey = panels[0]?.key || "total";
   .course-stats {
     --course-card: var(--card, #ffffff);
     --course-bg: var(--bg, #f5f7fb);
-    --course-bg-strong: var(--bg-strong, #eef3f8);
+    --course-bg-strong: var(--header, #f8fafc);
     --course-line: var(--line, #d8e0ea);
     --course-line-soft: var(--line-soft, #e6edf5);
     --course-muted: var(--muted, #6b7280);
@@ -269,6 +287,16 @@ const defaultPanelKey = panels[0]?.key || "total";
     line-height: 1.08;
   }
 
+  .course-stats-table thead th.sortable {
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .course-stats-table thead th.sortable:hover {
+    background: #f1f5f9;
+    color: var(--course-text);
+  }
+
   .course-stats-table thead th:first-child {
     border-top-left-radius: 14px;
     text-align: left;
@@ -285,35 +313,29 @@ const defaultPanelKey = panels[0]?.key || "total";
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
     font: inherit;
     color: inherit;
     white-space: nowrap;
   }
 
-  .course-stats-table th:first-child button {
+  .course-stats-table .th-inner {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .course-stats-table th:first-child .th-inner {
     justify-content: flex-start;
   }
 
-  .course-stats-table th button::after {
-    content: "↕";
+  .course-stats-table .sort-indicator {
+    display: inline-block;
     width: 10px;
     color: #94a3b8;
     font-size: 0.72rem;
     flex: 0 0 10px;
-    opacity: 0.65;
-  }
-
-  .course-stats-table th button[aria-sort="ascending"]::after {
-    content: "▲";
-    color: var(--accent, #2563eb);
-    opacity: 1;
-  }
-
-  .course-stats-table th button[aria-sort="descending"]::after {
-    content: "▼";
-    color: var(--accent, #2563eb);
-    opacity: 1;
   }
 
   .course-stats-table tbody td {
@@ -384,7 +406,7 @@ const defaultPanelKey = panels[0]?.key || "total";
       letter-spacing: 0;
       line-height: 1.04;
     }
-    .course-stats-table th button::after {
+    .course-stats-table .sort-indicator {
       width: 8px;
       font-size: 0.62rem;
       flex-basis: 8px;
