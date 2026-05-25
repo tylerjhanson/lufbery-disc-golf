@@ -2,9 +2,26 @@
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import PlayerLink from "../../components/PlayerLink.astro";
 import PlayerModal from "../../components/PlayerModal.astro";
+import courseStats from "../../data/course-stats.generated.json";
 import { getHandicaps, getPlayerProfiles } from "../../lib/data";
 
-const rows = getHandicaps();
+function normalizeCourseStatsPlayerKey(value) {
+  return String(value || "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+const courseStatsPlayers = courseStats?.players || {};
+const rows = getHandicaps().map((row) => {
+  const playerStats = courseStatsPlayers[normalizeCourseStatsPlayerKey(row.name)];
+  const originalLayoutRounds = Number(playerStats?.rounds);
+
+  return {
+    ...row,
+    rounds:
+      Number.isFinite(originalLayoutRounds) && originalLayoutRounds > 0
+        ? String(originalLayoutRounds)
+        : row.rounds,
+  };
+});
 const playerProfiles = getPlayerProfiles();
 ---
 
