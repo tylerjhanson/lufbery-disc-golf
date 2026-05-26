@@ -447,24 +447,25 @@ const defaultRoundType = "all";
     }
 
     .th-inner {
-      position: relative;
-      display: block;
-      width: 100%;
-      min-height: 1em;
-      padding: 0 14px;
-      text-align: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: auto;
+      max-width: 100%;
+      vertical-align: middle;
+    }
+
+    thead th:first-child .th-inner {
+      justify-content: flex-start;
     }
 
     .sort-header-label {
-      display: block;
-      width: 100%;
-      text-align: center;
+      display: inline-block;
+      min-width: 0;
     }
 
     .sort-indicator {
-      position: absolute;
-      top: 50%;
-      right: 0;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -472,7 +473,12 @@ const defaultRoundType = "all";
       color: #94a3b8;
       font-size: 0.72rem;
       line-height: 1;
-      transform: translateY(-50%);
+      flex: 0 0 10px;
+      transform: translateY(-0.02em);
+    }
+
+    .sort-indicator:empty {
+      display: none;
     }
 
     .sortable-th[aria-sort="ascending"] .sort-indicator,
