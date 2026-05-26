@@ -433,6 +433,48 @@ const defaultRoundType = "all";
       border-top-right-radius: 14px;
     }
 
+    .sortable-th {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .sort-header-button {
+      appearance: none;
+      width: 100%;
+      border: 0;
+      padding: 0;
+      margin: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      line-height: inherit;
+      letter-spacing: inherit;
+      text-transform: inherit;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
+      cursor: pointer;
+    }
+
+    thead th:first-child .sort-header-button {
+      justify-content: flex-start;
+      text-align: left;
+    }
+
+    .sort-indicator {
+      font-size: 0.72em;
+      line-height: 1;
+      opacity: 0.45;
+      transform: translateY(-0.02em);
+    }
+
+    .sortable-th[aria-sort="ascending"] .sort-indicator,
+    .sortable-th[aria-sort="descending"] .sort-indicator {
+      opacity: 0.9;
+      color: var(--accent);
+    }
+
     tbody td {
       padding: 9px 6px;
       border-bottom: 1px solid var(--line-soft);
@@ -972,6 +1014,211 @@ const defaultRoundType = "all";
       return String(value || "").toLowerCase().replace(/\s+/g, " ").trim();
     }
 
+    function isPayoutHeader(headerLabel) {
+      return /payout|\$/i.test(String(headerLabel || ""));
+    }
+
+    function isNumericSortHeader(headerLabel) {
+      return (
+        isPayoutHeader(headerLabel) ||
+        /\b(raw|hcp|handicap|net|r1|r2|round|score|total|front|back|place|points?)\b/i.test(
+          String(headerLabel || "")
+        )
+      );
+    }
+
+    function parseSortNumber(value, headerLabel) {
+      const text = String(value || "")
+        .replace(/\u2212/g, "-")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (!text || /^(-|—|n\/a|na)$/i.test(text)) return null;
+      if (/^e$/i.test(text)) return 0;
+
+      const matches = text.match(/[-+]?\$?\d[\d,]*(?:\.\d+)?/g);
+      if (!matches) return null;
+
+      const numbers = matches
+        .map((match) => Number(match.replace(/\$/g, "").replace(/,/g, "")))
+        .filter(Number.isFinite);
+
+      if (!numbers.length) return null;
+
+      return isPayoutHeader(headerLabel)
+        ? numbers.reduce((sum, number) => sum + number, 0)
+        : numbers[0];
+    }
+
+    function getInitialSortDirection(headerLabel) {
+      return isPayoutHeader(headerLabel) ? "desc" : "asc";
+    }
+
+    function getSortValue(row, columnIndex, headerLabel) {
+      const cell = row.cells[columnIndex];
+      const text = cell ? cell.textContent || "" : "";
+
+      if (columnIndex > 0 && isNumericSortHeader(headerLabel)) {
+        const number = parseSortNumber(text, headerLabel);
+
+        return {
+          type: "number",
+          value: number,
+          empty: number === null,
+        };
+      }
+
+      const normalizedText = normalizeValue(text);
+
+      return {
+        type: "text",
+        value: normalizedText,
+        empty: !normalizedText,
+      };
+    }
+
+    function compareSortValues(a, b, direction) {
+      if (a.empty && b.empty) return 0;
+      if (a.empty) return 1;
+      if (b.empty) return -1;
+
+      let result = 0;
+
+      if (a.type === "number" && b.type === "number") {
+        result = a.value - b.value;
+      } else {
+        result = String(a.value).localeCompare(String(b.value), undefined, {
+          numeric: true,
+          sensitivity: "base",
+        });
+      }
+
+      return direction === "asc" ? result : -result;
+    }
+
+    function updateSortIndicators(table, activeColumnIndex, direction) {
+      const headers = Array.from(table.tHead?.rows?.[0]?.cells || []);
+
+      headers.forEach((header, index) => {
+        if (!header.classList.contains("sortable-th")) return;
+
+        const indicator = header.querySelector(".sort-indicator");
+
+        if (index === activeColumnIndex) {
+          header.setAttribute(
+            "aria-sort",
+            direction === "asc" ? "ascending" : "descending"
+          );
+
+          if (indicator) {
+            indicator.textContent = direction === "asc" ? "▲" : "▼";
+          }
+        } else {
+          header.setAttribute("aria-sort", "none");
+
+          if (indicator) {
+            indicator.textContent = "↕";
+          }
+        }
+      });
+    }
+
+    function sortTableByColumn(table, columnIndex, headerLabel, direction) {
+      const tbody = table.tBodies?.[0];
+      if (!tbody) return;
+
+      const rows = Array.from(tbody.rows);
+
+      rows.sort((a, b) => {
+        const aValue = getSortValue(a, columnIndex, headerLabel);
+        const bValue = getSortValue(b, columnIndex, headerLabel);
+        const result = compareSortValues(aValue, bValue, direction);
+
+        if (result !== 0) return result;
+
+        const aOriginal = Number(a.getAttribute("data-original-index") || "0");
+        const bOriginal = Number(b.getAttribute("data-original-index") || "0");
+
+        return aOriginal - bOriginal;
+      });
+
+      tbody.append(...rows);
+
+      table.setAttribute("data-sort-column", String(columnIndex));
+      table.setAttribute("data-sort-direction", direction);
+
+      updateSortIndicators(table, columnIndex, direction);
+    }
+
+    function initializeSortableTables() {
+      const tables = Array.from(
+        document.querySelectorAll(
+          ".weekly-results-page table.handicap-table, .weekly-results-page table.working-table, .weekly-results-page table.pool-table"
+        )
+      );
+
+      tables.forEach((table) => {
+        const headerRow = table.tHead?.rows?.[0];
+        const tbody = table.tBodies?.[0];
+
+        if (!headerRow || !tbody) return;
+
+        Array.from(tbody.rows).forEach((row, index) => {
+          row.setAttribute("data-original-index", String(index));
+        });
+
+        Array.from(headerRow.cells).forEach((header, columnIndex) => {
+          const label = String(header.textContent || "")
+            .replace(/\s+/g, " ")
+            .trim();
+
+          if (!label || header.getAttribute("aria-hidden") === "true") return;
+
+          header.classList.add("sortable-th");
+          header.setAttribute("aria-sort", "none");
+
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "sort-header-button";
+
+          const labelSpan = document.createElement("span");
+          labelSpan.className = "sort-header-label";
+          labelSpan.textContent = label;
+
+          const indicator = document.createElement("span");
+          indicator.className = "sort-indicator";
+          indicator.setAttribute("aria-hidden", "true");
+          indicator.textContent = "↕";
+
+          button.append(labelSpan, indicator);
+
+          button.setAttribute(
+            "aria-label",
+            `Sort by ${label}. First sort is ${
+              getInitialSortDirection(label) === "asc" ? "ascending" : "descending"
+            }.`
+          );
+
+          header.replaceChildren(button);
+
+          button.addEventListener("click", () => {
+            const currentColumn = table.getAttribute("data-sort-column");
+            const currentDirection = table.getAttribute("data-sort-direction");
+
+            const direction =
+              currentColumn === String(columnIndex)
+                ? currentDirection === "asc"
+                  ? "desc"
+                  : "asc"
+                : getInitialSortDirection(label);
+
+            sortTableByColumn(table, columnIndex, label, direction);
+          });
+        });
+      });
+    }
+
+
     function updateSearchClear() {
       if (!searchWrap || !playerSearch) return;
       searchWrap.classList.toggle("has-value", !!playerSearch.value.trim());
@@ -1078,6 +1325,7 @@ const defaultRoundType = "all";
       playerSearch.focus();
     });
 
+    initializeSortableTables();
     sortCardsNewestFirst();
     applyFilters();
     updateSearchClear();
