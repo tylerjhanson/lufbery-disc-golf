@@ -30,23 +30,32 @@ const linkClass = ["player-button", className].filter(Boolean).join(" ");
     background: transparent;
     color: inherit;
     font: inherit;
-    font-weight: inherit;
+    font-weight: 650;
     padding: 0;
     margin: 0;
     cursor: pointer;
     text-align: left;
-    text-decoration-line: underline !important;
-    text-decoration-style: dotted !important;
-    text-decoration-thickness: 1px !important;
-    text-decoration-color: color-mix(in srgb, currentColor 24%, transparent) !important;
-    text-underline-offset: 2px;
-    transition: color 0.15s ease, text-decoration-color 0.15s ease;
+    text-decoration: none !important;
+    border-bottom: 1px solid rgba(34, 34, 34, 0.22);
+    transition:
+      color 0.15s ease,
+      border-color 0.15s ease,
+      background-color 0.15s ease;
+  }
+
+  .player-button::after {
+    content: "›";
+    color: var(--accent, #b91c1c);
+    margin-left: 4px;
+    font-weight: 800;
   }
 
   .player-button:hover,
   .player-button:focus-visible {
-    color: var(--accent, #2563eb);
-    text-decoration-color: color-mix(in srgb, currentColor 42%, transparent) !important;
+    color: var(--accent, #b91c1c);
+    border-bottom-color: currentColor;
+    background: rgba(185, 28, 28, 0.08);
+    border-radius: 4px;
     outline: none;
   }
 </style>
