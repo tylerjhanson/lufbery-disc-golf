@@ -413,15 +413,16 @@ const defaultRoundType = "all";
     thead th {
       background: var(--header);
       color: var(--muted);
-      font-size: 0.76rem;
+      font-size: 0.72rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.03em;
-      padding: 10px 6px;
+      padding: 10px 5px;
       border-bottom: 1px solid var(--line);
       text-align: center;
       white-space: normal;
-      line-height: 1.1;
+      line-height: 1.08;
+      user-select: none;
     }
 
     thead th:first-child {
@@ -435,43 +436,39 @@ const defaultRoundType = "all";
 
     .sortable-th {
       cursor: pointer;
-      user-select: none;
+      transition: background 0.15s ease, color 0.15s ease;
     }
 
-    .sort-header-button {
-      appearance: none;
-      width: 100%;
-      border: 0;
-      padding: 0;
-      margin: 0;
-      background: transparent;
-      color: inherit;
-      font: inherit;
-      line-height: inherit;
-      letter-spacing: inherit;
-      text-transform: inherit;
+    .sortable-th:hover,
+    .sortable-th:focus-visible {
+      background: #f1f5f9;
+      color: var(--text);
+      outline: none;
+    }
+
+    .th-inner {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.25rem;
-      cursor: pointer;
+      gap: 6px;
+      width: 100%;
     }
 
-    thead th:first-child .sort-header-button {
+    thead th:first-child .th-inner {
       justify-content: flex-start;
-      text-align: left;
     }
 
     .sort-indicator {
-      font-size: 0.72em;
+      display: inline-block;
+      width: 10px;
+      color: #94a3b8;
+      font-size: 0.72rem;
       line-height: 1;
-      opacity: 0.45;
-      transform: translateY(-0.02em);
+      flex: 0 0 10px;
     }
 
     .sortable-th[aria-sort="ascending"] .sort-indicator,
     .sortable-th[aria-sort="descending"] .sort-indicator {
-      opacity: 0.9;
       color: var(--accent);
     }
 
@@ -524,8 +521,8 @@ const defaultRoundType = "all";
     .weekly-results-page table.handicap-table thead th,
     .weekly-results-page table.working-table thead th {
       font-size: 0.72rem !important;
-      padding: 9px 6px !important;
-      line-height: 1.1 !important;
+      padding: 10px 5px !important;
+      line-height: 1.08 !important;
     }
 
     .weekly-results-page table.handicap-table tbody td,
@@ -545,7 +542,8 @@ const defaultRoundType = "all";
 
     .weekly-results-page table.pool-table thead th {
       font-size: 0.72rem !important;
-      padding: 9px 6px !important;
+      padding: 10px 5px !important;
+      line-height: 1.08 !important;
     }
 
     .weekly-results-page table.pool-table tbody td {
@@ -632,7 +630,7 @@ const defaultRoundType = "all";
       .weekly-results-page table.handicap-table thead th,
       .weekly-results-page table.working-table thead th {
         font-size: 0.64rem !important;
-        padding: 7px 3px !important;
+        padding: 8px 3px !important;
         letter-spacing: 0.01em !important;
         line-height: 1.08 !important;
       }
@@ -672,6 +670,7 @@ const defaultRoundType = "all";
       .weekly-results-page table.pool-table thead th {
         font-size: 0.66rem !important;
         padding: 8px 4px !important;
+        line-height: 1.08 !important;
       }
 
       .weekly-results-page table.pool-table tbody td {
@@ -855,7 +854,12 @@ const defaultRoundType = "all";
                     <thead>
                       <tr>
                         {["Name", "Raw", "Hcp.", "Net", "Payout"].map((header) => (
-                          <th>{header}</th>
+                          <th class="sortable-th" aria-sort="none">
+                            <span class="th-inner">
+                              <span class="sort-header-label">{header}</span>
+                              <span class="sort-indicator" aria-hidden="true"></span>
+                            </span>
+                          </th>
                         ))}
                       </tr>
                     </thead>
@@ -890,13 +894,25 @@ const defaultRoundType = "all";
                       </colgroup>
                       <thead>
                         <tr>
-                          <th>{cleanPlayerName(event.working.headers?.[0] || "Working to a handicap")}</th>
-                          <th>
-                            {getHeaderLabelByHeaders(
-                              event.working.headers,
-                              ["Raw", "R1", "Round 1", "Score"],
-                              "Raw"
-                            )}
+                          <th class="sortable-th" aria-sort="none">
+                            <span class="th-inner">
+                              <span class="sort-header-label">
+                                {cleanPlayerName(event.working.headers?.[0] || "Working to a handicap")}
+                              </span>
+                              <span class="sort-indicator" aria-hidden="true"></span>
+                            </span>
+                          </th>
+                          <th class="sortable-th" aria-sort="none">
+                            <span class="th-inner">
+                              <span class="sort-header-label">
+                                {getHeaderLabelByHeaders(
+                                  event.working.headers,
+                                  ["Raw", "R1", "Round 1", "Score"],
+                                  "Raw"
+                                )}
+                              </span>
+                              <span class="sort-indicator" aria-hidden="true"></span>
+                            </span>
                           </th>
                           <th aria-hidden="true"></th>
                           <th aria-hidden="true"></th>
@@ -961,7 +977,12 @@ const defaultRoundType = "all";
                       <tr>
                         {getVisibleColumnIndexes(pool.headers, ["Overall", "Ovr", "CTP"]).map(
                           (idx) => (
-                            <th>{pool.headers[idx]}</th>
+                            <th class="sortable-th" aria-sort="none">
+                              <span class="th-inner">
+                                <span class="sort-header-label">{pool.headers[idx]}</span>
+                                <span class="sort-indicator" aria-hidden="true"></span>
+                              </span>
+                            </th>
                           )
                         )}
                       </tr>
@@ -1117,7 +1138,7 @@ const defaultRoundType = "all";
           header.setAttribute("aria-sort", "none");
 
           if (indicator) {
-            indicator.textContent = "↕";
+            indicator.textContent = "";
           }
         }
       });
@@ -1168,40 +1189,18 @@ const defaultRoundType = "all";
         });
 
         Array.from(headerRow.cells).forEach((header, columnIndex) => {
-          const label = String(header.textContent || "")
+          if (!header.classList.contains("sortable-th")) return;
+
+          const labelEl = header.querySelector(".sort-header-label");
+          const label = String(labelEl?.textContent || header.textContent || "")
             .replace(/\s+/g, " ")
             .trim();
 
           if (!label || header.getAttribute("aria-hidden") === "true") return;
 
-          header.classList.add("sortable-th");
           header.setAttribute("aria-sort", "none");
 
-          const button = document.createElement("button");
-          button.type = "button";
-          button.className = "sort-header-button";
-
-          const labelSpan = document.createElement("span");
-          labelSpan.className = "sort-header-label";
-          labelSpan.textContent = label;
-
-          const indicator = document.createElement("span");
-          indicator.className = "sort-indicator";
-          indicator.setAttribute("aria-hidden", "true");
-          indicator.textContent = "↕";
-
-          button.append(labelSpan, indicator);
-
-          button.setAttribute(
-            "aria-label",
-            `Sort by ${label}. First sort is ${
-              getInitialSortDirection(label) === "asc" ? "ascending" : "descending"
-            }.`
-          );
-
-          header.replaceChildren(button);
-
-          button.addEventListener("click", () => {
+          const sortThisColumn = () => {
             const currentColumn = table.getAttribute("data-sort-column");
             const currentDirection = table.getAttribute("data-sort-direction");
 
@@ -1213,7 +1212,9 @@ const defaultRoundType = "all";
                 : getInitialSortDirection(label);
 
             sortTableByColumn(table, columnIndex, label, direction);
-          });
+          };
+
+          header.addEventListener("click", sortThisColumn);
         });
       });
     }
