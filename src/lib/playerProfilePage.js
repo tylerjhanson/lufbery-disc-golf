@@ -102,7 +102,7 @@ function trendLineSvg(points, getX, getY) {
   const denominator = n * sumXX - sumX * sumX;
   if (!denominator) return "";
   const slope = (n * sumXY - sumX * sumY) / denominator;
-  const intercept = sumY - (slope * sumX) / n;
+  const intercept = (sumY - slope * sumX) / n;
   const startValue = intercept;
   const endValue = slope * (n - 1) + intercept;
   return `<line class="profile-chart-trend" x1="${getX(0)}" y1="${getY(startValue)}" x2="${getX(n - 1)}" y2="${getY(endValue)}"></line>`;
