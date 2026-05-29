@@ -1,6 +1,7 @@
 (() => {
   const HELP_BUTTON_CLASS = "profile-handicap-help-link";
   const MODAL_ID = "handicapHelpModal";
+  const HOME_RESULT_FIX_STYLE_ID = "home-latest-result-height-fix-styles";
 
   const onReady = (callback) => {
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", callback, { once: true });
@@ -14,6 +15,77 @@
   };
 
   const formatScoreList = (scores) => scores.length ? scores.join(", ") : "—";
+
+  function addHomeLatestResultFixStyles() {
+    if (document.getElementById(HOME_RESULT_FIX_STYLE_ID)) return;
+
+    const style = document.createElement("style");
+    style.id = HOME_RESULT_FIX_STYLE_ID;
+    style.textContent = `
+      .latest-result-card.has-pool-result:not(.is-expanded) .result-collapse{max-height:var(--home-pool-result-collapse-max,var(--result-collapse-max,458px))!important}
+    `;
+    document.head.append(style);
+  }
+
+  function updateHomeLatestResultHeight() {
+    const card = document.getElementById("latestResultCard");
+    const collapse = document.getElementById("latestResultCollapse");
+
+    if (!card || !collapse) return;
+
+    const isDesktopLayout = window.matchMedia("(min-width: 901px)").matches;
+    const isPoolResult = collapse.querySelector(".result-pool-table") !== null;
+
+    if (!isDesktopLayout || !isPoolResult) {
+      card.classList.remove("has-pool-result");
+      collapse.style.removeProperty("--home-pool-result-collapse-max");
+      return;
+    }
+
+    const rows = Array.from(collapse.querySelectorAll(".result-main-table tbody tr, .result-working-table tbody tr"));
+    const visibleRows = 12;
+
+    if (rows.length <= visibleRows) {
+      card.classList.remove("has-pool-result");
+      collapse.style.removeProperty("--home-pool-result-collapse-max");
+      return;
+    }
+
+    const collapseTop = collapse.getBoundingClientRect().top;
+    const lastVisibleRowBottom = rows[visibleRows - 1].getBoundingClientRect().bottom;
+    const collapsedHeight = Math.ceil(lastVisibleRowBottom - collapseTop + 2);
+
+    if (collapsedHeight <= 0) return;
+
+    addHomeLatestResultFixStyles();
+    card.classList.add("has-pool-result");
+
+    const nextValue = `${collapsedHeight}px`;
+    if (collapse.style.getPropertyValue("--home-pool-result-collapse-max") !== nextValue) {
+      collapse.style.setProperty("--home-pool-result-collapse-max", nextValue);
+    }
+  }
+
+  function initHomeLatestResultHeightFix() {
+    const card = document.getElementById("latestResultCard");
+    if (!card) return;
+
+    const run = () => {
+      updateHomeLatestResultHeight();
+      requestAnimationFrame(updateHomeLatestResultHeight);
+      window.setTimeout(updateHomeLatestResultHeight, 0);
+    };
+
+    run();
+    window.addEventListener("load", run);
+    window.addEventListener("pageshow", run);
+    window.addEventListener("resize", run);
+
+    if ("ResizeObserver" in window) {
+      const resizeObserver = new ResizeObserver(() => requestAnimationFrame(updateHomeLatestResultHeight));
+      resizeObserver.observe(card);
+    }
+  }
 
   function getHandicapCard() {
     return Array.from(document.querySelectorAll(".profile-card")).find((card) => {
@@ -145,5 +217,8 @@
     table.insertAdjacentElement("afterend", button);
   }
 
-  onReady(init);
+  onReady(() => {
+    initHomeLatestResultHeightFix();
+    init();
+  });
 })();
