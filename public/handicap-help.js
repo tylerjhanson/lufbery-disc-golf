@@ -43,7 +43,7 @@
     }
 
     const rows = Array.from(collapse.querySelectorAll(".result-main-table tbody tr, .result-working-table tbody tr"));
-    const visibleRows = 12;
+    const visibleRows = 11;
 
     if (rows.length <= visibleRows) {
       card.classList.remove("has-pool-result");
