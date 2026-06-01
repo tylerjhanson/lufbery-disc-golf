@@ -112,7 +112,7 @@ const cssAnchor = `    tbody td:not(:first-child) {
     }
 `;
 
-const trendCss = `
+const oldTrendCss = `
     .hcp-cell {
       white-space: nowrap;
     }
@@ -156,7 +156,58 @@ const trendCss = `
     }
 `;
 
-if (!content.includes(".hcp-trend")) {
+const trendCss = `
+    .hcp-cell {
+      white-space: nowrap;
+    }
+
+    .hcp-value {
+      position: relative;
+      display: inline-block;
+      min-width: 1.4em;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .hcp-trend {
+      position: absolute;
+      left: calc(100% + 3px);
+      top: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 0.72em;
+      font-size: 0.72em;
+      line-height: 1;
+      font-weight: 900;
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
+    .hcp-trend::after {
+      display: inline-block;
+    }
+
+    .hcp-trend--down::after {
+      content: "▼";
+      color: #16a34a;
+    }
+
+    .hcp-trend--up::after {
+      content: "▲";
+      color: #dc2626;
+    }
+
+    .hcp-trend--unchanged::after {
+      content: "-";
+      color: #ca8a04;
+    }
+`;
+
+if (content.includes(oldTrendCss)) {
+  content = content.replace(oldTrendCss, trendCss);
+  changed = true;
+} else if (!content.includes(".hcp-trend")) {
   if (!content.includes(cssAnchor)) {
     throw new Error("Could not find the Handicaps & Tags table CSS block to add trend styles.");
   }
