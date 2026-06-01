@@ -1,122 +1,35 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-import { readdirSync, statSync } from "node:fs";
-import { parse } from "csv-parse/sync";
+import { readFileSync, writeFileSync } from "node:fs";
 
-const HCP_CSV_PATH = "src/data/hcp.csv";
-const DIST_DIR = "dist";
+const PAGE_PATH = "src/pages/singles/handicaps-tags.astro";
 
-function cleanText(value) {
-  return String(value || "").replace(/\s+/g, " ").trim();
-}
+let content = readFileSync(PAGE_PATH, "utf8");
+let changed = false;
 
-function normalizePlayerKey(value) {
-  return cleanText(value).toLowerCase();
-}
+const originalFrontmatterBlock = `const courseStatsPlayers = courseStats?.players || {};
+const rows = getHandicaps().map((row) => {
+  const playerStats = courseStatsPlayers[normalizeCourseStatsPlayerKey(row.name)];
+  const originalLayoutRounds = Number(playerStats?.rounds);
 
-function extractFirstNumber(value) {
-  const match = String(value || "").match(/-?\d+(\.\d+)?/);
-  if (!match) return null;
+  return {
+    ...row,
+    rounds:
+      Number.isFinite(originalLayoutRounds) && originalLayoutRounds > 0
+        ? String(originalLayoutRounds)
+        : row.rounds,
+  };
+});`;
 
-  const number = Number(match[0]);
-  return Number.isNaN(number) ? null : number;
-}
-
-function parseMonthDay(value) {
-  const match = String(value || "").trim().match(/^(\d{1,2})\/(\d{1,2})$/);
-  if (!match) return null;
+const updatedFrontmatterBlock = `function getRoundTime(value) {
+  const match = String(value || "").match(/(\\d{1,2})\\/(\\d{1,2})\\/(\\d{2,4})/);
+  if (!match) return 0;
 
   const month = Number(match[1]);
   const day = Number(match[2]);
+  let year = Number(match[3]);
 
-  if (!Number.isInteger(month) || !Number.isInteger(day)) return null;
-  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  if (year < 100) year += 2000;
 
-  return { month, day };
-}
-
-function getHandicapHistoryStartColumn(rows) {
-  const header = rows[0] || [];
-  const udiscIndex = header.findIndex((cell) => cleanText(cell).toLowerCase() === "udisc");
-
-  if (udiscIndex !== -1 && udiscIndex + 1 < header.length) {
-    return udiscIndex + 1;
-  }
-
-  return Math.min(6, Math.max(header.length - 1, 0));
-}
-
-function getLastActiveHandicapColumn(rows) {
-  const header = rows[0] || [];
-  const startColumn = getHandicapHistoryStartColumn(rows);
-
-  for (let i = header.length - 1; i >= startColumn; i -= 1) {
-    if (!parseMonthDay(header[i])) continue;
-
-    const hasAnyScore = rows.slice(1).some((row) => cleanText(row[i]) !== "");
-    if (hasAnyScore) return i;
-  }
-
-  return startColumn - 1;
-}
-
-function buildHandicapDateMap(rows) {
-  const header = rows[0] || [];
-  const startColumn = getHandicapHistoryStartColumn(rows);
-  const lastActiveColumn = getLastActiveHandicapColumn(rows);
-
-  if (lastActiveColumn < startColumn) {
-    return new Map();
-  }
-
-  const dateColumns = header
-    .slice(startColumn, lastActiveColumn + 1)
-    .map((label, offset) => {
-      const parts = parseMonthDay(label);
-      if (!parts) return null;
-
-      return {
-        index: startColumn + offset,
-        month: parts.month,
-        day: parts.day,
-      };
-    })
-    .filter(Boolean);
-
-  if (!dateColumns.length) return new Map();
-
-  const today = new Date();
-  const todayMonth = today.getMonth() + 1;
-  const todayDay = today.getDate();
-  const anchor = dateColumns[dateColumns.length - 1];
-  let year = today.getFullYear();
-
-  if (anchor.month > todayMonth || (anchor.month === todayMonth && anchor.day > todayDay)) {
-    year -= 1;
-  }
-
-  const dateMap = new Map();
-  let nextMonth = 0;
-  let nextDay = 0;
-  let hasNext = false;
-
-  for (let i = dateColumns.length - 1; i >= 0; i -= 1) {
-    const current = dateColumns[i];
-
-    if (
-      hasNext &&
-      (current.month > nextMonth || (current.month === nextMonth && current.day > nextDay))
-    ) {
-      year -= 1;
-    }
-
-    dateMap.set(current.index, `${current.month}/${current.day}/${String(year).slice(-2)}`);
-    nextMonth = current.month;
-    nextDay = current.day;
-    hasNext = true;
-  }
-
-  return dateMap;
+  return new Date(year, month - 1, day).getTime();
 }
 
 function calculateHandicapFromRounds(rounds) {
@@ -136,98 +49,70 @@ function calculateHandicapFromRounds(rounds) {
   }
 
   const average = values.reduce((sum, value) => sum + value, 0) / values.length;
+
   return Math.round((average - 53) * 0.8);
 }
 
-function buildTrendMap() {
-  const rows = parse(readFileSync(HCP_CSV_PATH, "utf8"), {
-    bom: true,
-    relax_column_count: true,
-  });
-  const dateMap = buildHandicapDateMap(rows);
-  const latestColumn = getLastActiveHandicapColumn(rows);
-  const orderedDateEntries = Array.from(dateMap.entries()).sort((a, b) => a[0] - b[0]);
-  const trends = new Map();
+const courseStatsPlayers = courseStats?.players || {};
+const handicapRows = getHandicaps();
+const latestLeagueRoundTime = Math.max(
+  0,
+  ...handicapRows.flatMap((row) =>
+    (row.allRounds || []).map((round) => getRoundTime(round.date))
+  )
+);
+const rows = handicapRows.map((row) => {
+  const playerStats = courseStatsPlayers[normalizeCourseStatsPlayerKey(row.name)];
+  const originalLayoutRounds = Number(playerStats?.rounds);
+  const allRounds = row.allRounds || [];
+  const latestPlayerRound = allRounds[allRounds.length - 1];
+  const playedLatestRound =
+    latestPlayerRound && getRoundTime(latestPlayerRound.date) === latestLeagueRoundTime;
 
-  if (latestColumn < 0) return trends;
+  const currentHcp = row.hcp === "" ? null : Number(row.hcp);
+  const previousHcp = playedLatestRound
+    ? calculateHandicapFromRounds(allRounds.slice(0, -1))
+    : null;
 
-  rows.slice(1).forEach((row) => {
-    const name = cleanText(row[0]);
-    if (!name) return;
+  const hcpTrend =
+    playedLatestRound &&
+    currentHcp != null &&
+    previousHcp != null &&
+    Number.isFinite(currentHcp) &&
+    Number.isFinite(previousHcp)
+      ? currentHcp < previousHcp
+        ? "down"
+        : currentHcp > previousHcp
+          ? "up"
+          : "unchanged"
+      : "";
 
-    const latestScore = extractFirstNumber(row[latestColumn]);
-    if (latestScore == null) return;
-
-    const officialRounds = extractFirstNumber(row[3]);
-    if (officialRounds == null || officialRounds < 3) return;
-
-    const allRounds = orderedDateEntries
-      .map(([index, date]) => {
-        const score = extractFirstNumber(row[index]);
-        return score == null ? null : { index, date, score };
-      })
-      .filter(Boolean);
-
-    const previousRounds = allRounds.filter((round) => round.index !== latestColumn);
-    const currentHandicap = calculateHandicapFromRounds(allRounds);
-    const previousHandicap = calculateHandicapFromRounds(previousRounds);
-
-    if (currentHandicap == null || previousHandicap == null) return;
-
-    let direction = "unchanged";
-    if (currentHandicap < previousHandicap) direction = "down";
-    if (currentHandicap > previousHandicap) direction = "up";
-
-    trends.set(normalizePlayerKey(name), direction);
-  });
-
-  return trends;
-}
-
-function stripTags(value) {
-  return String(value || "").replace(/<[^>]*>/g, "");
-}
-
-function decodeBasicEntities(value) {
-  return String(value || "")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
-}
-
-function findHtmlFiles(dir) {
-  if (!existsSync(dir)) return [];
-
-  const files = [];
-  const walk = (currentDir) => {
-    for (const entry of readdirSync(currentDir)) {
-      const fullPath = join(currentDir, entry);
-      const stat = statSync(fullPath);
-
-      if (stat.isDirectory()) {
-        walk(fullPath);
-      } else if (stat.isFile()) {
-        const normalized = fullPath.replace(/\\/g, "/");
-        if (
-          normalized.endsWith("/singles/handicaps-tags/index.html") ||
-          normalized.endsWith("/singles/handicaps-tags.html")
-        ) {
-          files.push(fullPath);
-        }
-      }
-    }
+  return {
+    ...row,
+    hcpTrend,
+    rounds:
+      Number.isFinite(originalLayoutRounds) && originalLayoutRounds > 0
+        ? String(originalLayoutRounds)
+        : row.rounds,
   };
+});`;
 
-  walk(dir);
-  return files;
+if (!content.includes("function getRoundTime(value)")) {
+  if (!content.includes(originalFrontmatterBlock)) {
+    throw new Error("Could not find the Handicaps & Tags rows block to add trend logic.");
+  }
+
+  content = content.replace(originalFrontmatterBlock, updatedFrontmatterBlock);
+  changed = true;
 }
 
-function addTrendStyles(html) {
-  if (html.includes(".hcp-trend")) return html;
+const cssAnchor = `    tbody td:not(:first-child) {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+`;
 
-  const css = `
+const trendCss = `
     .hcp-cell {
       white-space: nowrap;
     }
@@ -271,41 +156,37 @@ function addTrendStyles(html) {
     }
 `;
 
-  return html.replace("</style>", `${css}  </style>`);
+if (!content.includes(".hcp-trend")) {
+  if (!content.includes(cssAnchor)) {
+    throw new Error("Could not find the Handicaps & Tags table CSS block to add trend styles.");
+  }
+
+  content = content.replace(cssAnchor, `${cssAnchor}${trendCss}`);
+  changed = true;
 }
 
-function addTrendCells(html, trends) {
-  return html.replace(/<tbody>([\s\S]*?)<\/tbody>/, (tbodyMatch, tbodyHtml) => {
-    const updatedTbody = tbodyHtml.replace(/<tr>([\s\S]*?)<\/tr>/g, (rowMatch, rowHtml) => {
-      const cells = Array.from(rowHtml.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/g));
-      if (cells.length < 2) return rowMatch;
+const originalHcpCell = `                <td>{row.hcp}</td>`;
+const updatedHcpCell = `                <td class="hcp-cell" data-sort-value={row.hcp}>
+                  <span class="hcp-value">
+                    <span>{row.hcp}</span>
+                    {row.hcpTrend && (
+                      <span class={\`hcp-trend hcp-trend--\${row.hcpTrend}\`} aria-hidden="true"></span>
+                    )}
+                  </span>
+                </td>`;
 
-      const playerName = cleanText(decodeBasicEntities(stripTags(cells[0][1])));
-      const direction = trends.get(normalizePlayerKey(playerName));
-      if (!direction) return rowMatch;
+if (!content.includes('class="hcp-cell"')) {
+  if (!content.includes(originalHcpCell)) {
+    throw new Error("Could not find the Handicaps & Tags handicap cell to add trend markup.");
+  }
 
-      const handicapValueHtml = cells[1][1].trim();
-      const handicapValueText = cleanText(decodeBasicEntities(stripTags(handicapValueHtml)));
-      if (!handicapValueText) return rowMatch;
-
-      const hcpCell = `<td class="hcp-cell"><span class="hcp-value"><span>${handicapValueHtml}</span><span class="hcp-trend hcp-trend--${direction}" aria-hidden="true"></span></span></td>`;
-      return rowMatch.replace(cells[1][0], hcpCell);
-    });
-
-    return `<tbody>${updatedTbody}</tbody>`;
-  });
+  content = content.replace(originalHcpCell, updatedHcpCell);
+  changed = true;
 }
 
-const trends = buildTrendMap();
-const htmlFiles = findHtmlFiles(DIST_DIR);
-
-if (!htmlFiles.length) {
-  throw new Error("Could not find built Handicaps & Tags HTML file to apply handicap trend indicators.");
-}
-
-for (const htmlFile of htmlFiles) {
-  const originalHtml = readFileSync(htmlFile, "utf8");
-  const updatedHtml = addTrendCells(addTrendStyles(originalHtml), trends);
-  writeFileSync(htmlFile, updatedHtml);
-  console.log(`Applied handicap trend indicators to ${htmlFile}`);
+if (changed) {
+  writeFileSync(PAGE_PATH, content);
+  console.log("Patched Handicaps & Tags handicap trend indicators before Astro build.");
+} else {
+  console.log("Handicaps & Tags handicap trend indicators already patched.");
 }
