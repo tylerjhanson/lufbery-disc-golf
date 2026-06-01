@@ -106,6 +106,31 @@ if (!content.includes("function getRoundTime(value)")) {
   changed = true;
 }
 
+const sortIndicatorAnchor = `    .sort-indicator {
+      display: inline-block;
+      width: 10px;
+      color: #94a3b8;
+      font-size: 0.72rem;
+      flex: 0 0 10px;
+    }
+`;
+
+const sortIndicatorAlignmentCss = `
+    .sort-indicator:empty {
+      width: 0;
+      flex-basis: 0;
+    }
+`;
+
+if (!content.includes(".sort-indicator:empty")) {
+  if (!content.includes(sortIndicatorAnchor)) {
+    throw new Error("Could not find the sort indicator CSS block to center inactive headers.");
+  }
+
+  content = content.replace(sortIndicatorAnchor, `${sortIndicatorAnchor}${sortIndicatorAlignmentCss}`);
+  changed = true;
+}
+
 const cssAnchor = `    tbody td:not(:first-child) {
       overflow-wrap: anywhere;
       word-break: break-word;
