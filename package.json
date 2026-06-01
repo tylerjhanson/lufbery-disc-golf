@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "astro dev",
     "generate-course-stats": "node scripts/generate-course-stats.mjs",
-    "build": "node scripts/generate-course-stats.mjs && astro build",
+    "apply-handicap-trends": "node scripts/apply-handicap-trends.mjs",
+    "build": "node scripts/generate-course-stats.mjs && astro build && node scripts/apply-handicap-trends.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "generate-types": "wrangler types"
