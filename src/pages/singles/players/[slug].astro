@@ -188,7 +188,7 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
 
     <div class="profile-content-grid">
       <div class="profile-stack profile-main">
-        <section class="profile-card" data-mobile-collapse>
+        <section class="profile-card" data-mobile-collapse data-default-open>
           <div class="profile-card-header"><h2 class="profile-section-title">Score History</h2><button class="profile-mobile-toggle" type="button" aria-label="Toggle section">⌄</button></div>
           <div class="profile-card-body">{scoreChart ? <Fragment set:html={scoreChart} /> : <p class="profile-muted">No score history found.</p>}{scoreAverages.length ? <div><h3 class="profile-subheading">Average score by year</h3><div class="profile-year-stats">{scoreAverages.map((row) => <span class="profile-year-pill"><strong>{row.year}:</strong> {row.value}</span>)}</div></div> : null}</div>
         </section>
