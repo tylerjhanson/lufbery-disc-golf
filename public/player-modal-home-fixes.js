@@ -114,8 +114,12 @@
       }
 
       .weekly-results-page .player-name-cell.is-best-raw .player-button::after {
-        content: " 🔥";
+        content: "🔥";
         display: inline-block;
+        margin-left: 0.25em;
+        font-size: 0.67em;
+        line-height: 1;
+        vertical-align: 0.12em;
         text-decoration: none !important;
       }
     `;
