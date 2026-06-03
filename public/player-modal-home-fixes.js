@@ -112,6 +112,12 @@
         .player-course-stats-hole-meta { font-size: 0.7rem !important; }
         .player-course-stats-hole-meta { gap: 4px !important; }
       }
+
+      .weekly-results-page .player-name-cell.is-best-raw .player-button::after {
+        content: " 🔥";
+        display: inline-block;
+        text-decoration: none !important;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -231,15 +237,128 @@
     });
   }
 
+  function parseScoreNumber(value) {
+    const text = String(value || "")
+      .replace(/\u2212/g, "-")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (!text || /^(-|—|n\/a|na)$/i.test(text)) return null;
+    if (/^e$/i.test(text)) return 0;
+
+    const matches = text.match(/[-+]?\$?\d[\d,]*(?:\.\d+)?/g);
+    if (!matches) return null;
+
+    for (const match of matches) {
+      const number = Number(match.replace(/\$/g, "").replace(/,/g, ""));
+      if (Number.isFinite(number)) return number;
+    }
+
+    return null;
+  }
+
+  function normalizeScoreHeader(value) {
+    return String(value || "").toLowerCase().replace(/\s+/g, " ").trim();
+  }
+
+  function getTableHeaders(table) {
+    const headerRow = table?.tHead?.rows?.[0];
+    if (!headerRow) return [];
+
+    return Array.from(headerRow.cells).map((header) => {
+      const label = header.querySelector(".sort-header-label")?.textContent || header.textContent || "";
+      return normalizeScoreHeader(label);
+    });
+  }
+
+  function findScoreHeaderIndex(headers, labels) {
+    const normalizedLabels = labels.map(normalizeScoreHeader);
+
+    for (const label of normalizedLabels) {
+      const index = headers.findIndex((header) => header === label);
+      if (index !== -1) return index;
+    }
+
+    for (const label of normalizedLabels) {
+      const index = headers.findIndex((header) => header.includes(label));
+      if (index !== -1) return index;
+    }
+
+    return -1;
+  }
+
+  function getScoreFromCell(cells, index) {
+    if (index < 0 || index >= cells.length) return null;
+    return parseScoreNumber(cells[index]?.textContent || "");
+  }
+
+  function getBestRawScoreForRow(row) {
+    const table = row.closest("table");
+    const headers = getTableHeaders(table);
+    const cells = Array.from(row.cells || []);
+
+    const rawIndex = findScoreHeaderIndex(headers, ["raw", "raw score"]);
+    const totalIndex = findScoreHeaderIndex(headers, ["total", "total score"]);
+    const scoreIndex = findScoreHeaderIndex(headers, ["score"]);
+
+    for (const index of [rawIndex, totalIndex, scoreIndex]) {
+      const score = getScoreFromCell(cells, index);
+      if (score != null) return score;
+    }
+
+    const r1Index = findScoreHeaderIndex(headers, ["r1", "round 1"]);
+    const r2Index = findScoreHeaderIndex(headers, ["r2", "round 2"]);
+    const r1 = getScoreFromCell(cells, r1Index);
+    const r2 = getScoreFromCell(cells, r2Index);
+
+    if (r1 != null && r2 != null) return r1 + r2;
+
+    return parseScoreNumber(row.getAttribute("data-raw-score") || "");
+  }
+
+  function applyBestRawScoreEmojis(root = document) {
+    if (!(root instanceof Document || root instanceof Element)) return;
+
+    root.querySelectorAll(".weekly-results-page .card").forEach((card) => {
+      const rows = Array.from(card.querySelectorAll("tr[data-player-name]"));
+
+      rows.forEach((row) => {
+        row.querySelector(".player-name-cell")?.classList.remove("is-best-raw");
+      });
+
+      const scoredRows = rows
+        .map((row) => ({ row, score: getBestRawScoreForRow(row) }))
+        .filter(({ score }) => score != null);
+
+      if (!scoredRows.length) return;
+
+      const bestRawScore = Math.min(...scoredRows.map(({ score }) => score));
+
+      scoredRows.forEach(({ row, score }) => {
+        if (Math.abs(score - bestRawScore) > 0.000001) return;
+        row.querySelector(".player-name-cell")?.classList.add("is-best-raw");
+      });
+    });
+  }
+
+  function runBestRawScoreEmojiFix() {
+    applyBestRawScoreEmojis(document);
+    requestAnimationFrame(() => applyBestRawScoreEmojis(document));
+    setTimeout(() => applyBestRawScoreEmojis(document), 0);
+    setTimeout(() => applyBestRawScoreEmojis(document), 150);
+  }
+
   function start() {
     injectHomeLayoutFix();
     runHomeLayoutFix();
     updateCourseStatsModalLabel(document);
+    runBestRawScoreEmojiFix();
 
     const latestResultCard = document.getElementById("latestResultCard");
     const eventsCard = document.getElementById("upcomingEventsCard") || document.querySelector(".events-card");
     const eventsList = document.getElementById("eventsList") || document.querySelector(".events-card .event-list");
     const rightStack = document.querySelector(".right-stack");
+    const resultsEvents = document.getElementById("resultsEvents");
 
     if ("MutationObserver" in window) {
       const observerOptions = { attributes: true, attributeFilter: ["class", "style"] };
@@ -252,6 +371,12 @@
           subtree: true,
           attributes: true,
           attributeFilter: ["class", "style"],
+        });
+      }
+      if (resultsEvents) {
+        new MutationObserver(runBestRawScoreEmojiFix).observe(resultsEvents, {
+          childList: true,
+          subtree: true,
         });
       }
     }
@@ -267,6 +392,7 @@
     window.addEventListener("resize", runHomeLayoutFix);
     window.addEventListener("pageshow", runHomeLayoutFix);
     document.addEventListener("astro:page-load", runHomeLayoutFix);
+    document.addEventListener("astro:page-load", runBestRawScoreEmojiFix);
 
     const modalBody = document.getElementById("playerDetailsModalBody") || document.body;
     new MutationObserver(() => updateCourseStatsModalLabel(document)).observe(modalBody, {
