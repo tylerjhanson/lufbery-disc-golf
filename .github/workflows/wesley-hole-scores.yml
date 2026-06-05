@@ -1,0 +1,25 @@
+name: Wesley hole 9 and 12 scores
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Wesley hole score script
+        run: node scripts/wesley-hole-9-12.mjs
+
+        
