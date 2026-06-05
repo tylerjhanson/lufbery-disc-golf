@@ -220,8 +220,8 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
     .profile-round-table { min-width: 1120px; border-collapse: collapse; width: 100%; }
     .profile-round-table th, .profile-round-table td { padding: 8px 9px; border-bottom: 1px solid var(--line-soft, #eef2f7); text-align: center; white-space: nowrap; }
     .profile-round-table th:first-child, .profile-round-table td:first-child { position: sticky; left: 0; z-index: 1; background: var(--card, #fff); text-align: left; }
-    .profile-round-table thead tr:first-child th { border-bottom: 0; font-size: 0.78rem; font-weight: 950; }
-    .profile-round-table thead tr:nth-child(2) th { padding-top: 3px; font-size: 0.68rem; font-weight: 700; }
+    .profile-round-table thead tr:first-child th, .profile-round-table thead tr:first-child .profile-round-sort { border-bottom: 0; color: var(--text, #111827) !important; font-size: 0.78rem; font-weight: 950; }
+    .profile-round-table thead tr:nth-child(2) th { padding-top: 3px; color: var(--muted, #6b7280); font-size: 0.68rem; font-weight: 700; }
     .profile-round-table th { color: var(--muted, #6b7280); font-size: 0.73rem; font-weight: 850; }
     .profile-round-sort { border: 0; background: transparent; color: inherit; cursor: pointer; font: inherit; font-weight: 850; padding: 0; }
     .profile-round-score { display: inline-grid; place-items: center; min-width: 28px; height: 28px; padding: 0 7px; border-radius: 999px; font-weight: 850; }
@@ -251,6 +251,7 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
     html[data-theme="dark"] .profile-course-segment + .profile-course-segment { box-shadow: inset 1px 0 0 rgba(248, 250, 252, 0.16); }
     html[data-theme="dark"] .profile-round-table th:first-child, html[data-theme="dark"] .profile-round-table td:first-child { background: var(--card, #0b1220); }
     html[data-theme="dark"] .profile-round-panel-hole { color: var(--text, #f8fafc); }
+    html[data-theme="dark"] .profile-round-score--bogey, html[data-theme="dark"] .profile-round-score--double, html[data-theme="dark"] .profile-round-score--triple { color: #1f2937 !important; }
     @media (prefers-color-scheme: dark) {
       html[data-theme="system"] .profile-chart-shell, html[data-theme="system"] .profile-stat, html[data-theme="system"] .profile-year-pill { background: var(--header, #111827); }
       html[data-theme="system"] .profile-chart-grid { stroke: #334155; }
@@ -261,6 +262,7 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
       html[data-theme="system"] .profile-course-segment + .profile-course-segment { box-shadow: inset 1px 0 0 rgba(248, 250, 252, 0.16); }
       html[data-theme="system"] .profile-round-table th:first-child, html[data-theme="system"] .profile-round-table td:first-child { background: var(--card, #0b1220); }
       html[data-theme="system"] .profile-round-panel-hole { color: var(--text, #f8fafc); }
+      html[data-theme="system"] .profile-round-score--bogey, html[data-theme="system"] .profile-round-score--double, html[data-theme="system"] .profile-round-score--triple { color: #1f2937 !important; }
     }
 
     @media (max-width: 900px) {
@@ -292,9 +294,12 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
       .profile-round-desktop { display: block; }
       .profile-round-mobile { display: none; }
       .profile-round-table { min-width: 0; table-layout: fixed; }
-      .profile-round-table th, .profile-round-table td { padding: 6px 3px; font-size: 0.68rem; }
-      .profile-round-table th:first-child, .profile-round-table td:first-child { width: 62px; }
-      .profile-round-score { min-width: 22px; height: 22px; padding: 0 4px; font-size: 0.7rem; }
+      .profile-round-table th, .profile-round-table td { padding: 5px 1px; font-size: 0.66rem; letter-spacing: -0.025em; }
+      .profile-round-table th:first-child, .profile-round-table td:first-child { width: 54px; }
+      .profile-round-table th:nth-child(2), .profile-round-table td:nth-child(2), .profile-round-table th:last-child, .profile-round-table td:last-child { width: 34px; font-size: 0.66rem; }
+      .profile-round-table thead tr:first-child th, .profile-round-table thead tr:first-child .profile-round-sort { font-size: 0.66rem; }
+      .profile-round-table thead tr:nth-child(2) th { font-size: 0.58rem; }
+      .profile-round-score { min-width: 20px; height: 20px; padding: 0 3px; font-size: 0.66rem; }
     }
   </style>
 
@@ -363,7 +368,7 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
               <table class="profile-round-table" data-round-table>
                 <thead>
                   <tr><th><button class="profile-round-sort" type="button" data-round-sort="date">Date</button></th><th><button class="profile-round-sort" type="button" data-round-sort="toPar">Total</button></th>{coursePars.map((_par, index) => <th><button class="profile-round-sort" type="button" data-round-sort={`h${index + 1}`}>{index + 1}</button></th>)}<th><button class="profile-round-sort" type="button" data-round-sort="total">Round</button></th></tr>
-                  <tr><th>Par</th><th>{formatToPar(0)}</th>{coursePars.map((par) => <th>{par}</th>)}<th>{coursePars.reduce((sum, par) => sum + Number(par || 0), 0)}</th></tr>
+                  <tr><th></th><th></th>{coursePars.map((par) => <th>{par}</th>)}<th>{coursePars.reduce((sum, par) => sum + Number(par || 0), 0)}</th></tr>
                 </thead>
                 <tbody data-round-list="desktop">{roundHistory.map((round) => <tr data-round-item data-round-year={round.year} data-sort-date={round.dateKey} data-sort-to-par={round.toPar} data-sort-total={round.total} {...Object.fromEntries(round.scores.map((score, index) => [`data-sort-h${index + 1}`, score]))}><td>{round.href ? <a class="profile-link" href={round.href}>{round.displayDate}</a> : round.displayDate}</td><td>{round.toParLabel}</td>{round.holes.map((hole) => <td><span class={`profile-round-score profile-round-score--${hole.className}`}>{hole.score}</span></td>)}<td>{round.total}</td></tr>)}</tbody>
               </table>
@@ -445,8 +450,9 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
           items.sort((a, b) => {
             const av = roundValue(a, key);
             const bv = roundValue(b, key);
-            const result = typeof av === "string" ? av.localeCompare(bv) : av - bv;
-            return roundSort.direction === "asc" ? result : -result;
+            const primary = typeof av === "string" ? av.localeCompare(bv) : av - bv;
+            if (primary) return roundSort.direction === "asc" ? primary : -primary;
+            return String(b.dataset.sortDate || "").localeCompare(String(a.dataset.sortDate || ""));
           });
           items.forEach((item) => list.appendChild(item));
         });
