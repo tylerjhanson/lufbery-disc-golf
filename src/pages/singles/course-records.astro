@@ -1,11 +1,16 @@
 ---
 import { getPlayerProfiles, getSinglesRecords } from "../../lib/data";
+import courseStats from "../../data/course-stats.generated.json";
 import PlayerLink from "../../components/PlayerLink.astro";
 import PlayerModal from "../../components/PlayerModal.astro";
 import SiteLayout from "../../layouts/SiteLayout.astro";
 
 const rows = getSinglesRecords();
 const playerProfiles = getPlayerProfiles();
+const DEFAULT_PARS = [3,3,4,3,3,3,3,3,3,3,3,3,3,4,3,3,3,3];
+const pars = Array.isArray(courseStats?.source?.holePars) && courseStats.source.holePars.length >= 18 ? courseStats.source.holePars.slice(0, 18) : DEFAULT_PARS;
+const frontPar = pars.slice(0, 9).reduce((sum, par) => sum + Number(par || 0), 0);
+const backPar = pars.slice(9, 18).reduce((sum, par) => sum + Number(par || 0), 0);
 
 function getDateParts(value: string) {
   const match = String(value || "").match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
@@ -25,6 +30,12 @@ function getRowYear(value: string) {
   return parts ? String(parts.year) : "";
 }
 
+function getDateKey(value: string) {
+  const parts = getDateParts(value);
+  if (!parts) return "";
+  return `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
+}
+
 function getScoreSortValue(value: string) {
   const text = String(value || "").trim();
 
@@ -39,9 +50,63 @@ function isUdiscUrl(value: string) {
   return /(^https?:\/\/)?(www\.)?udisc\.com\b/i.test(String(value || "").trim());
 }
 
-const recordYears = [...new Set(rows.map((row) => getRowYear(row.date)).filter(Boolean))].sort(
-  (a, b) => Number(b) - Number(a)
-);
+function toPar(value: number) {
+  if (!Number.isFinite(value)) return "";
+  if (value === 0) return "E";
+  return value > 0 ? `+${value}` : String(value);
+}
+
+function shortDate(value: string) {
+  const parts = getDateParts(value);
+  return parts ? `${parts.month}/${parts.day}/${String(parts.year).slice(-2)}` : String(value || "");
+}
+
+function rankByMetric(items: any[], limit: number, metric: (item: any) => number, direction: "asc" | "desc" = "asc") {
+  const sorted = [...items].sort((a, b) => {
+    const primary = direction === "asc" ? metric(a) - metric(b) : metric(b) - metric(a);
+    if (primary) return primary;
+    return String(b.dateKey || "").localeCompare(String(a.dateKey || "")) || String(a.name || "").localeCompare(String(b.name || ""));
+  });
+  if (sorted.length <= limit) return sorted;
+  const cutoff = metric(sorted[limit - 1]);
+  return sorted.filter((item) => metric(item) === cutoff || (direction === "asc" ? metric(item) < cutoff : metric(item) > cutoff));
+}
+
+const allRoundRows = Object.values(courseStats.players || {})
+  .flatMap((player: any) => {
+    const name = String(player?.name || "").trim();
+    const history = Array.isArray(player?.roundHistory) ? player.roundHistory : [];
+    return history.map((round: any) => {
+      const scores = Array.isArray(round.scores) ? round.scores.slice(0, 18).map(Number) : [];
+      const front = scores.slice(0, 9).reduce((sum, score) => sum + (Number.isFinite(score) ? score : 0), 0);
+      const back = scores.slice(9, 18).reduce((sum, score) => sum + (Number.isFinite(score) ? score : 0), 0);
+      const birdiesOrBetter = scores.reduce((count, score, index) => count + (Number(score) < Number(pars[index] || 3) ? 1 : 0), 0);
+      const date = String(round.date || "");
+      return {
+        name,
+        date,
+        dateDisplay: shortDate(date),
+        dateKey: String(round.dateKey || getDateKey(date)),
+        year: String(round.year || getRowYear(date)),
+        url: String(round.url || ""),
+        front,
+        back,
+        frontToPar: front - frontPar,
+        backToPar: back - backPar,
+        birdiesOrBetter,
+      };
+    });
+  })
+  .filter((round) => round.name && round.dateKey);
+
+const bestFrontRows = rankByMetric(allRoundRows, 10, (round) => round.front, "asc");
+const bestBackRows = rankByMetric(allRoundRows, 10, (round) => round.back, "asc");
+const mostBirdiesRows = rankByMetric(allRoundRows, 10, (round) => round.birdiesOrBetter, "desc");
+
+const recordYears = [...new Set([
+  ...rows.map((row) => getRowYear(row.date)),
+  ...allRoundRows.map((row) => row.year),
+].filter(Boolean))].sort((a, b) => Number(b) - Number(a));
 ---
 
 <SiteLayout title="Singles Records" showBrandBar={true}>
@@ -111,6 +176,7 @@ const recordYears = [...new Set(rows.map((row) => getRowYear(row.date)).filter(B
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       overflow: hidden;
+      margin-bottom: 18px;
     }
 
     .card-header {
@@ -123,6 +189,33 @@ const recordYears = [...new Set(rows.map((row) => getRowYear(row.date)).filter(B
       line-height: 1.05;
       letter-spacing: -0.03em;
     }
+
+    .records-section {
+      background: var(--card);
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
+
+    .records-section summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      cursor: pointer;
+      padding: 20px 24px;
+      font-size: 0.95rem;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      list-style: none;
+    }
+
+    .records-section summary::-webkit-details-marker { display: none; }
+    .records-section summary::after { content: "›"; color: var(--muted); font-size: 1.4rem; transform: rotate(90deg); transition: transform 0.15s ease; }
+    .records-section:not([open]) summary::after { transform: rotate(0deg); }
 
     .table-wrap {
       padding: 0 20px 10px;
@@ -288,6 +381,7 @@ const recordYears = [...new Set(rows.map((row) => getRowYear(row.date)).filter(B
       .card-header { padding: 18px 16px 10px; }
       h1 { font-size: 2.1rem; }
       .table-wrap { padding: 0 8px 8px; }
+      .records-section summary { padding: 18px 16px; }
 
       col.name-col { width: 42%; }
       col.score-col { width: 22%; }
@@ -326,7 +420,7 @@ const recordYears = [...new Set(rows.map((row) => getRowYear(row.date)).filter(B
 
   <div class="wrap">
     <div class="page-header">
-      <h1>Best Rounds – Original (A Baskets)</h1>
+      <h1>Singles Course Records</h1>
     </div>
 
     <div class="toolbar">
@@ -340,9 +434,10 @@ const recordYears = [...new Set(rows.map((row) => getRowYear(row.date)).filter(B
       </label>
     </div>
 
-    <div class="card">
+    <details class="records-section" open>
+      <summary>Break 50 – Original (A Baskets)</summary>
       <div class="table-wrap">
-        <table id="sortable-table">
+        <table id="break50-table" data-record-table>
           <colgroup>
             <col class="name-col" />
             <col class="score-col" />
@@ -409,17 +504,75 @@ const recordYears = [...new Set(rows.map((row) => getRowYear(row.date)).filter(B
           </tbody>
         </table>
       </div>
+      <div class="empty-state">No records found for the selected year.</div>
+    </details>
 
-      <div id="recordsEmpty" class="empty-state">No records found for the selected year.</div>
-    </div>
+    <details class="records-section">
+      <summary>Best Front 9 Scores</summary>
+      <div class="table-wrap">
+        <table data-record-table>
+          <colgroup><col class="name-col" /><col class="score-col" /><col class="date-col" /></colgroup>
+          <thead><tr><th>Name</th><th>Score</th><th>Date</th></tr></thead>
+          <tbody>
+            {bestFrontRows.map((row) => (
+              <tr data-year={row.year}>
+                <td><PlayerLink name={row.name} /></td>
+                <td>{row.front} ({toPar(row.frontToPar)})</td>
+                <td>{row.url ? <a class="date-link" href={row.url} target="_blank" rel="noopener">{row.dateDisplay}</a> : row.dateDisplay}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div class="empty-state">No records found for the selected year.</div>
+    </details>
+
+    <details class="records-section">
+      <summary>Best Back 9 Scores</summary>
+      <div class="table-wrap">
+        <table data-record-table>
+          <colgroup><col class="name-col" /><col class="score-col" /><col class="date-col" /></colgroup>
+          <thead><tr><th>Name</th><th>Score</th><th>Date</th></tr></thead>
+          <tbody>
+            {bestBackRows.map((row) => (
+              <tr data-year={row.year}>
+                <td><PlayerLink name={row.name} /></td>
+                <td>{row.back} ({toPar(row.backToPar)})</td>
+                <td>{row.url ? <a class="date-link" href={row.url} target="_blank" rel="noopener">{row.dateDisplay}</a> : row.dateDisplay}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div class="empty-state">No records found for the selected year.</div>
+    </details>
+
+    <details class="records-section">
+      <summary>Most Birdies or Better in a Round</summary>
+      <div class="table-wrap">
+        <table data-record-table>
+          <colgroup><col class="name-col" /><col class="score-col" /><col class="date-col" /></colgroup>
+          <thead><tr><th>Name</th><th>Value</th><th>Date</th></tr></thead>
+          <tbody>
+            {mostBirdiesRows.map((row) => (
+              <tr data-year={row.year}>
+                <td><PlayerLink name={row.name} /></td>
+                <td>{row.birdiesOrBetter}</td>
+                <td>{row.url ? <a class="date-link" href={row.url} target="_blank" rel="noopener">{row.dateDisplay}</a> : row.dateDisplay}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div class="empty-state">No records found for the selected year.</div>
+    </details>
   </div>
 
   <script>
-    const table = document.getElementById("sortable-table");
-    const tbody = table.querySelector("tbody");
-    const headers = table.querySelectorAll("thead th.sortable");
+    const break50Table = document.getElementById("break50-table");
+    const tbody = break50Table?.querySelector("tbody");
+    const headers = break50Table?.querySelectorAll("thead th.sortable") || [];
     const yearFilter = document.getElementById("yearFilter");
-    const recordsEmpty = document.getElementById("recordsEmpty");
 
     let currentColumn = 1;
     let currentDirection = "asc";
@@ -494,6 +647,7 @@ const recordYears = [...new Set(rows.map((row) => getRowYear(row.date)).filter(B
     }
 
     function sortTable(columnIndex, type, direction) {
+      if (!tbody) return;
       const sortedRows = Array.from(tbody.querySelectorAll("tr")).sort((rowA, rowB) => {
         const valueA = getCellValue(rowA, columnIndex);
         const valueB = getCellValue(rowB, columnIndex);
@@ -506,19 +660,20 @@ const recordYears = [...new Set(rows.map((row) => getRowYear(row.date)).filter(B
 
     function applyYearFilter() {
       const selectedYear = yearFilter?.value || "all";
-      const rows = Array.from(tbody.querySelectorAll("tr"));
-      let visible = 0;
+      document.querySelectorAll("[data-record-table]").forEach((table) => {
+        const rows = Array.from(table.querySelectorAll("tbody tr"));
+        const emptyState = table.closest("details")?.querySelector(".empty-state");
+        let visible = 0;
 
-      rows.forEach((row) => {
-        const rowYear = row.getAttribute("data-year") || "";
-        const show = selectedYear === "all" || selectedYear === rowYear;
-        row.style.display = show ? "" : "none";
-        if (show) visible += 1;
+        rows.forEach((row) => {
+          const rowYear = row.getAttribute("data-year") || "";
+          const show = selectedYear === "all" || selectedYear === rowYear;
+          row.style.display = show ? "" : "none";
+          if (show) visible += 1;
+        });
+
+        if (emptyState) emptyState.style.display = visible ? "none" : "block";
       });
-
-      if (recordsEmpty) {
-        recordsEmpty.style.display = visible ? "none" : "block";
-      }
     }
 
     headers.forEach((header) => {
