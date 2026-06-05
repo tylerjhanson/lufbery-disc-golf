@@ -1,7 +1,7 @@
 ---
 import SiteLayout from "../../../layouts/SiteLayout.astro";
 import courseStats from "../../../data/course-stats.generated.json";
-import { getPlayerProfiles } from "../../../lib/data";
+import { getPlayerProfiles, getWeeklyResults, getWeeklyResultsAnchorId } from "../../../lib/data";
 import {
   parseDisplayYear,
   formatScoreWithPar,
@@ -15,6 +15,59 @@ import {
   buildCourseViews,
   droppedRecentRoundIndex,
 } from "../../../lib/playerProfilePage.js";
+
+const WEEKLY_RESULTS_PAGE_PATH = "/singles/weekly-results";
+
+function extractEventDate(value) {
+  const match = String(value || "")
+    .trim()
+    .match(/^(\d{1,2}\/\d{1,2}\/\d{2,4})/);
+
+  return match ? match[1] : "";
+}
+
+function toFullYearUsDate(value) {
+  const match = String(value || "")
+    .trim()
+    .match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+
+  if (!match) return String(value || "").trim();
+
+  const month = Number(match[1]);
+  const day = Number(match[2]);
+  let year = Number(match[3]);
+
+  if (year < 100) year += 2000;
+
+  return `${month}/${day}/${year}`;
+}
+
+function normalizeDateKey(value) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  const match = text.match(/^(\d{1,2}\/\d{1,2}\/\d{2,4})(.*)$/);
+
+  if (!match) return text;
+
+  const suffix = String(match[2] || "").replace(/\s+/g, " ").trim();
+  return `${toFullYearUsDate(match[1])}${suffix ? ` ${suffix}` : ""}`;
+}
+
+const weeklyResultHrefByDate = new Map();
+for (const event of getWeeklyResults()) {
+  const eventDate = toFullYearUsDate(extractEventDate(event.title));
+  if (!eventDate) continue;
+
+  weeklyResultHrefByDate.set(
+    normalizeDateKey(eventDate),
+    `${WEEKLY_RESULTS_PAGE_PATH}#${getWeeklyResultsAnchorId(event.title)}`
+  );
+}
+
+function getWeeklyResultsHrefForProfileDate(value) {
+  const dateOnly = extractEventDate(value) || value;
+  const fullDate = toFullYearUsDate(dateOnly);
+  return weeklyResultHrefByDate.get(normalizeDateKey(fullDate)) || "";
+}
 
 export function getStaticPaths() {
   const toSlug = (value) => String(value || "")
@@ -40,6 +93,10 @@ const { profile } = Astro.props;
 const name = String(profile.name || "Player");
 const allRounds = Array.isArray(profile.allRounds) ? profile.allRounds : [];
 const recentRounds = Array.isArray(profile.recentRounds) ? profile.recentRounds : [];
+const recentRoundsWithLinks = recentRounds.map((round) => ({
+  ...round,
+  href: getWeeklyResultsHrefForProfileDate(round.date),
+}));
 const handicapHistory = Array.isArray(profile.handicapHistory) ? profile.handicapHistory.filter((row) => parseDisplayYear(row.date) >= 2023) : [];
 const tagHistory = Array.isArray(profile.tagHistory) ? profile.tagHistory.filter((row) => parseDisplayYear(row.date) >= 2023) : [];
 const weeklyWins = Array.isArray(profile.weeklyWins) ? profile.weeklyWins : [];
@@ -205,7 +262,7 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
       <aside class="profile-stack profile-sidebar">
         <section class="profile-card" data-mobile-collapse data-default-open>
           <div class="profile-card-header"><h2 class="profile-section-title">Rounds Counting Towards Handicap</h2><button class="profile-mobile-toggle" type="button" aria-label="Toggle section">⌄</button></div>
-          <div class="profile-card-body"><table class="profile-table"><thead><tr><th>Date</th><th>Score</th></tr></thead><tbody>{recentRounds.length ? recentRounds.map((round, index) => <tr class={index === droppedIndex ? "profile-dropped-round" : ""}><td>{round.date}</td><td>{formatScoreWithPar(round.score)}</td></tr>) : <tr><td colspan="2" class="profile-muted">No handicap rounds found.</td></tr>}</tbody></table></div>
+          <div class="profile-card-body"><table class="profile-table"><thead><tr><th>Date</th><th>Score</th></tr></thead><tbody>{recentRoundsWithLinks.length ? recentRoundsWithLinks.map((round, index) => <tr class={index === droppedIndex ? "profile-dropped-round" : ""}><td>{round.href ? <a class="profile-link" href={round.href}>{round.date}</a> : round.date}</td><td>{formatScoreWithPar(round.score)}</td></tr>) : <tr><td colspan="2" class="profile-muted">No handicap rounds found.</td></tr>}</tbody></table></div>
         </section>
         <section class="profile-card" data-mobile-collapse data-default-open data-profile-personal-best>
           <div class="profile-card-header"><h2 class="profile-section-title">{personalBestTitle}</h2><button class="profile-mobile-toggle" type="button" aria-label="Toggle section">⌄</button></div>
