@@ -124,9 +124,11 @@ const roundHistory = (Array.isArray(playerCourseStats?.roundHistory) ? playerCou
   const toPar = Number.isFinite(Number(round.toPar)) ? Number(round.toPar) : total - coursePars.reduce((sum, par) => sum + Number(par || 0), 0);
   const date = toFullYearUsDate(round.date || extractEventDate(round.title));
   const href = getWeeklyResultsHrefForProfileDate(date) || String(round.url || "");
+  const year = String(round.year || parseDisplayYear(date));
   return {
     ...round,
     date,
+    year,
     displayDate: toShortUsDate(date),
     href,
     scores,
@@ -136,6 +138,8 @@ const roundHistory = (Array.isArray(playerCourseStats?.roundHistory) ? playerCou
     holes: scores.map((score, index) => ({ hole: index + 1, score, par: Number(coursePars[index] || 3), className: scoreClass(score, coursePars[index] || 3) })),
   };
 });
+const roundHistoryYears = Array.from(new Set(roundHistory.map((round) => round.year).filter(Boolean))).sort((a, b) => Number(b) - Number(a));
+const roundHistoryViews = [{ value: "all", label: "All years" }, ...roundHistoryYears.map((year) => ({ value: year, label: year }))];
 const scoreAverages = yearAverages(allRounds);
 const bestHandicaps = yearlyBest(handicapHistory, "handicap", 2023);
 const bestTags = yearlyBest(tagHistory, "tag", 2023);
@@ -216,23 +220,29 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
     .profile-round-table { min-width: 1120px; border-collapse: collapse; width: 100%; }
     .profile-round-table th, .profile-round-table td { padding: 8px 9px; border-bottom: 1px solid var(--line-soft, #eef2f7); text-align: center; white-space: nowrap; }
     .profile-round-table th:first-child, .profile-round-table td:first-child { position: sticky; left: 0; z-index: 1; background: var(--card, #fff); text-align: left; }
+    .profile-round-table thead tr:first-child th { border-bottom: 0; font-size: 0.78rem; font-weight: 950; }
+    .profile-round-table thead tr:nth-child(2) th { padding-top: 3px; font-size: 0.68rem; font-weight: 700; }
     .profile-round-table th { color: var(--muted, #6b7280); font-size: 0.73rem; font-weight: 850; }
     .profile-round-sort { border: 0; background: transparent; color: inherit; cursor: pointer; font: inherit; font-weight: 850; padding: 0; }
     .profile-round-score { display: inline-grid; place-items: center; min-width: 28px; height: 28px; padding: 0 7px; border-radius: 999px; font-weight: 850; }
     .profile-round-mobile { display: none; }
-    .profile-round-mobile-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-    .profile-round-mobile-controls .profile-round-sort { border: 1px solid var(--line-soft, #e5e7eb); border-radius: 999px; padding: 7px 10px; background: var(--header, #f8fafc); color: var(--text, #111827); }
+    .profile-round-mobile-controls { display: grid; grid-template-columns: 1fr 72px 72px 22px; gap: 8px; align-items: center; margin-bottom: 10px; padding: 0 12px; }
+    .profile-round-mobile-controls .profile-round-sort { justify-self: start; color: var(--muted, #6b7280); font-size: 0.8rem; font-weight: 900; }
+    .profile-round-mobile-controls .profile-round-sort:nth-child(2), .profile-round-mobile-controls .profile-round-sort:nth-child(3) { justify-self: center; }
     .profile-round-mobile-list { display: grid; gap: 8px; }
     .profile-round-card { border: 1px solid var(--line-soft, #eef2f7); border-radius: 14px; background: var(--card, #fff); overflow: hidden; }
     .profile-round-mobile-summary { display: grid; grid-template-columns: 1fr 72px 72px 22px; gap: 8px; align-items: center; width: 100%; padding: 11px 12px; cursor: pointer; font-weight: 850; }
-    .profile-round-mobile-detail { display: none; padding: 0 12px 12px; }
+    .profile-round-mobile-summary span:nth-child(2), .profile-round-mobile-summary span:nth-child(3), .profile-round-mobile-summary span:nth-child(4) { text-align: center; }
+    .profile-round-mobile-detail { display: none; padding: 0 12px 14px; }
     .profile-round-card.is-expanded .profile-round-mobile-detail { display: block; }
-    .profile-round-panels { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+    .profile-round-panels { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; padding-bottom: 12px; }
     .profile-round-panel { min-width: 100%; scroll-snap-align: start; }
-    .profile-round-panel-grid { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 5px; align-items: end; }
-    .profile-round-panel-cell { display: grid; gap: 4px; justify-items: center; color: var(--muted, #6b7280); font-size: 0.69rem; font-weight: 800; }
+    .profile-round-panel-grid { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 5px; align-items: end; padding-bottom: 4px; }
+    .profile-round-panel-cell { display: grid; gap: 4px; justify-items: center; color: var(--muted, #6b7280); font-weight: 800; }
+    .profile-round-panel-hole { color: var(--text, #111827); font-size: 0.76rem; font-weight: 950; }
+    .profile-round-panel-par { font-size: 0.64rem; font-weight: 650; }
 
-    html[data-theme="dark"] .profile-chart-shell, html[data-theme="dark"] .profile-stat, html[data-theme="dark"] .profile-year-pill, html[data-theme="dark"] .profile-round-mobile-controls .profile-round-sort { background: var(--header, #111827); }
+    html[data-theme="dark"] .profile-chart-shell, html[data-theme="dark"] .profile-stat, html[data-theme="dark"] .profile-year-pill { background: var(--header, #111827); }
     html[data-theme="dark"] .profile-chart-grid { stroke: #334155; }
     html[data-theme="dark"] .profile-chart-axis { fill: var(--muted, #94a3b8); }
     html[data-theme="dark"] .profile-chart-guide { stroke: #cbd5e1; }
@@ -240,8 +250,9 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
     html[data-theme="dark"] .profile-course-bar { border-color: #334155; }
     html[data-theme="dark"] .profile-course-segment + .profile-course-segment { box-shadow: inset 1px 0 0 rgba(248, 250, 252, 0.16); }
     html[data-theme="dark"] .profile-round-table th:first-child, html[data-theme="dark"] .profile-round-table td:first-child { background: var(--card, #0b1220); }
+    html[data-theme="dark"] .profile-round-panel-hole { color: var(--text, #f8fafc); }
     @media (prefers-color-scheme: dark) {
-      html[data-theme="system"] .profile-chart-shell, html[data-theme="system"] .profile-stat, html[data-theme="system"] .profile-year-pill, html[data-theme="system"] .profile-round-mobile-controls .profile-round-sort { background: var(--header, #111827); }
+      html[data-theme="system"] .profile-chart-shell, html[data-theme="system"] .profile-stat, html[data-theme="system"] .profile-year-pill { background: var(--header, #111827); }
       html[data-theme="system"] .profile-chart-grid { stroke: #334155; }
       html[data-theme="system"] .profile-chart-axis { fill: var(--muted, #94a3b8); }
       html[data-theme="system"] .profile-chart-guide { stroke: #cbd5e1; }
@@ -249,6 +260,7 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
       html[data-theme="system"] .profile-course-bar { border-color: #334155; }
       html[data-theme="system"] .profile-course-segment + .profile-course-segment { box-shadow: inset 1px 0 0 rgba(248, 250, 252, 0.16); }
       html[data-theme="system"] .profile-round-table th:first-child, html[data-theme="system"] .profile-round-table td:first-child { background: var(--card, #0b1220); }
+      html[data-theme="system"] .profile-round-panel-hole { color: var(--text, #f8fafc); }
     }
 
     @media (max-width: 900px) {
@@ -274,6 +286,15 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
       .profile-mobile-toggle { display: inline-flex; align-items: center; justify-content: center; align-self: center; width: 34px; height: 34px; flex: 0 0 34px; border: 0; background: transparent; color: var(--muted, #6b7280); font-size: 1.1rem; font-weight: 900; line-height: 1; padding: 0; }
       .profile-round-desktop { display: none; }
       .profile-round-mobile { display: block; }
+    }
+
+    @media (max-width: 900px) and (orientation: landscape) {
+      .profile-round-desktop { display: block; }
+      .profile-round-mobile { display: none; }
+      .profile-round-table { min-width: 0; table-layout: fixed; }
+      .profile-round-table th, .profile-round-table td { padding: 6px 3px; font-size: 0.68rem; }
+      .profile-round-table th:first-child, .profile-round-table td:first-child { width: 62px; }
+      .profile-round-score { min-width: 22px; height: 22px; padding: 0 4px; font-size: 0.7rem; }
     }
   </style>
 
@@ -334,27 +355,27 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
 
     <div class="profile-stack profile-bottom-stack">
       <section class="profile-card is-collapsed" data-round-history-card data-mobile-collapse data-default-collapsed>
-        <div class="profile-card-header"><h2 class="profile-section-title">Round History</h2><button class="profile-mobile-toggle" type="button" aria-label="Toggle section">⌄</button></div>
+        <div class="profile-card-header"><h2 class="profile-section-title">Round History</h2>{roundHistoryViews.length > 2 ? <select class="profile-course-filter" data-round-year-filter aria-label="Filter round history by year">{roundHistoryViews.map((view) => <option value={view.value}>{view.label}</option>)}</select> : null}<button class="profile-mobile-toggle" type="button" aria-label="Toggle section">⌄</button></div>
         <div class="profile-card-body">
           {roundHistory.length ? <>
-            <p class="profile-round-hint">{formatRounds(roundHistory.length)} • Original Layout • Tap a date to view the weekly result.</p>
+            <p class="profile-round-hint"><span data-round-count>{formatRounds(roundHistory.length)}</span> • Original Layout</p>
             <div class="profile-round-desktop profile-round-desktop-wrap">
               <table class="profile-round-table" data-round-table>
                 <thead>
                   <tr><th><button class="profile-round-sort" type="button" data-round-sort="date">Date</button></th><th><button class="profile-round-sort" type="button" data-round-sort="toPar">Total</button></th>{coursePars.map((_par, index) => <th><button class="profile-round-sort" type="button" data-round-sort={`h${index + 1}`}>{index + 1}</button></th>)}<th><button class="profile-round-sort" type="button" data-round-sort="total">Round</button></th></tr>
                   <tr><th>Par</th><th>{formatToPar(0)}</th>{coursePars.map((par) => <th>{par}</th>)}<th>{coursePars.reduce((sum, par) => sum + Number(par || 0), 0)}</th></tr>
                 </thead>
-                <tbody data-round-list="desktop">{roundHistory.map((round) => <tr data-round-item data-sort-date={round.dateKey} data-sort-to-par={round.toPar} data-sort-total={round.total} {...Object.fromEntries(round.scores.map((score, index) => [`data-sort-h${index + 1}`, score]))}><td>{round.href ? <a class="profile-link" href={round.href}>{round.displayDate}</a> : round.displayDate}</td><td>{round.toParLabel}</td>{round.holes.map((hole) => <td><span class={`profile-round-score profile-round-score--${hole.className}`}>{hole.score}</span></td>)}<td>{round.total}</td></tr>)}</tbody>
+                <tbody data-round-list="desktop">{roundHistory.map((round) => <tr data-round-item data-round-year={round.year} data-sort-date={round.dateKey} data-sort-to-par={round.toPar} data-sort-total={round.total} {...Object.fromEntries(round.scores.map((score, index) => [`data-sort-h${index + 1}`, score]))}><td>{round.href ? <a class="profile-link" href={round.href}>{round.displayDate}</a> : round.displayDate}</td><td>{round.toParLabel}</td>{round.holes.map((hole) => <td><span class={`profile-round-score profile-round-score--${hole.className}`}>{hole.score}</span></td>)}<td>{round.total}</td></tr>)}</tbody>
               </table>
             </div>
             <div class="profile-round-mobile">
               <div class="profile-round-mobile-controls" aria-label="Sort round history"><button class="profile-round-sort" type="button" data-round-sort="date">Date</button><button class="profile-round-sort" type="button" data-round-sort="toPar">Total</button><button class="profile-round-sort" type="button" data-round-sort="total">Round</button></div>
-              <div class="profile-round-mobile-list" data-round-list="mobile">{roundHistory.map((round) => <article class="profile-round-card" data-round-item data-sort-date={round.dateKey} data-sort-to-par={round.toPar} data-sort-total={round.total} {...Object.fromEntries(round.scores.map((score, index) => [`data-sort-h${index + 1}`, score]))}><div class="profile-round-mobile-summary" role="button" tabindex="0" aria-expanded="false"><span>{round.href ? <a class="profile-link" href={round.href}>{round.displayDate}</a> : round.displayDate}</span><span>{round.toParLabel}</span><span>{round.total}</span><span>⌄</span></div><div class="profile-round-mobile-detail"><div class="profile-round-panels"><div class="profile-round-panel"><div class="profile-round-panel-grid">{round.holes.slice(0, 9).map((hole) => <div class="profile-round-panel-cell"><span>H{hole.hole}</span><span>Par {hole.par}</span><span class={`profile-round-score profile-round-score--${hole.className}`}>{hole.score}</span></div>)}</div></div><div class="profile-round-panel"><div class="profile-round-panel-grid">{round.holes.slice(9, 18).map((hole) => <div class="profile-round-panel-cell"><span>H{hole.hole}</span><span>Par {hole.par}</span><span class={`profile-round-score profile-round-score--${hole.className}`}>{hole.score}</span></div>)}</div></div></div></div></article>)}</div>
+              <div class="profile-round-mobile-list" data-round-list="mobile">{roundHistory.map((round) => <article class="profile-round-card" data-round-item data-round-year={round.year} data-sort-date={round.dateKey} data-sort-to-par={round.toPar} data-sort-total={round.total} {...Object.fromEntries(round.scores.map((score, index) => [`data-sort-h${index + 1}`, score]))}><div class="profile-round-mobile-summary" role="button" tabindex="0" aria-expanded="false"><span>{round.href ? <a class="profile-link" href={round.href}>{round.displayDate}</a> : round.displayDate}</span><span>{round.toParLabel}</span><span>{round.total}</span><span>⌄</span></div><div class="profile-round-mobile-detail"><div class="profile-round-panels"><div class="profile-round-panel"><div class="profile-round-panel-grid">{round.holes.slice(0, 9).map((hole) => <div class="profile-round-panel-cell"><span class="profile-round-panel-hole">{hole.hole}</span><span class="profile-round-panel-par">{hole.par}</span><span class={`profile-round-score profile-round-score--${hole.className}`}>{hole.score}</span></div>)}</div></div><div class="profile-round-panel"><div class="profile-round-panel-grid">{round.holes.slice(9, 18).map((hole) => <div class="profile-round-panel-cell"><span class="profile-round-panel-hole">{hole.hole}</span><span class="profile-round-panel-par">{hole.par}</span><span class={`profile-round-score profile-round-score--${hole.className}`}>{hole.score}</span></div>)}</div></div></div></div></article>)}</div>
             </div>
           </> : <p class="profile-muted">No UDisc round history found.</p>}
         </div>
       </section>
-      {courseViews.length ? <section class="profile-card" data-course-stats-card data-mobile-collapse data-default-open><div class="profile-card-header"><h2 class="profile-section-title">Course Stats</h2>{courseViews.length > 1 ? <select class="profile-course-filter" aria-label="Filter player course stats by year">{courseViews.map((view) => <option value={view.value}>{view.label}</option>)}</select> : null}<button class="profile-mobile-toggle" type="button" aria-label="Toggle section">⌄</button></div><div class="profile-card-body">{courseViews.map((view, index) => <div class="profile-course-panel" data-course-panel={view.value} hidden={index !== 0}><p class="profile-course-summary">{formatRounds(view.rounds)} • Original Layout</p><div class="profile-course-grid">{view.holes.map((hole) => <article class="profile-course-hole"><div class="profile-course-hole-header"><h3 class="profile-course-hole-title">Hole {hole.hole} <span>Par {hole.par}</span></h3><div class="profile-course-meta"><span>Diff. <strong>{hole.difficultyRank || "—"}</strong></span><span>Avg <strong>{formatAverage(hole.average)}</strong></span></div></div><div class="profile-course-bar" style={hole.barStyle}>{hole.segments.map((segment) => <div class={`profile-course-segment profile-course-segment--${segment.className}`} data-course-tip={`${segment.label}: ${segment.count} (${segment.pctNumber.toFixed(1)}%)`} title={`${segment.label}: ${segment.count} (${segment.pctNumber.toFixed(1)}%)`}>{segment.pctNumber >= 11 ? <span>{segment.count}</span> : null}</div>)}</div></article>)}</div></div>)}</div></section> : null}
+      {courseViews.length ? <section class="profile-card is-collapsed" data-course-stats-card data-mobile-collapse data-default-collapsed><div class="profile-card-header"><h2 class="profile-section-title">Course Stats</h2>{courseViews.length > 1 ? <select class="profile-course-filter" aria-label="Filter player course stats by year">{courseViews.map((view) => <option value={view.value}>{view.label}</option>)}</select> : null}<button class="profile-mobile-toggle" type="button" aria-label="Toggle section">⌄</button></div><div class="profile-card-body">{courseViews.map((view, index) => <div class="profile-course-panel" data-course-panel={view.value} hidden={index !== 0}><p class="profile-course-summary">{formatRounds(view.rounds)} • Original Layout</p><div class="profile-course-grid">{view.holes.map((hole) => <article class="profile-course-hole"><div class="profile-course-hole-header"><h3 class="profile-course-hole-title">Hole {hole.hole} <span>Par {hole.par}</span></h3><div class="profile-course-meta"><span>Diff. <strong>{hole.difficultyRank || "—"}</strong></span><span>Avg <strong>{formatAverage(hole.average)}</strong></span></div></div><div class="profile-course-bar" style={hole.barStyle}>{hole.segments.map((segment) => <div class={`profile-course-segment profile-course-segment--${segment.className}`} data-course-tip={`${segment.label}: ${segment.count} (${segment.pctNumber.toFixed(1)}%)`} title={`${segment.label}: ${segment.count} (${segment.pctNumber.toFixed(1)}%)`}>{segment.pctNumber >= 11 ? <span>{segment.count}</span> : null}</div>)}</div></article>)}</div></div>)}</div></section> : null}
     </div>
     <div class="profile-chart-tooltip" aria-hidden="true"></div>
   </main>
@@ -393,12 +414,27 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
       });
 
       const roundCard = document.querySelector("[data-round-history-card]");
+      const roundYearFilter = roundCard?.querySelector("[data-round-year-filter]");
+      const roundCountLabel = roundCard?.querySelector("[data-round-count]");
       let roundSort = { key: "date", direction: "desc" };
       function roundValue(item, key) {
         if (key === "date") return item.dataset.sortDate || "";
         const attr = key === "toPar" ? "sortToPar" : key === "total" ? "sortTotal" : `sort${key.charAt(0).toUpperCase()}${key.slice(1)}`;
         const value = Number(item.dataset[attr]);
         return Number.isFinite(value) ? value : 9999;
+      }
+      function updateRoundCount() {
+        if (!roundCard || !roundCountLabel) return;
+        const visibleCount = Array.from(roundCard.querySelectorAll('[data-round-list="desktop"] [data-round-item]')).filter((item) => !item.hidden).length;
+        roundCountLabel.textContent = `${visibleCount.toLocaleString()} round${visibleCount === 1 ? "" : "s"}`;
+      }
+      function applyRoundYearFilter() {
+        if (!roundCard) return;
+        const selectedYear = roundYearFilter?.value || "all";
+        roundCard.querySelectorAll("[data-round-item]").forEach((item) => {
+          item.hidden = !(selectedYear === "all" || item.dataset.roundYear === selectedYear);
+        });
+        updateRoundCount();
       }
       function sortRoundList(key) {
         if (!roundCard) return;
@@ -415,6 +451,7 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
           items.forEach((item) => list.appendChild(item));
         });
       }
+      roundYearFilter?.addEventListener("change", (event) => { event.stopPropagation(); applyRoundYearFilter(); });
       roundCard?.querySelectorAll("[data-round-sort]").forEach((button) => button.addEventListener("click", (event) => { event.stopPropagation(); sortRoundList(button.dataset.roundSort || "date"); }));
       roundCard?.querySelectorAll(".profile-round-mobile-summary").forEach((summary) => {
         summary.addEventListener("click", (event) => {
@@ -429,6 +466,7 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
           summary.click();
         });
       });
+      applyRoundYearFilter();
 
       const tooltip = document.querySelector(".profile-chart-tooltip");
       let courseTipTimer;
