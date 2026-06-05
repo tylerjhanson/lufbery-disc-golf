@@ -1,0 +1,271 @@
+---
+import SiteLayout from "../../../layouts/SiteLayout.astro";
+import courseStats from "../../../data/course-stats.generated.json";
+
+const DEFAULT_PARS = [3,3,4,3,3,3,3,3,3,3,3,3,3,4,3,3,3,3];
+const pars = Array.isArray(courseStats?.source?.holePars) && courseStats.source.holePars.length >= 18 ? courseStats.source.holePars.slice(0, 18) : DEFAULT_PARS;
+const parTotal = pars.reduce((sum, par) => sum + Number(par || 0), 0);
+
+function toSlug(value) {
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function shortDate(value) {
+  const match = String(value || "").match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  return match ? `${match[1]}/${match[2]}/${match[3].slice(-2)}` : String(value || "");
+}
+
+function toPar(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "";
+  if (number === 0) return "E";
+  return number > 0 ? `+${number}` : String(number);
+}
+
+function scoreClass(score, par) {
+  const diff = Number(score) - Number(par);
+  if (!Number.isFinite(diff)) return "par";
+  if (diff <= -2) return "ace";
+  if (diff === -1) return "birdie";
+  if (diff === 0) return "par";
+  if (diff === 1) return "bogey";
+  if (diff === 2) return "double";
+  return "triple";
+}
+
+function rankWithTies(rows, limit, compare) {
+  const sorted = [...rows].sort(compare);
+  if (sorted.length <= limit) return sorted;
+  const cutoff = sorted[limit - 1];
+  return sorted.filter((row) => compare(row, cutoff) <= 0);
+}
+
+function uniqueYears(rows) {
+  return Array.from(new Set(rows.map((row) => row.year).filter(Boolean))).sort((a, b) => Number(b) - Number(a));
+}
+
+const allRounds = Object.values(courseStats.players || {})
+  .flatMap((player) => {
+    const name = String(player?.name || "").trim();
+    const slug = toSlug(name);
+    const history = Array.isArray(player?.roundHistory) ? player.roundHistory : [];
+    return history.map((round) => {
+      const scores = Array.isArray(round.scores) ? round.scores.slice(0, 18).map(Number) : [];
+      const total = Number.isFinite(Number(round.total)) ? Number(round.total) : scores.reduce((sum, score) => sum + (Number.isFinite(score) ? score : 0), 0);
+      const toParNumber = Number.isFinite(Number(round.toPar)) ? Number(round.toPar) : total - parTotal;
+      const front = scores.slice(0, 9).reduce((sum, score) => sum + score, 0);
+      const back = scores.slice(9, 18).reduce((sum, score) => sum + score, 0);
+      const birdiesOrBetter = scores.reduce((count, score, index) => count + (Number(score) < Number(pars[index] || 3) ? 1 : 0), 0);
+      const overParHoles = scores.reduce((count, score, index) => count + (Number(score) > Number(pars[index] || 3) ? 1 : 0), 0);
+      const year = String(round.year || String(round.date || "").split("/").pop() || "");
+      return {
+        ...round,
+        name,
+        slug,
+        playerHref: slug ? `/singles/players/${slug}/` : "",
+        displayDate: shortDate(round.date),
+        year,
+        scores,
+        total,
+        toParNumber,
+        toParLabel: toPar(toParNumber),
+        front,
+        back,
+        frontToPar: front - pars.slice(0, 9).reduce((sum, par) => sum + Number(par || 0), 0),
+        backToPar: back - pars.slice(9, 18).reduce((sum, par) => sum + Number(par || 0), 0),
+        birdiesOrBetter,
+        overParHoles,
+        holes: scores.map((score, index) => ({ hole: index + 1, score, par: Number(pars[index] || 3), className: scoreClass(score, pars[index] || 3) })),
+      };
+    });
+  })
+  .sort((a, b) => String(b.dateKey || "").localeCompare(String(a.dateKey || "")) || a.name.localeCompare(b.name) || a.total - b.total);
+
+const playerNames = Array.from(new Set(allRounds.map((round) => round.name).filter(Boolean))).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+const years = uniqueYears(allRounds);
+const frontPar = pars.slice(0, 9).reduce((sum, par) => sum + Number(par || 0), 0);
+const backPar = pars.slice(9, 18).reduce((sum, par) => sum + Number(par || 0), 0);
+const bestRounds = rankWithTies(allRounds, 10, (a, b) => (a.toParNumber - b.toParNumber) || (a.total - b.total) || String(b.dateKey || "").localeCompare(String(a.dateKey || "")) || a.name.localeCompare(b.name));
+const bestFronts = rankWithTies(allRounds, 10, (a, b) => (a.front - b.front) || String(b.dateKey || "").localeCompare(String(a.dateKey || "")) || a.name.localeCompare(b.name));
+const bestBacks = rankWithTies(allRounds, 10, (a, b) => (a.back - b.back) || String(b.dateKey || "").localeCompare(String(a.dateKey || "")) || a.name.localeCompare(b.name));
+const mostBirdies = rankWithTies(allRounds, 10, (a, b) => (b.birdiesOrBetter - a.birdiesOrBetter) || (a.total - b.total) || String(b.dateKey || "").localeCompare(String(a.dateKey || "")) || a.name.localeCompare(b.name));
+const mostOverPar = rankWithTies(allRounds, 10, (a, b) => (b.overParHoles - a.overParHoles) || (b.total - a.total) || String(b.dateKey || "").localeCompare(String(a.dateKey || "")) || a.name.localeCompare(b.name));
+---
+
+<SiteLayout title="Player Round Database" description="Unindexed player round database with hole-by-hole Lufbery league scores." noindex={true} showBrandBar={true}>
+  <style is:global>
+    body { margin: 0; padding: 24px; background: linear-gradient(180deg, #f8fafc 0%, var(--bg, #f5f7fb) 100%); color: var(--text, #111827); font-family: Inter, Arial, Helvetica, sans-serif; }
+    .database-wrap { width: 100%; max-width: none; margin: 0; }
+    .database-header, .database-card { border: 1px solid var(--line-soft, #eef2f7); border-radius: 22px; background: var(--card, #fff); box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08); }
+    .database-header { margin-bottom: 18px; padding: 22px 24px; }
+    .database-title { margin: 0; font-size: clamp(2rem, 4vw, 3.4rem); line-height: 1; letter-spacing: -0.045em; }
+    .database-subtitle { margin: 10px 0 0; color: var(--muted, #6b7280); font-size: 0.95rem; font-weight: 650; }
+    .database-card { margin-bottom: 18px; overflow: hidden; }
+    .database-card-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 20px 8px; }
+    .database-section-title { margin: 0; font-size: 0.9rem; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; }
+    .database-card-body { padding: 0 20px 20px; }
+    .database-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 14px 0 16px; }
+    .database-control { display: grid; gap: 5px; color: var(--muted, #6b7280); font-size: 0.72rem; font-weight: 850; letter-spacing: 0.04em; text-transform: uppercase; }
+    .database-input, .database-select { min-width: 190px; border: 1px solid var(--line-soft, #e5e7eb); border-radius: 999px; background: var(--card, #fff); color: var(--text, #111827); font: inherit; font-size: 0.88rem; font-weight: 750; padding: 9px 13px; text-transform: none; letter-spacing: normal; }
+    .database-input { min-width: 260px; }
+    .database-summary { color: var(--muted, #6b7280); font-size: 0.9rem; font-weight: 750; }
+    .database-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .database-table { width: 100%; min-width: 1260px; border-collapse: collapse; table-layout: fixed; }
+    .database-table th, .database-table td { padding: 8px 8px; border-bottom: 1px solid var(--line-soft, #eef2f7); text-align: center; white-space: nowrap; font-size: 0.82rem; }
+    .database-table th { color: var(--muted, #6b7280); font-size: 0.72rem; font-weight: 850; }
+    .database-table thead tr:first-child th, .database-table thead tr:first-child .database-sort { color: var(--text, #111827); font-size: 0.76rem; font-weight: 950; }
+    .database-table thead tr:nth-child(2) th { padding-top: 2px; color: var(--muted, #6b7280); font-size: 0.66rem; font-weight: 700; }
+    .database-table th:first-child, .database-table td:first-child, .database-table th:nth-child(2), .database-table td:nth-child(2) { text-align: left; }
+    .database-table th:first-child, .database-table td:first-child { position: sticky; left: 0; z-index: 2; background: var(--card, #fff); width: 156px; }
+    .database-table th:nth-child(2), .database-table td:nth-child(2) { position: sticky; left: 156px; z-index: 2; background: var(--card, #fff); width: 70px; }
+    .database-table th:nth-child(3), .database-table td:nth-child(3), .database-table th:last-child, .database-table td:last-child { width: 46px; }
+    .database-table th[data-hole], .database-table td[data-hole] { width: 38px; }
+    .database-sort { border: 0; background: transparent; color: inherit; cursor: pointer; font: inherit; font-weight: 950; padding: 0; }
+    .database-link { color: var(--accent, #2563eb); font-weight: 800; text-decoration: none; }
+    .database-link:hover { text-decoration: underline; }
+    .database-score { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 7px; border-radius: 999px; font-weight: 900; }
+    .database-score--ace { background: #2f6fb6; color: #fff; }
+    .database-score--birdie { background: #6c9bd1; color: #fff; }
+    .database-score--par { background: var(--card, #ffffff); color: var(--text, #111827); }
+    .database-score--bogey { background: #f2d8c8; color: #111827; }
+    .database-score--double { background: #efb286; color: #111827; }
+    .database-score--triple { background: #eb7b3c; color: #111827; }
+    .leader-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .leader-table { width: 100%; border-collapse: collapse; }
+    .leader-table th, .leader-table td { padding: 9px 0; border-bottom: 1px solid var(--line-soft, #eef2f7); text-align: left; font-size: 0.9rem; vertical-align: top; }
+    .leader-table th { color: var(--muted, #6b7280); font-size: 0.72rem; font-weight: 850; }
+    .leader-table th:last-child, .leader-table td:last-child { text-align: right; }
+    .leader-meta { color: var(--muted, #6b7280); font-size: 0.78rem; font-weight: 700; }
+    .database-empty { display: none; padding: 18px 0 0; color: var(--muted, #6b7280); font-weight: 750; }
+    html[data-theme="dark"] .database-table th:first-child, html[data-theme="dark"] .database-table td:first-child, html[data-theme="dark"] .database-table th:nth-child(2), html[data-theme="dark"] .database-table td:nth-child(2) { background: var(--card, #0b1220); }
+    html[data-theme="dark"] .database-score--bogey, html[data-theme="dark"] .database-score--double, html[data-theme="dark"] .database-score--triple { color: #111827 !important; }
+    @media (prefers-color-scheme: dark) {
+      html[data-theme="system"] .database-table th:first-child, html[data-theme="system"] .database-table td:first-child, html[data-theme="system"] .database-table th:nth-child(2), html[data-theme="system"] .database-table td:nth-child(2) { background: var(--card, #0b1220); }
+      html[data-theme="system"] .database-score--bogey, html[data-theme="system"] .database-score--double, html[data-theme="system"] .database-score--triple { color: #111827 !important; }
+    }
+    @media (max-width: 900px) {
+      body { padding: 14px; }
+      .leader-grid { grid-template-columns: 1fr; }
+      .database-input, .database-select { min-width: 100%; }
+      .database-control { width: 100%; }
+    }
+  </style>
+
+  <main class="database-wrap" data-round-database>
+    <header class="database-header">
+      <h1 class="database-title">Player Round Database</h1>
+      <p class="database-subtitle">Unindexed hole-by-hole database for {allRounds.length.toLocaleString()} original-layout rounds.</p>
+    </header>
+
+    <section class="database-card">
+      <div class="database-card-header"><h2 class="database-section-title">Round Leaders</h2></div>
+      <div class="database-card-body leader-grid">
+        <div>
+          <h3 class="database-section-title">Best rounds</h3>
+          <table class="leader-table"><thead><tr><th>Player</th><th>Date</th><th>Score</th></tr></thead><tbody>{bestRounds.map((row) => <tr><td><a class="database-link" href={row.playerHref}>{row.name}</a><div class="leader-meta">{row.displayDate}</div></td><td>{row.displayDate}</td><td>{row.toParLabel} / {row.total}</td></tr>)}</tbody></table>
+        </div>
+        <div>
+          <h3 class="database-section-title">Best front 9</h3>
+          <table class="leader-table"><thead><tr><th>Player</th><th>Date</th><th>Front</th></tr></thead><tbody>{bestFronts.map((row) => <tr><td><a class="database-link" href={row.playerHref}>{row.name}</a><div class="leader-meta">Round {row.toParLabel} / {row.total}</div></td><td>{row.displayDate}</td><td>{toPar(row.frontToPar)} / {row.front}</td></tr>)}</tbody></table>
+        </div>
+        <div>
+          <h3 class="database-section-title">Best back 9</h3>
+          <table class="leader-table"><thead><tr><th>Player</th><th>Date</th><th>Back</th></tr></thead><tbody>{bestBacks.map((row) => <tr><td><a class="database-link" href={row.playerHref}>{row.name}</a><div class="leader-meta">Round {row.toParLabel} / {row.total}</div></td><td>{row.displayDate}</td><td>{toPar(row.backToPar)} / {row.back}</td></tr>)}</tbody></table>
+        </div>
+        <div>
+          <h3 class="database-section-title">Most birdies or better</h3>
+          <table class="leader-table"><thead><tr><th>Player</th><th>Date</th><th>B+</th></tr></thead><tbody>{mostBirdies.map((row) => <tr><td><a class="database-link" href={row.playerHref}>{row.name}</a><div class="leader-meta">{row.toParLabel} / {row.total}</div></td><td>{row.displayDate}</td><td>{row.birdiesOrBetter}</td></tr>)}</tbody></table>
+        </div>
+        <div>
+          <h3 class="database-section-title">Most over-par holes</h3>
+          <table class="leader-table"><thead><tr><th>Player</th><th>Date</th><th>Over</th></tr></thead><tbody>{mostOverPar.map((row) => <tr><td><a class="database-link" href={row.playerHref}>{row.name}</a><div class="leader-meta">{row.toParLabel} / {row.total}</div></td><td>{row.displayDate}</td><td>{row.overParHoles}</td></tr>)}</tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <section class="database-card">
+      <div class="database-card-header"><h2 class="database-section-title">All Rounds</h2></div>
+      <div class="database-card-body">
+        <div class="database-controls">
+          <label class="database-control">Name <input class="database-input" type="search" data-name-filter placeholder="Search player name" /></label>
+          <label class="database-control">Year <select class="database-select" data-year-filter><option value="all">All years</option>{years.map((year) => <option value={year}>{year}</option>)}</select></label>
+          <span class="database-summary"><span data-visible-count>{allRounds.length.toLocaleString()}</span> rounds shown</span>
+        </div>
+        <div class="database-table-wrap">
+          <table class="database-table">
+            <thead>
+              <tr>
+                <th rowspan="2"><button class="database-sort" type="button" data-sort="name">Player</button></th>
+                <th rowspan="2"><button class="database-sort" type="button" data-sort="date">Date</button></th>
+                <th rowspan="2"><button class="database-sort" type="button" data-sort="toPar">Tot.</button></th>
+                {pars.map((_par, index) => <th data-hole><button class="database-sort" type="button" data-sort={`h${index + 1}`}>{index + 1}</button></th>)}
+                <th rowspan="2"><button class="database-sort" type="button" data-sort="total">Round</button></th>
+              </tr>
+              <tr>{pars.map((par) => <th data-hole>{par}</th>)}</tr>
+            </thead>
+            <tbody data-round-list>{allRounds.map((round) => <tr data-round-item data-name={round.name.toLowerCase()} data-year={round.year} data-sort-name={round.name} data-sort-date={round.dateKey} data-sort-to-par={round.toParNumber} data-sort-total={round.total} {...Object.fromEntries(round.scores.map((score, index) => [`data-sort-h${index + 1}`, score]))}><td><a class="database-link" href={round.playerHref}>{round.name}</a></td><td>{round.displayDate}</td><td>{round.toParLabel}</td>{round.holes.map((hole) => <td data-hole><span class={`database-score database-score--${hole.className}`}>{hole.score}</span></td>)}<td>{round.total}</td></tr>)}</tbody>
+          </table>
+        </div>
+        <p class="database-empty" data-empty>No rounds match those filters.</p>
+      </div>
+    </section>
+  </main>
+
+  <script is:inline>
+    (() => {
+      const root = document.querySelector("[data-round-database]");
+      if (!root) return;
+      const nameFilter = root.querySelector("[data-name-filter]");
+      const yearFilter = root.querySelector("[data-year-filter]");
+      const count = root.querySelector("[data-visible-count]");
+      const empty = root.querySelector("[data-empty]");
+      const list = root.querySelector("[data-round-list]");
+      const rows = Array.from(root.querySelectorAll("[data-round-item]"));
+      const state = { key: "date", direction: "desc" };
+      function sortValue(row, key) {
+        if (key === "date") return row.dataset.sortDate || "";
+        if (key === "name") return row.dataset.sortName || "";
+        const attr = key === "toPar" ? "sortToPar" : key === "total" ? "sortTotal" : `sort${key.charAt(0).toUpperCase()}${key.slice(1)}`;
+        const value = Number(row.dataset[attr]);
+        return Number.isFinite(value) ? value : 9999;
+      }
+      function applyFilters() {
+        const name = String(nameFilter?.value || "").trim().toLowerCase();
+        const year = yearFilter?.value || "all";
+        let visible = 0;
+        rows.forEach((row) => {
+          const show = (!name || String(row.dataset.name || "").includes(name)) && (year === "all" || row.dataset.year === year);
+          row.hidden = !show;
+          if (show) visible += 1;
+        });
+        if (count) count.textContent = visible.toLocaleString();
+        if (empty) empty.style.display = visible ? "none" : "block";
+      }
+      function sortRows(key) {
+        state.direction = state.key === key && state.direction === "asc" ? "desc" : "asc";
+        state.key = key;
+        rows.sort((a, b) => {
+          const av = sortValue(a, key);
+          const bv = sortValue(b, key);
+          const primary = typeof av === "string" ? av.localeCompare(bv) : av - bv;
+          if (primary) return state.direction === "asc" ? primary : -primary;
+          const dateTie = String(b.dataset.sortDate || "").localeCompare(String(a.dataset.sortDate || ""));
+          if (dateTie) return dateTie;
+          return String(a.dataset.sortName || "").localeCompare(String(b.dataset.sortName || ""));
+        });
+        rows.forEach((row) => list?.appendChild(row));
+        applyFilters();
+      }
+      root.querySelectorAll("[data-sort]").forEach((button) => button.addEventListener("click", () => sortRows(button.dataset.sort || "date")));
+      nameFilter?.addEventListener("input", applyFilters);
+      yearFilter?.addEventListener("change", applyFilters);
+      applyFilters();
+    })();
+  </script>
+</SiteLayout>
