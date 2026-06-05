@@ -83,7 +83,7 @@ function linkedEvents() {
 function bucket(label) {
   return { label, rounds: 0, holes: PARS.map((par, i) => ({ hole: i + 1, par, rounds: 0, total: 0, counts: Object.fromEntries(SEGMENTS.map(([key]) => [key, 0])) })) };
 }
-function playerBucket(name) { return { ...bucket(name), name, byYear: new Map() }; }
+function playerBucket(name) { return { ...bucket(name), name, byYear: new Map(), roundHistory: [] }; }
 function segment(score, par) { const d = score - par; return d <= -2 ? "aceEagle" : d === -1 ? "birdie" : d === 0 ? "par" : d === 1 ? "bogey" : d === 2 ? "doubleBogey" : "triplePlus"; }
 function addRound(target, scores) { target.rounds += 1; scores.forEach((score, i) => { const h = target.holes[i]; h.rounds += 1; h.total += score; h.counts[segment(score, h.par)] += 1; }); }
 function finishBucket(b) {
@@ -97,7 +97,8 @@ function finishBucket(b) {
 function finishPlayerBucket(b) {
   const total = finishBucket(b);
   const years = [...b.byYear.keys()].sort((a,b) => Number(b) - Number(a));
-  return { name: b.name, key: keyFor(b.name), rounds: total.rounds, holes: total.holes, years, byYear: Object.fromEntries(years.map((year) => [year, finishBucket(b.byYear.get(year))])) };
+  const roundHistory = [...b.roundHistory].sort((a,b) => String(b.dateKey).localeCompare(String(a.dateKey)) || a.total - b.total);
+  return { name: b.name, key: keyFor(b.name), rounds: total.rounds, holes: total.holes, roundHistory, years, byYear: Object.fromEntries(years.map((year) => [year, finishBucket(b.byYear.get(year))])) };
 }
 function sheetRows(workbook, name) {
   const sheet = workbook.Sheets[name];
@@ -127,14 +128,14 @@ function exportRows(file, event, warnings, aliases) {
     const key = aliases[keyFor(name)] || keyFor(name);
     const scores = holeIndexes.map((i) => num(row[i]));
     if (!name || !key || scores.some((score) => score == null || score < 1)) continue;
-    const countedTotal = scores.reduce((sum, score) => sum + score, 0);
+    const total = scores.reduce((sum, score) => sum + score, 0);
     const exportTotal = totalIndex === -1 ? null : num(row[totalIndex]);
-    if (exportTotal != null && exportTotal !== countedTotal) {
+    if (exportTotal != null && exportTotal !== total) {
       const extraTotal = extraIndexes.map(({ index }) => num(row[index])).filter((score) => score != null && score >= 1).reduce((sum, score) => sum + score, 0);
-      if (extraTotal && exportTotal === countedTotal + extraTotal) adjustedRows += 1;
+      if (extraTotal && exportTotal === total + extraTotal) adjustedRows += 1;
       else continue;
     }
-    out.push({ name, key, scores });
+    out.push({ name, key, scores, total, toPar: total - PARS.reduce((sum, par) => sum + par, 0) });
   }
   if (adjustedRows) warnings.push({ type: "round-total-adjusted-for-excluded-extra-holes", title: event.title, file: path.relative(root, file), rows: adjustedRows });
   return out;
@@ -148,6 +149,7 @@ function addRows({ rows, event, file, total, byYear, byPlayer, includedEvents })
     if (!byPlayer.has(row.key)) byPlayer.set(row.key, playerBucket(row.name));
     const player = byPlayer.get(row.key);
     addRound(player, row.scores);
+    player.roundHistory.push({ title: event.title, date: event.date, dateKey: event.dateKey, year: event.year, url: event.url || "", file: path.relative(root, file), scores: row.scores, total: row.total, toPar: row.toPar });
     if (!player.byYear.has(year)) player.byYear.set(year, bucket(year));
     addRound(player.byYear.get(year), row.scores);
   }
