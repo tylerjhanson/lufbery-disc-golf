@@ -4,6 +4,10 @@ const ROUND_HISTORY_FIX_STYLE = `
     color: var(--text, #111827) !important;
   }
 
+  .profile-round-table thead tr:first-child th[rowspan="2"] {
+    vertical-align: middle !important;
+  }
+
   html[data-theme="dark"] .profile-round-score--bogey,
   html[data-theme="dark"] .profile-round-score--double,
   html[data-theme="dark"] .profile-round-score--triple,
@@ -37,9 +41,9 @@ const ROUND_HISTORY_FIX_STYLE = `
     }
     .profile-round-table th:first-child,
     .profile-round-table td:first-child {
-      width: 42px !important;
-      font-size: 0.54rem !important;
-      letter-spacing: -0.045em !important;
+      width: 39px !important;
+      font-size: 0.50rem !important;
+      letter-spacing: -0.055em !important;
     }
     .profile-round-table td:first-child .profile-link {
       font-size: inherit !important;
@@ -49,14 +53,23 @@ const ROUND_HISTORY_FIX_STYLE = `
     .profile-round-table td:nth-child(2),
     .profile-round-table th:last-child,
     .profile-round-table td:last-child {
-      width: 28px !important;
+      width: 27px !important;
       font-size: 0.58rem !important;
       letter-spacing: -0.035em !important;
+      font-weight: 750 !important;
     }
     .profile-round-table thead tr:first-child th,
     .profile-round-table thead tr:first-child .profile-round-sort {
       font-size: 0.62rem !important;
       color: var(--text, #111827) !important;
+    }
+    .profile-round-table thead tr:first-child th:first-child,
+    .profile-round-table thead tr:first-child th:nth-child(2),
+    .profile-round-table thead tr:first-child th:last-child,
+    .profile-round-table thead tr:first-child th:first-child .profile-round-sort,
+    .profile-round-table thead tr:first-child th:nth-child(2) .profile-round-sort,
+    .profile-round-table thead tr:first-child th:last-child .profile-round-sort {
+      font-size: 0.58rem !important;
     }
     .profile-round-table thead tr:nth-child(2) th {
       font-size: 0.58rem !important;
@@ -95,7 +108,7 @@ const ROUND_HISTORY_FIX_SCRIPT = `
   const state = { key: 'date', direction: 'desc' };
   function value(item, key) {
     if (key === 'date') return item.dataset.sortDate || '';
-    const attr = key === 'toPar' ? 'sortToPar' : key === 'total' ? 'sortTotal' : `sort${key.charAt(0).toUpperCase()}${key.slice(1)}`;
+    const attr = key === 'toPar' ? 'sortToPar' : key === 'total' ? 'sortTotal' : 'sort' + key.charAt(0).toUpperCase() + key.slice(1);
     const number = Number(item.dataset[attr]);
     return Number.isFinite(number) ? number : 9999;
   }
