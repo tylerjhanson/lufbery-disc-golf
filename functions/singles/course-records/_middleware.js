@@ -1,72 +1,4 @@
 const COURSE_RECORDS_FIX_STYLE = `
-  table[data-leader-table] {
-    width: 100% !important;
-    border-collapse: separate !important;
-    border-spacing: 0 !important;
-    table-layout: fixed !important;
-  }
-
-  table[data-leader-table] col.name-col { width: 46% !important; }
-  table[data-leader-table] col.score-col { width: 20% !important; }
-  table[data-leader-table] col.date-col { width: 34% !important; }
-
-  table[data-leader-table] thead th {
-    background: var(--header, #f8fafc) !important;
-    color: var(--muted, #6b7280) !important;
-    font-size: 0.86rem !important;
-    font-weight: 700 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.04em !important;
-    padding: 14px 16px !important;
-    border-bottom: 1px solid var(--line, #e5e7eb) !important;
-    text-align: center !important;
-    user-select: none !important;
-  }
-
-  table[data-leader-table] thead th:first-child {
-    border-top-left-radius: 14px !important;
-    text-align: left !important;
-  }
-
-  table[data-leader-table] thead th:last-child {
-    border-top-right-radius: 14px !important;
-  }
-
-  table[data-leader-table] tbody td {
-    padding: 15px 16px !important;
-    border-bottom: 1px solid var(--line-soft, #eef2f7) !important;
-    font-size: 1rem !important;
-    text-align: center !important;
-    vertical-align: middle !important;
-  }
-
-  table[data-leader-table] tbody tr:nth-child(even) td {
-    background: #fcfdff !important;
-  }
-
-  table[data-leader-table] tbody tr:hover td {
-    background: var(--hover, #f9fbff) !important;
-  }
-
-  table[data-leader-table] tbody td:first-child {
-    text-align: left !important;
-    font-weight: 600 !important;
-    overflow-wrap: anywhere !important;
-    word-break: break-word !important;
-  }
-
-  table[data-leader-table] .date-link,
-  #break50-table .date-link {
-    color: var(--accent, #2563eb) !important;
-    text-decoration: none !important;
-    font-weight: 600 !important;
-  }
-
-  table[data-leader-table] .date-link:hover,
-  #break50-table .date-link:hover {
-    text-decoration: underline !important;
-  }
-
   .date-link-inline {
     display: inline-flex !important;
     align-items: center !important;
@@ -112,21 +44,89 @@ const COURSE_RECORDS_FIX_STYLE = `
       display: inline-block !important;
     }
   }
+`;
 
-  @media (max-width: 700px) {
-    table[data-leader-table] col.name-col { width: 42% !important; }
-    table[data-leader-table] col.score-col { width: 22% !important; }
-    table[data-leader-table] col.date-col { width: 36% !important; }
-    table[data-leader-table] thead th {
-      font-size: 0.72rem !important;
-      letter-spacing: 0.02em !important;
-      padding: 10px 6px !important;
-    }
-    table[data-leader-table] tbody td {
-      font-size: 0.9rem !important;
-      padding: 10px 6px !important;
-    }
+const COURSE_RECORDS_FIX_SCRIPT = `
+(() => {
+  const TEXT_PROPS = [
+    'font-family',
+    'font-size',
+    'font-style',
+    'font-weight',
+    'line-height',
+    'letter-spacing',
+    'color',
+    'text-align',
+    'text-decoration-line',
+    'text-decoration-style',
+    'text-decoration-thickness',
+    'text-decoration-color',
+    'text-underline-offset'
+  ];
+  const CELL_PROPS = [
+    'padding-top',
+    'padding-right',
+    'padding-bottom',
+    'padding-left',
+    'border-bottom-color',
+    'border-bottom-style',
+    'border-bottom-width',
+    'vertical-align'
+  ];
+
+  function copyProps(from, to, props) {
+    if (!from || !to) return;
+    const styles = window.getComputedStyle(from);
+    props.forEach((prop) => {
+      to.style.setProperty(prop, styles.getPropertyValue(prop), 'important');
+    });
   }
+
+  function syncCourseRecordLeaderStyles() {
+    const referenceRow = document.querySelector('#break50-table tbody tr');
+    if (!referenceRow) return;
+    const referenceCells = Array.from(referenceRow.children).slice(0, 3);
+    if (referenceCells.length < 3) return;
+    const referencePlayerLink = referenceCells[0].querySelector('.player-button') || referenceCells[0].querySelector('a');
+    const referenceDateLink = referenceCells[2].querySelector('.date-link') || referenceCells[2].querySelector('a');
+
+    document.querySelectorAll('table[data-leader-table] tbody tr').forEach((row) => {
+      Array.from(row.children).slice(0, 3).forEach((cell, index) => {
+        copyProps(referenceCells[index], cell, CELL_PROPS);
+        copyProps(referenceCells[index], cell, TEXT_PROPS);
+      });
+
+      const playerLink = row.children[0]?.querySelector('.player-button') || row.children[0]?.querySelector('a');
+      copyProps(referencePlayerLink || referenceCells[0], playerLink, TEXT_PROPS);
+
+      const dateLink = row.children[2]?.querySelector('.date-link') || row.children[2]?.querySelector('a');
+      if (dateLink) copyProps(referenceDateLink || referenceCells[2], dateLink, TEXT_PROPS);
+    });
+  }
+
+  let syncQueued = false;
+  function queueSync() {
+    if (syncQueued) return;
+    syncQueued = true;
+    requestAnimationFrame(() => {
+      syncQueued = false;
+      syncCourseRecordLeaderStyles();
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', queueSync, { once: true });
+  } else {
+    queueSync();
+  }
+
+  const observer = new MutationObserver(queueSync);
+  document.querySelectorAll('table[data-leader-table] tbody').forEach((tbody) => {
+    observer.observe(tbody, { childList: true, subtree: true });
+  });
+
+  document.getElementById('yearFilter')?.addEventListener('change', queueSync);
+})();
 `;
 
 export async function onRequest(context) {
@@ -138,6 +138,11 @@ export async function onRequest(context) {
     .on("head", {
       element(element) {
         element.append(`<style>${COURSE_RECORDS_FIX_STYLE}</style>`, { html: true });
+      },
+    })
+    .on("body", {
+      element(element) {
+        element.append(`<script>${COURSE_RECORDS_FIX_SCRIPT}</script>`, { html: true });
       },
     })
     .transform(response);
