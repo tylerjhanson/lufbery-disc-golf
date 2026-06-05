@@ -62,7 +62,6 @@ const allRounds = Object.values(courseStats.players || {})
       const front = scores.slice(0, 9).reduce((sum, score) => sum + score, 0);
       const back = scores.slice(9, 18).reduce((sum, score) => sum + score, 0);
       const birdiesOrBetter = scores.reduce((count, score, index) => count + (Number(score) < Number(pars[index] || 3) ? 1 : 0), 0);
-      const overParHoles = scores.reduce((count, score, index) => count + (Number(score) > Number(pars[index] || 3) ? 1 : 0), 0);
       const year = String(round.year || String(round.date || "").split("/").pop() || "");
       return {
         ...round,
@@ -80,22 +79,17 @@ const allRounds = Object.values(courseStats.players || {})
         frontToPar: front - pars.slice(0, 9).reduce((sum, par) => sum + Number(par || 0), 0),
         backToPar: back - pars.slice(9, 18).reduce((sum, par) => sum + Number(par || 0), 0),
         birdiesOrBetter,
-        overParHoles,
         holes: scores.map((score, index) => ({ hole: index + 1, score, par: Number(pars[index] || 3), className: scoreClass(score, pars[index] || 3) })),
       };
     });
   })
   .sort((a, b) => String(b.dateKey || "").localeCompare(String(a.dateKey || "")) || a.name.localeCompare(b.name) || a.total - b.total);
 
-const playerNames = Array.from(new Set(allRounds.map((round) => round.name).filter(Boolean))).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
 const years = uniqueYears(allRounds);
-const frontPar = pars.slice(0, 9).reduce((sum, par) => sum + Number(par || 0), 0);
-const backPar = pars.slice(9, 18).reduce((sum, par) => sum + Number(par || 0), 0);
 const bestRounds = rankWithTies(allRounds, 10, (a, b) => (a.toParNumber - b.toParNumber) || (a.total - b.total) || String(b.dateKey || "").localeCompare(String(a.dateKey || "")) || a.name.localeCompare(b.name));
 const bestFronts = rankWithTies(allRounds, 10, (a, b) => (a.front - b.front) || String(b.dateKey || "").localeCompare(String(a.dateKey || "")) || a.name.localeCompare(b.name));
 const bestBacks = rankWithTies(allRounds, 10, (a, b) => (a.back - b.back) || String(b.dateKey || "").localeCompare(String(a.dateKey || "")) || a.name.localeCompare(b.name));
 const mostBirdies = rankWithTies(allRounds, 10, (a, b) => (b.birdiesOrBetter - a.birdiesOrBetter) || (a.total - b.total) || String(b.dateKey || "").localeCompare(String(a.dateKey || "")) || a.name.localeCompare(b.name));
-const mostOverPar = rankWithTies(allRounds, 10, (a, b) => (b.overParHoles - a.overParHoles) || (b.total - a.total) || String(b.dateKey || "").localeCompare(String(a.dateKey || "")) || a.name.localeCompare(b.name));
 ---
 
 <SiteLayout title="Player Round Database" description="Unindexed player round database with hole-by-hole Lufbery league scores." noindex={true} showBrandBar={true}>
@@ -171,20 +165,16 @@ const mostOverPar = rankWithTies(allRounds, 10, (a, b) => (b.overParHoles - a.ov
           <table class="leader-table"><thead><tr><th>Player</th><th>Date</th><th>Score</th></tr></thead><tbody>{bestRounds.map((row) => <tr><td><a class="database-link" href={row.playerHref}>{row.name}</a><div class="leader-meta">{row.displayDate}</div></td><td>{row.displayDate}</td><td>{row.toParLabel} / {row.total}</td></tr>)}</tbody></table>
         </div>
         <div>
+          <h3 class="database-section-title">Most birdies or better</h3>
+          <table class="leader-table"><thead><tr><th>Player</th><th>Date</th><th>B+</th></tr></thead><tbody>{mostBirdies.map((row) => <tr><td><a class="database-link" href={row.playerHref}>{row.name}</a><div class="leader-meta">{row.toParLabel} / {row.total}</div></td><td>{row.displayDate}</td><td>{row.birdiesOrBetter}</td></tr>)}</tbody></table>
+        </div>
+        <div>
           <h3 class="database-section-title">Best front 9</h3>
           <table class="leader-table"><thead><tr><th>Player</th><th>Date</th><th>Front</th></tr></thead><tbody>{bestFronts.map((row) => <tr><td><a class="database-link" href={row.playerHref}>{row.name}</a><div class="leader-meta">Round {row.toParLabel} / {row.total}</div></td><td>{row.displayDate}</td><td>{toPar(row.frontToPar)} / {row.front}</td></tr>)}</tbody></table>
         </div>
         <div>
           <h3 class="database-section-title">Best back 9</h3>
           <table class="leader-table"><thead><tr><th>Player</th><th>Date</th><th>Back</th></tr></thead><tbody>{bestBacks.map((row) => <tr><td><a class="database-link" href={row.playerHref}>{row.name}</a><div class="leader-meta">Round {row.toParLabel} / {row.total}</div></td><td>{row.displayDate}</td><td>{toPar(row.backToPar)} / {row.back}</td></tr>)}</tbody></table>
-        </div>
-        <div>
-          <h3 class="database-section-title">Most birdies or better</h3>
-          <table class="leader-table"><thead><tr><th>Player</th><th>Date</th><th>B+</th></tr></thead><tbody>{mostBirdies.map((row) => <tr><td><a class="database-link" href={row.playerHref}>{row.name}</a><div class="leader-meta">{row.toParLabel} / {row.total}</div></td><td>{row.displayDate}</td><td>{row.birdiesOrBetter}</td></tr>)}</tbody></table>
-        </div>
-        <div>
-          <h3 class="database-section-title">Most over-par holes</h3>
-          <table class="leader-table"><thead><tr><th>Player</th><th>Date</th><th>Over</th></tr></thead><tbody>{mostOverPar.map((row) => <tr><td><a class="database-link" href={row.playerHref}>{row.name}</a><div class="leader-meta">{row.toParLabel} / {row.total}</div></td><td>{row.displayDate}</td><td>{row.overParHoles}</td></tr>)}</tbody></table>
         </div>
       </div>
     </section>
