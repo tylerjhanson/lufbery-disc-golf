@@ -4,10 +4,6 @@ const ROUND_HISTORY_FIX_STYLE = `
     color: var(--text, #111827) !important;
   }
 
-  .profile-round-table thead tr:first-child th[rowspan="2"] {
-    vertical-align: middle !important;
-  }
-
   html[data-theme="dark"] .profile-round-score--bogey,
   html[data-theme="dark"] .profile-round-score--double,
   html[data-theme="dark"] .profile-round-score--triple,
@@ -33,52 +29,72 @@ const ROUND_HISTORY_FIX_STYLE = `
       min-width: 0 !important;
       table-layout: fixed !important;
     }
+    .profile-round-col-date { width: 38px !important; }
+    .profile-round-col-total { width: 27px !important; }
+    .profile-round-col-hole { width: 23px !important; }
+    .profile-round-col-round { width: 32px !important; }
     .profile-round-table th,
     .profile-round-table td {
-      padding: 5px 1px !important;
-      font-size: 0.62rem !important;
-      letter-spacing: -0.035em !important;
+      padding: 5px 0 !important;
+      font-size: 0.60rem !important;
+      letter-spacing: -0.04em !important;
     }
     .profile-round-table th:first-child,
     .profile-round-table td:first-child {
-      width: 39px !important;
+      width: 38px !important;
       font-size: 0.50rem !important;
-      letter-spacing: -0.055em !important;
+      letter-spacing: -0.06em !important;
     }
     .profile-round-table td:first-child .profile-link {
       font-size: inherit !important;
       letter-spacing: inherit !important;
     }
     .profile-round-table th:nth-child(2),
-    .profile-round-table td:nth-child(2),
+    .profile-round-table td:nth-child(2) {
+      width: 27px !important;
+      font-size: 0.56rem !important;
+      letter-spacing: -0.04em !important;
+      font-weight: 750 !important;
+      text-align: center !important;
+    }
     .profile-round-table th:last-child,
     .profile-round-table td:last-child {
-      width: 27px !important;
-      font-size: 0.58rem !important;
-      letter-spacing: -0.035em !important;
+      width: 32px !important;
+      font-size: 0.56rem !important;
+      letter-spacing: -0.04em !important;
       font-weight: 750 !important;
+      text-align: center !important;
     }
     .profile-round-table thead tr:first-child th,
     .profile-round-table thead tr:first-child .profile-round-sort {
-      font-size: 0.62rem !important;
+      font-size: 0.60rem !important;
       color: var(--text, #111827) !important;
     }
     .profile-round-table thead tr:first-child th:first-child,
     .profile-round-table thead tr:first-child th:nth-child(2),
-    .profile-round-table thead tr:first-child th:last-child,
     .profile-round-table thead tr:first-child th:first-child .profile-round-sort,
-    .profile-round-table thead tr:first-child th:nth-child(2) .profile-round-sort,
+    .profile-round-table thead tr:first-child th:nth-child(2) .profile-round-sort {
+      font-size: 0.56rem !important;
+      transform: translateY(10px);
+    }
+    .profile-round-table thead tr:first-child th:last-child,
     .profile-round-table thead tr:first-child th:last-child .profile-round-sort {
-      font-size: 0.58rem !important;
+      font-size: 0.56rem !important;
+      text-align: center !important;
     }
     .profile-round-table thead tr:nth-child(2) th {
-      font-size: 0.58rem !important;
+      font-size: 0.56rem !important;
+      border-bottom: 1px solid var(--line-soft, #eef2f7) !important;
+    }
+    .profile-round-table thead tr:nth-child(2) th:first-child,
+    .profile-round-table thead tr:nth-child(2) th:nth-child(2) {
+      color: transparent !important;
     }
     .profile-round-score {
-      min-width: 19px !important;
-      height: 19px !important;
+      min-width: 18px !important;
+      height: 18px !important;
       padding: 0 2px !important;
-      font-size: 0.62rem !important;
+      font-size: 0.60rem !important;
     }
   }
 `;
@@ -97,12 +113,23 @@ const ROUND_HISTORY_FIX_SCRIPT = `
     const rows = table.tHead?.rows;
     if (!rows || rows.length < 2 || table.dataset.headerRefined === 'true') return;
     table.dataset.headerRefined = 'true';
-    const firstRow = rows[0];
+
+    if (!table.querySelector('colgroup')) {
+      const colgroup = document.createElement('colgroup');
+      const classes = ['profile-round-col-date', 'profile-round-col-total'];
+      for (let i = 0; i < 18; i += 1) classes.push('profile-round-col-hole');
+      classes.push('profile-round-col-round');
+      classes.forEach((className) => {
+        const col = document.createElement('col');
+        col.className = className;
+        colgroup.appendChild(col);
+      });
+      table.insertBefore(colgroup, table.firstChild);
+    }
+
     const secondRow = rows[1];
-    if (firstRow.cells[0]) firstRow.cells[0].rowSpan = 2;
-    if (firstRow.cells[1]) firstRow.cells[1].rowSpan = 2;
-    if (secondRow.cells[1]) secondRow.cells[1].remove();
-    if (secondRow.cells[0]) secondRow.cells[0].remove();
+    if (secondRow.cells[0]) secondRow.cells[0].textContent = '';
+    if (secondRow.cells[1]) secondRow.cells[1].textContent = '';
   });
 
   const state = { key: 'date', direction: 'desc' };
