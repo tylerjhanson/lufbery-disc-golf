@@ -1,5 +1,5 @@
 ---
-import { getPlayerProfiles, getSinglesRecords } from "../../lib/data";
+import { getPlayerProfiles, getSinglesRecords, getWeeklyResults, getWeeklyResultsAnchorId } from "../../lib/data";
 import courseStats from "../../data/course-stats.generated.json";
 import udiscEventOverrides from "../../data/udisc-event-overrides.json";
 import PlayerLink from "../../components/PlayerLink.astro";
@@ -7,12 +7,14 @@ import PlayerModal from "../../components/PlayerModal.astro";
 import SiteLayout from "../../layouts/SiteLayout.astro";
 
 const rows = getSinglesRecords();
+const weeklyEvents = getWeeklyResults();
 const playerProfiles = getPlayerProfiles();
 const DEFAULT_PARS = [3,3,4,3,3,3,3,3,3,3,3,3,3,4,3,3,3,3];
 const pars = Array.isArray(courseStats?.source?.holePars) && courseStats.source.holePars.length >= 18 ? courseStats.source.holePars.slice(0, 18) : DEFAULT_PARS;
 const frontPar = pars.slice(0, 9).reduce((sum, par) => sum + Number(par || 0), 0);
 const backPar = pars.slice(9, 18).reduce((sum, par) => sum + Number(par || 0), 0);
 const eventOverrides = udiscEventOverrides as Record<string, { date?: string; dateKey?: string; url?: string }>;
+const WEEKLY_RESULTS_PAGE_PATH = "/singles/weekly-results";
 
 function getDateParts(value: string) {
   const match = String(value || "").match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
@@ -75,12 +77,20 @@ function getOverrideForDate(value: string) {
   return key ? eventOverrides[key] : undefined;
 }
 
-function getRecordDateHrefByDateKey() {
+function getWebsiteHrefByDateKey() {
   const map = new Map<string, string>();
+
+  for (const event of weeklyEvents) {
+    const key = getDateKey(String(event?.title || ""));
+    if (!key) continue;
+    map.set(key, `${WEEKLY_RESULTS_PAGE_PATH}#${getWeeklyResultsAnchorId(String(event.title || ""))}`);
+  }
+
   for (const row of rows) {
     const key = getDateKey(row.date);
     if (key && row.resultsHref) map.set(key, row.resultsHref);
   }
+
   return map;
 }
 
@@ -95,7 +105,7 @@ function rankByMetric(items: any[], limit: number, metric: (item: any) => number
   return sorted.filter((item) => metric(item) === cutoff || (direction === "asc" ? metric(item) < cutoff : metric(item) > cutoff));
 }
 
-const websiteHrefByDateKey = getRecordDateHrefByDateKey();
+const websiteHrefByDateKey = getWebsiteHrefByDateKey();
 const allRoundRows = Object.values(courseStats.players || {})
   .flatMap((player: any) => {
     const name = cleanName(player?.name || "");
@@ -171,9 +181,30 @@ const mostBirdiesRows = leaderboardsByYear.all.birdies;
 
 <SiteLayout title="Singles Records" showBrandBar={true}>
   <style>
-    :root { --bg: #f5f7fb; --card: #ffffff; --text: #111827; --muted: #6b7280; --line: #e5e7eb; --line-soft: #eef2f7; --header: #f8fafc; --hover: #f9fbff; --accent: #2563eb; --shadow: 0 10px 30px rgba(15, 23, 42, 0.08); --radius: 22px; }
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --line-soft: #eef2f7;
+      --header: #f8fafc;
+      --hover: #f9fbff;
+      --accent: #2563eb;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --radius: 22px;
+    }
+
     * { box-sizing: border-box; }
-    body { margin: 0; padding: 24px; font-family: Inter, Arial, Helvetica, sans-serif; background: linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%); color: var(--text); }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+
     .wrap { width: 100%; max-width: none; margin: 0; }
     .page-header { margin-bottom: 18px; }
     .toolbar { display: flex; align-items: center; justify-content: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
@@ -202,10 +233,10 @@ const mostBirdiesRows = leaderboardsByYear.all.birdies;
     tbody tr:nth-child(even) td { background: #fcfdff; }
     tbody tr:hover td { background: var(--hover); }
     tbody td:first-child { text-align: left; font-weight: 600; overflow-wrap: anywhere; word-break: break-word; }
-    .date-link, .player-button { color: var(--accent); text-decoration: none; font-weight: 600; }
-    .date-link:hover, .player-button:hover { text-decoration: underline; }
-    .date-link-inline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
-    .udisc-icon { height: 0.82em; width: auto; display: inline-block; vertical-align: middle; flex: 0 0 auto; opacity: 0.98; transform: translateY(-0.11em); }
+    .date-link { color: var(--accent); text-decoration: none; font-weight: 600; }
+    .date-link:hover { text-decoration: underline; }
+    .date-link-inline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: nowrap; }
+    .udisc-icon { height: 0.82em; width: auto; max-width: 1em; display: inline-block; vertical-align: middle; flex: 0 0 auto; opacity: 0.98; transform: translateY(-0.11em); }
     .udisc-icon--dark { display: none; }
     :global(html.dark) .udisc-icon--light, :global(html[data-theme="dark"]) .udisc-icon--light, :global(body.dark) .udisc-icon--light, :global(body[data-theme="dark"]) .udisc-icon--light { display: none; }
     :global(html.dark) .udisc-icon--dark, :global(html[data-theme="dark"]) .udisc-icon--dark, :global(body.dark) .udisc-icon--dark, :global(body[data-theme="dark"]) .udisc-icon--dark { display: inline-block; }
@@ -231,7 +262,7 @@ const mostBirdiesRows = leaderboardsByYear.all.birdies;
         <table id="break50-table" data-record-table>
           <colgroup><col class="name-col" /><col class="score-col" /><col class="date-col" /></colgroup>
           <thead><tr><th class="sortable" data-column="0" data-type="text"><span class="th-inner">Name <span class="sort-indicator"></span></span></th><th class="sortable" data-column="1" data-type="score"><span class="th-inner">Score <span class="sort-indicator"></span></span></th><th class="sortable" data-column="2" data-type="date"><span class="th-inner">Date <span class="sort-indicator"></span></span></th></tr></thead>
-          <tbody>{rows.map((row) => <tr data-year={getRowYear(row.date)}><td><PlayerLink name={row.name} /></td><td data-sort={getScoreSortValue(row.score)}>{row.score}</td><td>{row.resultsHref ? <a class="date-link" href={row.resultsHref}>{row.date}</a> : row.url ? <a class={`date-link${isUdiscUrl(row.url) ? " date-link-inline" : ""}`} href={row.url} target="_blank" rel="noopener"><span>{row.date}</span>{isUdiscUrl(row.url) && <><img class="udisc-icon udisc-icon--light" src="https://lufberydiscgolf.com/udisc-icon.png" alt="UDisc" loading="lazy" decoding="async" /><img class="udisc-icon udisc-icon--dark" src="https://lufberydiscgolf.com/udisc-icon-white.png" alt="UDisc" loading="lazy" decoding="async" /></>}</a> : row.date}</td></tr>)}</tbody>
+          <tbody>{rows.map((row) => <tr data-year={getRowYear(row.date)}><td><PlayerLink name={row.name} /></td><td data-sort={getScoreSortValue(row.score)}>{row.score}</td><td>{row.resultsHref ? <a class="date-link" href={row.resultsHref}>{shortDate(row.date)}</a> : row.url ? <a class={`date-link${isUdiscUrl(row.url) ? " date-link-inline" : ""}`} href={row.url} target="_blank" rel="noopener"><span>{shortDate(row.date)}</span>{isUdiscUrl(row.url) && <><img class="udisc-icon udisc-icon--light" src="https://lufberydiscgolf.com/udisc-icon.png" alt="UDisc" loading="lazy" decoding="async" /><img class="udisc-icon udisc-icon--dark" src="https://lufberydiscgolf.com/udisc-icon-white.png" alt="UDisc" loading="lazy" decoding="async" /></>}</a> : shortDate(row.date)}</td></tr>)}</tbody>
         </table>
       </div>
       <div class="empty-state">No records found for the selected year.</div>
