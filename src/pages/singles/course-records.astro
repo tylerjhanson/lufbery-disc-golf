@@ -1,6 +1,7 @@
 ---
 import { getPlayerProfiles, getSinglesRecords } from "../../lib/data";
 import courseStats from "../../data/course-stats.generated.json";
+import udiscEventOverrides from "../../data/udisc-event-overrides.json";
 import PlayerLink from "../../components/PlayerLink.astro";
 import PlayerModal from "../../components/PlayerModal.astro";
 import SiteLayout from "../../layouts/SiteLayout.astro";
@@ -11,17 +12,15 @@ const DEFAULT_PARS = [3,3,4,3,3,3,3,3,3,3,3,3,3,4,3,3,3,3];
 const pars = Array.isArray(courseStats?.source?.holePars) && courseStats.source.holePars.length >= 18 ? courseStats.source.holePars.slice(0, 18) : DEFAULT_PARS;
 const frontPar = pars.slice(0, 9).reduce((sum, par) => sum + Number(par || 0), 0);
 const backPar = pars.slice(9, 18).reduce((sum, par) => sum + Number(par || 0), 0);
+const eventOverrides = udiscEventOverrides as Record<string, { date?: string; dateKey?: string; url?: string }>;
 
 function getDateParts(value: string) {
   const match = String(value || "").match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
   if (!match) return null;
-
   const month = Number(match[1]);
   const day = Number(match[2]);
   let year = Number(match[3]);
-
   if (year < 100) year += 2000;
-
   return { month, day, year };
 }
 
@@ -38,10 +37,8 @@ function getDateKey(value: string) {
 
 function getScoreSortValue(value: string) {
   const text = String(value || "").trim();
-
   if (!text) return "";
   if (/^e$/i.test(text)) return "56";
-
   const match = text.match(/-?\d+(\.\d+)?/);
   return match ? match[0] : "";
 }
@@ -61,6 +58,32 @@ function shortDate(value: string) {
   return parts ? `${parts.month}/${parts.day}/${String(parts.year).slice(-2)}` : String(value || "");
 }
 
+function cleanName(value: string) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function playerSlug(value: string) {
+  return cleanName(value)
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function getOverrideForDate(value: string) {
+  const key = getDateKey(value);
+  return key ? eventOverrides[key] : undefined;
+}
+
+function getRecordDateHrefByDateKey() {
+  const map = new Map<string, string>();
+  for (const row of rows) {
+    const key = getDateKey(row.date);
+    if (key && row.resultsHref) map.set(key, row.resultsHref);
+  }
+  return map;
+}
+
 function rankByMetric(items: any[], limit: number, metric: (item: any) => number, direction: "asc" | "desc" = "asc") {
   const sorted = [...items].sort((a, b) => {
     const primary = direction === "asc" ? metric(a) - metric(b) : metric(b) - metric(a);
@@ -72,23 +95,32 @@ function rankByMetric(items: any[], limit: number, metric: (item: any) => number
   return sorted.filter((item) => metric(item) === cutoff || (direction === "asc" ? metric(item) < cutoff : metric(item) > cutoff));
 }
 
+const websiteHrefByDateKey = getRecordDateHrefByDateKey();
 const allRoundRows = Object.values(courseStats.players || {})
   .flatMap((player: any) => {
-    const name = String(player?.name || "").trim();
+    const name = cleanName(player?.name || "");
     const history = Array.isArray(player?.roundHistory) ? player.roundHistory : [];
     return history.map((round: any) => {
       const scores = Array.isArray(round.scores) ? round.scores.slice(0, 18).map(Number) : [];
       const front = scores.slice(0, 9).reduce((sum, score) => sum + (Number.isFinite(score) ? score : 0), 0);
       const back = scores.slice(9, 18).reduce((sum, score) => sum + (Number.isFinite(score) ? score : 0), 0);
       const birdiesOrBetter = scores.reduce((count, score, index) => count + (Number(score) < Number(pars[index] || 3) ? 1 : 0), 0);
-      const date = String(round.date || "");
+      const originalDate = String(round.date || "");
+      const originalDateKey = String(round.dateKey || getDateKey(originalDate));
+      const override = getOverrideForDate(originalDate);
+      const date = String(override?.date || originalDate);
+      const dateKey = String(override?.dateKey || originalDateKey || getDateKey(date));
+      const resultsHref = websiteHrefByDateKey.get(dateKey) || websiteHrefByDateKey.get(originalDateKey) || "";
+      const url = resultsHref ? "" : String(override?.url || round.url || "");
       return {
         name,
+        playerHref: `/singles/players/${playerSlug(name)}/`,
         date,
         dateDisplay: shortDate(date),
-        dateKey: String(round.dateKey || getDateKey(date)),
-        year: String(round.year || getRowYear(date)),
-        url: String(round.url || ""),
+        dateKey,
+        year: getRowYear(date),
+        resultsHref,
+        url,
         front,
         back,
         frontToPar: front - frontPar,
@@ -99,337 +131,96 @@ const allRoundRows = Object.values(courseStats.players || {})
   })
   .filter((round) => round.name && round.dateKey);
 
-const bestFrontRows = rankByMetric(allRoundRows, 10, (round) => round.front, "asc");
-const bestBackRows = rankByMetric(allRoundRows, 10, (round) => round.back, "asc");
-const mostBirdiesRows = rankByMetric(allRoundRows, 10, (round) => round.birdiesOrBetter, "desc");
+function rowForClient(row: any) {
+  return {
+    name: row.name,
+    playerHref: row.playerHref,
+    dateDisplay: row.dateDisplay,
+    dateKey: row.dateKey,
+    resultsHref: row.resultsHref,
+    url: row.url,
+    front: row.front,
+    back: row.back,
+    frontToPar: row.frontToPar,
+    backToPar: row.backToPar,
+    frontLabel: `${row.front} (${toPar(row.frontToPar)})`,
+    backLabel: `${row.back} (${toPar(row.backToPar)})`,
+    birdiesOrBetter: row.birdiesOrBetter,
+  };
+}
+
+function leadersForYear(year: string) {
+  const source = year === "all" ? allRoundRows : allRoundRows.filter((row) => row.year === year);
+  return {
+    front: rankByMetric(source, 10, (round) => round.front, "asc").map(rowForClient),
+    back: rankByMetric(source, 10, (round) => round.back, "asc").map(rowForClient),
+    birdies: rankByMetric(source, 10, (round) => round.birdiesOrBetter, "desc").map(rowForClient),
+  };
+}
 
 const recordYears = [...new Set([
   ...rows.map((row) => getRowYear(row.date)),
   ...allRoundRows.map((row) => row.year),
 ].filter(Boolean))].sort((a, b) => Number(b) - Number(a));
+const leaderboardsByYear = Object.fromEntries(["all", ...recordYears].map((year) => [year, leadersForYear(year)]));
+const leaderboardsJson = JSON.stringify(leaderboardsByYear).replace(/</g, "\\u003c");
+const bestFrontRows = leaderboardsByYear.all.front;
+const bestBackRows = leaderboardsByYear.all.back;
+const mostBirdiesRows = leaderboardsByYear.all.birdies;
 ---
 
 <SiteLayout title="Singles Records" showBrandBar={true}>
   <style>
-    :root {
-      --bg: #f5f7fb;
-      --card: #ffffff;
-      --text: #111827;
-      --muted: #6b7280;
-      --line: #e5e7eb;
-      --line-soft: #eef2f7;
-      --header: #f8fafc;
-      --hover: #f9fbff;
-      --accent: #2563eb;
-      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-      --radius: 22px;
-    }
-
+    :root { --bg: #f5f7fb; --card: #ffffff; --text: #111827; --muted: #6b7280; --line: #e5e7eb; --line-soft: #eef2f7; --header: #f8fafc; --hover: #f9fbff; --accent: #2563eb; --shadow: 0 10px 30px rgba(15, 23, 42, 0.08); --radius: 22px; }
     * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      padding: 24px;
-      font-family: Inter, Arial, Helvetica, sans-serif;
-      background: linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%);
-      color: var(--text);
-    }
-
-    .wrap {
-      width: 100%;
-      max-width: none;
-      margin: 0;
-    }
-
-    .page-header {
-      margin-bottom: 18px;
-    }
-
-    .toolbar {
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 12px;
-    }
-
-    .filter-select {
-      min-width: 170px;
-      padding: 10px 12px;
-      border: 1px solid var(--line-soft);
-      border-radius: 9px;
-      background: var(--card);
-      color: var(--text);
-      font: inherit;
-    }
-
-    .empty-state {
-      display: none;
-      padding: 14px 20px 18px;
-      color: var(--muted);
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--line-soft);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      margin-bottom: 18px;
-    }
-
-    .card-header {
-      padding: 26px 28px 14px;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(2rem, 4vw, 3rem);
-      line-height: 1.05;
-      letter-spacing: -0.03em;
-    }
-
-    .records-section {
-      background: var(--card);
-      border: 1px solid var(--line-soft);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      margin-bottom: 18px;
-    }
-
-    .records-section summary {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      cursor: pointer;
-      padding: 20px 24px;
-      font-size: 0.95rem;
-      font-weight: 900;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      list-style: none;
-    }
-
+    body { margin: 0; padding: 24px; font-family: Inter, Arial, Helvetica, sans-serif; background: linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%); color: var(--text); }
+    .wrap { width: 100%; max-width: none; margin: 0; }
+    .page-header { margin-bottom: 18px; }
+    .toolbar { display: flex; align-items: center; justify-content: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+    .filter-select { min-width: 170px; padding: 10px 12px; border: 1px solid var(--line-soft); border-radius: 9px; background: var(--card); color: var(--text); font: inherit; }
+    .empty-state { display: none; padding: 14px 20px 18px; color: var(--muted); }
+    h1 { margin: 0; font-size: clamp(2rem, 4vw, 3rem); line-height: 1.05; letter-spacing: -0.03em; }
+    .records-section { background: var(--card); border: 1px solid var(--line-soft); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 18px; }
+    .records-section summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; padding: 20px 24px; font-size: 0.95rem; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; list-style: none; }
     .records-section summary::-webkit-details-marker { display: none; }
     .records-section summary::after { content: "›"; color: var(--muted); font-size: 1.4rem; transform: rotate(90deg); transition: transform 0.15s ease; }
     .records-section:not([open]) summary::after { transform: rotate(0deg); }
-
-    .table-wrap {
-      padding: 0 20px 10px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
-      table-layout: fixed;
-    }
-
+    .table-wrap { padding: 0 20px 10px; }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
     col.name-col { width: 46%; }
     col.score-col { width: 20%; }
     col.date-col { width: 34%; }
-
-    thead th {
-      background: var(--header);
-      color: var(--muted);
-      font-size: 0.86rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--line);
-      text-align: center;
-      user-select: none;
-    }
-
-    thead th.sortable {
-      cursor: pointer;
-      transition: background 0.15s ease, color 0.15s ease;
-    }
-
-    thead th.sortable:hover {
-      background: #f1f5f9;
-      color: var(--text);
-    }
-
-    thead th:first-child {
-      border-top-left-radius: 14px;
-      text-align: left;
-    }
-
-    thead th:last-child {
-      border-top-right-radius: 14px;
-    }
-
-    .th-inner {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      width: 100%;
-    }
-
-    thead th:first-child .th-inner {
-      justify-content: flex-start;
-    }
-
-    .sort-indicator {
-      display: inline-block;
-      width: 12px;
-      color: #94a3b8;
-      font-size: 0.8rem;
-      flex: 0 0 12px;
-    }
-
-    tbody td {
-      padding: 15px 16px;
-      border-bottom: 1px solid var(--line-soft);
-      font-size: 1rem;
-      text-align: center;
-      vertical-align: middle;
-    }
-
-    tbody tr:nth-child(even) td {
-      background: #fcfdff;
-    }
-
-    tbody tr:hover td {
-      background: var(--hover);
-    }
-
-    tbody td:first-child {
-      text-align: left;
-      font-weight: 600;
-      overflow-wrap: anywhere;
-      word-break: break-word;
-    }
-
-    .date-link {
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .date-link:hover {
-      text-decoration: underline;
-    }
-
-    .date-link-inline {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .udisc-icon {
-      height: 0.82em;
-      width: auto;
-      display: inline-block;
-      vertical-align: middle;
-      flex: 0 0 auto;
-      opacity: 0.98;
-      transform: translateY(-0.11em);
-    }
-
-    .udisc-icon--dark {
-      display: none;
-    }
-
-    :global(html.dark) .udisc-icon--light,
-    :global(html[data-theme="dark"]) .udisc-icon--light,
-    :global(body.dark) .udisc-icon--light,
-    :global(body[data-theme="dark"]) .udisc-icon--light {
-      display: none;
-    }
-
-    :global(html.dark) .udisc-icon--dark,
-    :global(html[data-theme="dark"]) .udisc-icon--dark,
-    :global(body.dark) .udisc-icon--dark,
-    :global(body[data-theme="dark"]) .udisc-icon--dark {
-      display: inline-block;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      .udisc-icon--light {
-        display: none;
-      }
-
-      .udisc-icon--dark {
-        display: inline-block;
-      }
-    }
-
-    .footer-link {
-      padding: 18px 28px 26px;
-    }
-
-    .footer-link a {
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .footer-link a:hover {
-      text-decoration: underline;
-    }
-
-    @media (max-width: 700px) {
-      body { padding: 10px; }
-      .card-header { padding: 18px 16px 10px; }
-      h1 { font-size: 2.1rem; }
-      .table-wrap { padding: 0 8px 8px; }
-      .records-section summary { padding: 18px 16px; }
-
-      col.name-col { width: 42%; }
-      col.score-col { width: 22%; }
-      col.date-col { width: 36%; }
-
-      thead th {
-        font-size: 0.72rem;
-        letter-spacing: 0.02em;
-        padding: 10px 6px;
-      }
-
-      tbody td {
-        font-size: 0.9rem;
-        padding: 10px 6px;
-      }
-
-      .footer-link {
-        padding: 14px 16px 18px;
-      }
-    }
-
-    @media (max-width: 420px) {
-      h1 { font-size: 1.95rem; }
-
-      thead th {
-        font-size: 0.68rem;
-        padding: 9px 4px;
-      }
-
-      tbody td {
-        font-size: 0.86rem;
-        padding: 9px 4px;
-      }
-    }
+    thead th { background: var(--header); color: var(--muted); font-size: 0.86rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 14px 16px; border-bottom: 1px solid var(--line); text-align: center; user-select: none; }
+    thead th.sortable { cursor: pointer; transition: background 0.15s ease, color 0.15s ease; }
+    thead th.sortable:hover { background: #f1f5f9; color: var(--text); }
+    thead th:first-child { border-top-left-radius: 14px; text-align: left; }
+    thead th:last-child { border-top-right-radius: 14px; }
+    .th-inner { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
+    thead th:first-child .th-inner { justify-content: flex-start; }
+    .sort-indicator { display: inline-block; width: 12px; color: #94a3b8; font-size: 0.8rem; flex: 0 0 12px; }
+    tbody td { padding: 15px 16px; border-bottom: 1px solid var(--line-soft); font-size: 1rem; text-align: center; vertical-align: middle; }
+    tbody tr:nth-child(even) td { background: #fcfdff; }
+    tbody tr:hover td { background: var(--hover); }
+    tbody td:first-child { text-align: left; font-weight: 600; overflow-wrap: anywhere; word-break: break-word; }
+    .date-link, .player-button { color: var(--accent); text-decoration: none; font-weight: 600; }
+    .date-link:hover, .player-button:hover { text-decoration: underline; }
+    .date-link-inline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+    .udisc-icon { height: 0.82em; width: auto; display: inline-block; vertical-align: middle; flex: 0 0 auto; opacity: 0.98; transform: translateY(-0.11em); }
+    .udisc-icon--dark { display: none; }
+    :global(html.dark) .udisc-icon--light, :global(html[data-theme="dark"]) .udisc-icon--light, :global(body.dark) .udisc-icon--light, :global(body[data-theme="dark"]) .udisc-icon--light { display: none; }
+    :global(html.dark) .udisc-icon--dark, :global(html[data-theme="dark"]) .udisc-icon--dark, :global(body.dark) .udisc-icon--dark, :global(body[data-theme="dark"]) .udisc-icon--dark { display: inline-block; }
+    @media (prefers-color-scheme: dark) { .udisc-icon--light { display: none; } .udisc-icon--dark { display: inline-block; } }
+    @media (max-width: 700px) { body { padding: 10px; } h1 { font-size: 2.1rem; } .table-wrap { padding: 0 8px 8px; } .records-section summary { padding: 18px 16px; } col.name-col { width: 42%; } col.score-col { width: 22%; } col.date-col { width: 36%; } thead th { font-size: 0.72rem; letter-spacing: 0.02em; padding: 10px 6px; } tbody td { font-size: 0.9rem; padding: 10px 6px; } }
+    @media (max-width: 420px) { h1 { font-size: 1.95rem; } thead th { font-size: 0.68rem; padding: 9px 4px; } tbody td { font-size: 0.86rem; padding: 9px 4px; } }
   </style>
 
   <div class="wrap">
-    <div class="page-header">
-      <h1>Singles Course Records</h1>
-    </div>
-
+    <div class="page-header"><h1>Singles Course Records</h1></div>
     <div class="toolbar">
       <label>
         <select id="yearFilter" class="filter-select" aria-label="Filter records by year">
           <option value="all">All years</option>
-          {recordYears.map((year) => (
-            <option value={year}>{year}</option>
-          ))}
+          {recordYears.map((year) => <option value={year}>{year}</option>)}
         </select>
       </label>
     </div>
@@ -438,263 +229,61 @@ const recordYears = [...new Set([
       <summary>Break 50 – Original (A Baskets)</summary>
       <div class="table-wrap">
         <table id="break50-table" data-record-table>
-          <colgroup>
-            <col class="name-col" />
-            <col class="score-col" />
-            <col class="date-col" />
-          </colgroup>
-
-          <thead>
-            <tr>
-              <th class="sortable" data-column="0" data-type="text">
-                <span class="th-inner">Name <span class="sort-indicator"></span></span>
-              </th>
-              <th class="sortable" data-column="1" data-type="score">
-                <span class="th-inner">Score <span class="sort-indicator"></span></span>
-              </th>
-              <th class="sortable" data-column="2" data-type="date">
-                <span class="th-inner">Date <span class="sort-indicator"></span></span>
-              </th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {rows.map((row) => (
-              <tr data-year={getRowYear(row.date)}>
-                <td><PlayerLink name={row.name} /></td>
-                <td data-sort={getScoreSortValue(row.score)}>{row.score}</td>
-                <td>
-                  {row.resultsHref ? (
-                    <a class="date-link" href={row.resultsHref}>
-                      {row.date}
-                    </a>
-                  ) : row.url ? (
-                    <a
-                      class={`date-link${isUdiscUrl(row.url) ? " date-link-inline" : ""}`}
-                      href={row.url}
-                      target="_blank"
-                      rel="noopener"
-                    >
-                      <span>{row.date}</span>
-                      {isUdiscUrl(row.url) && (
-                        <>
-                          <img
-                            class="udisc-icon udisc-icon--light"
-                            src="https://lufberydiscgolf.com/udisc-icon.png"
-                            alt="UDisc"
-                            loading="lazy"
-                            decoding="async"
-                          />
-                          <img
-                            class="udisc-icon udisc-icon--dark"
-                            src="https://lufberydiscgolf.com/udisc-icon-white.png"
-                            alt="UDisc"
-                            loading="lazy"
-                            decoding="async"
-                          />
-                        </>
-                      )}
-                    </a>
-                  ) : (
-                    row.date
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div class="empty-state">No records found for the selected year.</div>
-    </details>
-
-    <details class="records-section">
-      <summary>Best Front 9 Scores</summary>
-      <div class="table-wrap">
-        <table data-record-table>
           <colgroup><col class="name-col" /><col class="score-col" /><col class="date-col" /></colgroup>
-          <thead><tr><th>Name</th><th>Score</th><th>Date</th></tr></thead>
-          <tbody>
-            {bestFrontRows.map((row) => (
-              <tr data-year={row.year}>
-                <td><PlayerLink name={row.name} /></td>
-                <td>{row.front} ({toPar(row.frontToPar)})</td>
-                <td>{row.url ? <a class="date-link" href={row.url} target="_blank" rel="noopener">{row.dateDisplay}</a> : row.dateDisplay}</td>
-              </tr>
-            ))}
-          </tbody>
+          <thead><tr><th class="sortable" data-column="0" data-type="text"><span class="th-inner">Name <span class="sort-indicator"></span></span></th><th class="sortable" data-column="1" data-type="score"><span class="th-inner">Score <span class="sort-indicator"></span></span></th><th class="sortable" data-column="2" data-type="date"><span class="th-inner">Date <span class="sort-indicator"></span></span></th></tr></thead>
+          <tbody>{rows.map((row) => <tr data-year={getRowYear(row.date)}><td><PlayerLink name={row.name} /></td><td data-sort={getScoreSortValue(row.score)}>{row.score}</td><td>{row.resultsHref ? <a class="date-link" href={row.resultsHref}>{row.date}</a> : row.url ? <a class={`date-link${isUdiscUrl(row.url) ? " date-link-inline" : ""}`} href={row.url} target="_blank" rel="noopener"><span>{row.date}</span>{isUdiscUrl(row.url) && <><img class="udisc-icon udisc-icon--light" src="https://lufberydiscgolf.com/udisc-icon.png" alt="UDisc" loading="lazy" decoding="async" /><img class="udisc-icon udisc-icon--dark" src="https://lufberydiscgolf.com/udisc-icon-white.png" alt="UDisc" loading="lazy" decoding="async" /></>}</a> : row.date}</td></tr>)}</tbody>
         </table>
       </div>
       <div class="empty-state">No records found for the selected year.</div>
     </details>
 
-    <details class="records-section">
-      <summary>Best Back 9 Scores</summary>
-      <div class="table-wrap">
-        <table data-record-table>
-          <colgroup><col class="name-col" /><col class="score-col" /><col class="date-col" /></colgroup>
-          <thead><tr><th>Name</th><th>Score</th><th>Date</th></tr></thead>
-          <tbody>
-            {bestBackRows.map((row) => (
-              <tr data-year={row.year}>
-                <td><PlayerLink name={row.name} /></td>
-                <td>{row.back} ({toPar(row.backToPar)})</td>
-                <td>{row.url ? <a class="date-link" href={row.url} target="_blank" rel="noopener">{row.dateDisplay}</a> : row.dateDisplay}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div class="empty-state">No records found for the selected year.</div>
-    </details>
-
-    <details class="records-section">
-      <summary>Most Birdies or Better in a Round</summary>
-      <div class="table-wrap">
-        <table data-record-table>
-          <colgroup><col class="name-col" /><col class="score-col" /><col class="date-col" /></colgroup>
-          <thead><tr><th>Name</th><th>Value</th><th>Date</th></tr></thead>
-          <tbody>
-            {mostBirdiesRows.map((row) => (
-              <tr data-year={row.year}>
-                <td><PlayerLink name={row.name} /></td>
-                <td>{row.birdiesOrBetter}</td>
-                <td>{row.url ? <a class="date-link" href={row.url} target="_blank" rel="noopener">{row.dateDisplay}</a> : row.dateDisplay}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div class="empty-state">No records found for the selected year.</div>
-    </details>
+    <details class="records-section"><summary>Best Front 9 Scores</summary><div class="table-wrap"><table data-leader-table="front"><colgroup><col class="name-col" /><col class="score-col" /><col class="date-col" /></colgroup><thead><tr><th>Name</th><th>Score</th><th>Date</th></tr></thead><tbody>{bestFrontRows.map((row) => <tr><td><a class="player-button" href={row.playerHref}>{row.name}</a></td><td>{row.frontLabel}</td><td>{row.resultsHref ? <a class="date-link" href={row.resultsHref}>{row.dateDisplay}</a> : row.url ? <a class={`date-link${isUdiscUrl(row.url) ? " date-link-inline" : ""}`} href={row.url} target="_blank" rel="noopener"><span>{row.dateDisplay}</span>{isUdiscUrl(row.url) && <><img class="udisc-icon udisc-icon--light" src="https://lufberydiscgolf.com/udisc-icon.png" alt="UDisc" loading="lazy" decoding="async" /><img class="udisc-icon udisc-icon--dark" src="https://lufberydiscgolf.com/udisc-icon-white.png" alt="UDisc" loading="lazy" decoding="async" /></>}</a> : row.dateDisplay}</td></tr>)}</tbody></table></div><div class="empty-state">No records found for the selected year.</div></details>
+    <details class="records-section"><summary>Best Back 9 Scores</summary><div class="table-wrap"><table data-leader-table="back"><colgroup><col class="name-col" /><col class="score-col" /><col class="date-col" /></colgroup><thead><tr><th>Name</th><th>Score</th><th>Date</th></tr></thead><tbody>{bestBackRows.map((row) => <tr><td><a class="player-button" href={row.playerHref}>{row.name}</a></td><td>{row.backLabel}</td><td>{row.resultsHref ? <a class="date-link" href={row.resultsHref}>{row.dateDisplay}</a> : row.url ? <a class={`date-link${isUdiscUrl(row.url) ? " date-link-inline" : ""}`} href={row.url} target="_blank" rel="noopener"><span>{row.dateDisplay}</span>{isUdiscUrl(row.url) && <><img class="udisc-icon udisc-icon--light" src="https://lufberydiscgolf.com/udisc-icon.png" alt="UDisc" loading="lazy" decoding="async" /><img class="udisc-icon udisc-icon--dark" src="https://lufberydiscgolf.com/udisc-icon-white.png" alt="UDisc" loading="lazy" decoding="async" /></>}</a> : row.dateDisplay}</td></tr>)}</tbody></table></div><div class="empty-state">No records found for the selected year.</div></details>
+    <details class="records-section"><summary>Most Birdies or Better in a Round</summary><div class="table-wrap"><table data-leader-table="birdies"><colgroup><col class="name-col" /><col class="score-col" /><col class="date-col" /></colgroup><thead><tr><th>Name</th><th>Value</th><th>Date</th></tr></thead><tbody>{mostBirdiesRows.map((row) => <tr><td><a class="player-button" href={row.playerHref}>{row.name}</a></td><td>{row.birdiesOrBetter}</td><td>{row.resultsHref ? <a class="date-link" href={row.resultsHref}>{row.dateDisplay}</a> : row.url ? <a class={`date-link${isUdiscUrl(row.url) ? " date-link-inline" : ""}`} href={row.url} target="_blank" rel="noopener"><span>{row.dateDisplay}</span>{isUdiscUrl(row.url) && <><img class="udisc-icon udisc-icon--light" src="https://lufberydiscgolf.com/udisc-icon.png" alt="UDisc" loading="lazy" decoding="async" /><img class="udisc-icon udisc-icon--dark" src="https://lufberydiscgolf.com/udisc-icon-white.png" alt="UDisc" loading="lazy" decoding="async" /></>}</a> : row.dateDisplay}</td></tr>)}</tbody></table></div><div class="empty-state">No records found for the selected year.</div></details>
   </div>
 
+  <script type="application/json" id="leaderboard-data" set:html={leaderboardsJson}></script>
   <script>
     const break50Table = document.getElementById("break50-table");
     const tbody = break50Table?.querySelector("tbody");
     const headers = break50Table?.querySelectorAll("thead th.sortable") || [];
     const yearFilter = document.getElementById("yearFilter");
-
+    const leaderboards = JSON.parse(document.getElementById("leaderboard-data")?.textContent || "{}");
     let currentColumn = 1;
     let currentDirection = "asc";
-
-    function getCellValue(row, columnIndex) {
-      const cell = row.children[columnIndex];
-      return cell?.dataset.sort || cell?.textContent?.trim() || "";
+    function escapeHtml(value) { return String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char])); }
+    function isUdiscUrlClient(value) { return /(^https?:\/\/)?(www\.)?udisc\.com\b/i.test(String(value || "").trim()); }
+    function renderDate(row) {
+      const text = escapeHtml(row.dateDisplay || "");
+      if (row.resultsHref) return `<a class="date-link" href="${escapeHtml(row.resultsHref)}">${text}</a>`;
+      if (!row.url) return text;
+      const icon = isUdiscUrlClient(row.url) ? `<img class="udisc-icon udisc-icon--light" src="https://lufberydiscgolf.com/udisc-icon.png" alt="UDisc" loading="lazy" decoding="async" /><img class="udisc-icon udisc-icon--dark" src="https://lufberydiscgolf.com/udisc-icon-white.png" alt="UDisc" loading="lazy" decoding="async" />` : "";
+      return `<a class="date-link${isUdiscUrlClient(row.url) ? " date-link-inline" : ""}" href="${escapeHtml(row.url)}" target="_blank" rel="noopener"><span>${text}</span>${icon}</a>`;
     }
-
-    function parseUsDate(value) {
-      const match = String(value || "").match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
-      if (!match) return new Date(0).getTime();
-
-      let month = Number(match[1]);
-      let day = Number(match[2]);
-      let year = Number(match[3]);
-
-      if (year < 100) year += 2000;
-
-      return new Date(year, month - 1, day).getTime();
+    function renderLeaderTable(type, rows) {
+      const table = document.querySelector(`[data-leader-table="${type}"]`);
+      const body = table?.querySelector("tbody");
+      const empty = table?.closest("details")?.querySelector(".empty-state");
+      if (!body) return;
+      body.innerHTML = rows.map((row) => `<tr><td><a class="player-button" href="${escapeHtml(row.playerHref)}">${escapeHtml(row.name)}</a></td><td>${escapeHtml(type === "front" ? row.frontLabel : type === "back" ? row.backLabel : row.birdiesOrBetter)}</td><td>${renderDate(row)}</td></tr>`).join("");
+      if (empty) empty.style.display = rows.length ? "none" : "block";
     }
-
-    function parseScore(value) {
-      const text = String(value || "").trim();
-
-      if (!text) return 9999;
-      if (/^e$/i.test(text)) return 56;
-
-      const match = text.match(/-?\d+(\.\d+)?/);
-      if (!match) return 9999;
-
-      const n = Number(match[0]);
-      return Number.isNaN(n) ? 9999 : n;
-    }
-
-    function compareValues(a, b, type, direction) {
-      const emptyA = a === "";
-      const emptyB = b === "";
-
-      if (emptyA && emptyB) return 0;
-      if (emptyA) return 1;
-      if (emptyB) return -1;
-
-      let result = 0;
-
-      if (type === "date") {
-        result = parseUsDate(a) - parseUsDate(b);
-      } else if (type === "score") {
-        result = parseScore(a) - parseScore(b);
-      } else {
-        result = a.localeCompare(b, undefined, { sensitivity: "base", numeric: true });
-      }
-
-      return direction === "asc" ? result : -result;
-    }
-
-    function updateIndicators(activeColumn, direction) {
-      headers.forEach((header) => {
-        const indicator = header.querySelector(".sort-indicator");
-        const col = Number(header.dataset.column);
-
-        if (!indicator) return;
-
-        if (col === activeColumn) {
-          indicator.textContent = direction === "asc" ? "▲" : "▼";
-          indicator.style.color = "#2563eb";
-        } else {
-          indicator.textContent = "";
-          indicator.style.color = "#94a3b8";
-        }
-      });
-    }
-
-    function sortTable(columnIndex, type, direction) {
-      if (!tbody) return;
-      const sortedRows = Array.from(tbody.querySelectorAll("tr")).sort((rowA, rowB) => {
-        const valueA = getCellValue(rowA, columnIndex);
-        const valueB = getCellValue(rowB, columnIndex);
-        return compareValues(valueA, valueB, type, direction);
-      });
-
-      tbody.append(...sortedRows);
-      updateIndicators(columnIndex, direction);
-    }
-
-    function applyYearFilter() {
+    function refreshLeaderboards() {
       const selectedYear = yearFilter?.value || "all";
-      document.querySelectorAll("[data-record-table]").forEach((table) => {
-        const rows = Array.from(table.querySelectorAll("tbody tr"));
-        const emptyState = table.closest("details")?.querySelector(".empty-state");
-        let visible = 0;
-
-        rows.forEach((row) => {
-          const rowYear = row.getAttribute("data-year") || "";
-          const show = selectedYear === "all" || selectedYear === rowYear;
-          row.style.display = show ? "" : "none";
-          if (show) visible += 1;
-        });
-
-        if (emptyState) emptyState.style.display = visible ? "none" : "block";
-      });
+      const data = leaderboards[selectedYear] || leaderboards.all || { front: [], back: [], birdies: [] };
+      renderLeaderTable("front", data.front || []);
+      renderLeaderTable("back", data.back || []);
+      renderLeaderTable("birdies", data.birdies || []);
     }
-
-    headers.forEach((header) => {
-      header.addEventListener("click", () => {
-        const columnIndex = Number(header.dataset.column);
-        const type = header.dataset.type || "text";
-
-        if (currentColumn === columnIndex) {
-          currentDirection = currentDirection === "asc" ? "desc" : "asc";
-        } else {
-          currentColumn = columnIndex;
-          currentDirection = columnIndex === 1 ? "asc" : columnIndex === 2 ? "desc" : "asc";
-        }
-
-        sortTable(columnIndex, type, currentDirection);
-        applyYearFilter();
-      });
-    });
-
+    function getCellValue(row, columnIndex) { const cell = row.children[columnIndex]; return cell?.dataset.sort || cell?.textContent?.trim() || ""; }
+    function parseUsDate(value) { const match = String(value || "").match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/); if (!match) return new Date(0).getTime(); let month = Number(match[1]); let day = Number(match[2]); let year = Number(match[3]); if (year < 100) year += 2000; return new Date(year, month - 1, day).getTime(); }
+    function parseScore(value) { const text = String(value || "").trim(); if (!text) return 9999; if (/^e$/i.test(text)) return 56; const match = text.match(/-?\d+(\.\d+)?/); if (!match) return 9999; const n = Number(match[0]); return Number.isNaN(n) ? 9999 : n; }
+    function compareValues(a, b, type, direction) { const emptyA = a === ""; const emptyB = b === ""; if (emptyA && emptyB) return 0; if (emptyA) return 1; if (emptyB) return -1; let result = 0; if (type === "date") result = parseUsDate(a) - parseUsDate(b); else if (type === "score") result = parseScore(a) - parseScore(b); else result = a.localeCompare(b, undefined, { sensitivity: "base", numeric: true }); return direction === "asc" ? result : -result; }
+    function updateIndicators(activeColumn, direction) { headers.forEach((header) => { const indicator = header.querySelector(".sort-indicator"); const col = Number(header.dataset.column); if (!indicator) return; if (col === activeColumn) { indicator.textContent = direction === "asc" ? "▲" : "▼"; indicator.style.color = "#2563eb"; } else { indicator.textContent = ""; indicator.style.color = "#94a3b8"; } }); }
+    function sortTable(columnIndex, type, direction) { if (!tbody) return; const sortedRows = Array.from(tbody.querySelectorAll("tr")).sort((rowA, rowB) => compareValues(getCellValue(rowA, columnIndex), getCellValue(rowB, columnIndex), type, direction)); tbody.append(...sortedRows); updateIndicators(columnIndex, direction); }
+    function applyYearFilter() { const selectedYear = yearFilter?.value || "all"; document.querySelectorAll("#break50-table tbody tr").forEach((row) => { const rowYear = row.getAttribute("data-year") || ""; row.style.display = selectedYear === "all" || selectedYear === rowYear ? "" : "none"; }); const visible = Array.from(document.querySelectorAll("#break50-table tbody tr")).filter((row) => row.style.display !== "none").length; const emptyState = document.querySelector("#break50-table")?.closest("details")?.querySelector(".empty-state"); if (emptyState) emptyState.style.display = visible ? "none" : "block"; refreshLeaderboards(); }
+    headers.forEach((header) => { header.addEventListener("click", () => { const columnIndex = Number(header.dataset.column); const type = header.dataset.type || "text"; if (currentColumn === columnIndex) currentDirection = currentDirection === "asc" ? "desc" : "asc"; else { currentColumn = columnIndex; currentDirection = columnIndex === 1 ? "asc" : columnIndex === 2 ? "desc" : "asc"; } sortTable(columnIndex, type, currentDirection); applyYearFilter(); }); });
     yearFilter?.addEventListener("change", applyYearFilter);
-
     sortTable(currentColumn, "score", currentDirection);
     applyYearFilter();
   </script>
