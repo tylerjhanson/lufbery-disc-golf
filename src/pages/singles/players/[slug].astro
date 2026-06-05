@@ -17,37 +17,32 @@ import {
 } from "../../../lib/playerProfilePage.js";
 
 const WEEKLY_RESULTS_PAGE_PATH = "/singles/weekly-results";
+const DEFAULT_PARS = [3,3,4,3,3,3,3,3,3,3,3,3,3,4,3,3,3,3];
 
 function extractEventDate(value) {
-  const match = String(value || "")
-    .trim()
-    .match(/^(\d{1,2}\/\d{1,2}\/\d{2,4})/);
-
+  const match = String(value || "").trim().match(/^(\d{1,2}\/\d{1,2}\/\d{2,4})/);
   return match ? match[1] : "";
 }
 
 function toFullYearUsDate(value) {
-  const match = String(value || "")
-    .trim()
-    .match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
-
+  const match = String(value || "").trim().match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
   if (!match) return String(value || "").trim();
-
   const month = Number(match[1]);
   const day = Number(match[2]);
   let year = Number(match[3]);
-
   if (year < 100) year += 2000;
-
   return `${month}/${day}/${year}`;
+}
+
+function toShortUsDate(value) {
+  const match = toFullYearUsDate(value).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  return match ? `${match[1]}/${match[2]}/${match[3].slice(-2)}` : String(value || "");
 }
 
 function normalizeDateKey(value) {
   const text = String(value || "").replace(/\s+/g, " ").trim();
   const match = text.match(/^(\d{1,2}\/\d{1,2}\/\d{2,4})(.*)$/);
-
   if (!match) return text;
-
   const suffix = String(match[2] || "").replace(/\s+/g, " ").trim();
   return `${toFullYearUsDate(match[1])}${suffix ? ` ${suffix}` : ""}`;
 }
@@ -56,7 +51,6 @@ const weeklyResultHrefByDate = new Map();
 for (const event of getWeeklyResults()) {
   const eventDate = toFullYearUsDate(extractEventDate(event.title));
   if (!eventDate) continue;
-
   weeklyResultHrefByDate.set(
     normalizeDateKey(eventDate),
     `${WEEKLY_RESULTS_PAGE_PATH}#${getWeeklyResultsAnchorId(event.title)}`
@@ -67,6 +61,24 @@ function getWeeklyResultsHrefForProfileDate(value) {
   const dateOnly = extractEventDate(value) || value;
   const fullDate = toFullYearUsDate(dateOnly);
   return weeklyResultHrefByDate.get(normalizeDateKey(fullDate)) || "";
+}
+
+function formatToPar(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "—";
+  if (number === 0) return "E";
+  return number > 0 ? `+${number}` : String(number);
+}
+
+function scoreClass(score, par) {
+  const diff = Number(score) - Number(par);
+  if (!Number.isFinite(diff)) return "par";
+  if (diff <= -2) return "ace";
+  if (diff === -1) return "birdie";
+  if (diff === 0) return "par";
+  if (diff === 1) return "bogey";
+  if (diff === 2) return "double";
+  return "triple";
 }
 
 export function getStaticPaths() {
@@ -93,10 +105,7 @@ const { profile } = Astro.props;
 const name = String(profile.name || "Player");
 const allRounds = Array.isArray(profile.allRounds) ? profile.allRounds : [];
 const recentRounds = Array.isArray(profile.recentRounds) ? profile.recentRounds : [];
-const recentRoundsWithLinks = recentRounds.map((round) => ({
-  ...round,
-  href: getWeeklyResultsHrefForProfileDate(round.date),
-}));
+const recentRoundsWithLinks = recentRounds.map((round) => ({ ...round, href: getWeeklyResultsHrefForProfileDate(round.date) }));
 const handicapHistory = Array.isArray(profile.handicapHistory) ? profile.handicapHistory.filter((row) => parseDisplayYear(row.date) >= 2023) : [];
 const tagHistory = Array.isArray(profile.tagHistory) ? profile.tagHistory.filter((row) => parseDisplayYear(row.date) >= 2023) : [];
 const weeklyWins = Array.isArray(profile.weeklyWins) ? profile.weeklyWins : [];
@@ -108,6 +117,25 @@ const lowestHandicapValue = lowestHandicap(handicapHistory, profile.handicap);
 const lowestHandicapDisplay = lowestHandicapValue === "" ? "—" : String(lowestHandicapValue);
 const playerCourseStats = courseStatsForPlayer(courseStats, name);
 const courseViews = buildCourseViews(playerCourseStats);
+const coursePars = Array.isArray(courseStats?.source?.holePars) && courseStats.source.holePars.length >= 18 ? courseStats.source.holePars.slice(0, 18) : DEFAULT_PARS;
+const roundHistory = (Array.isArray(playerCourseStats?.roundHistory) ? playerCourseStats.roundHistory : []).map((round) => {
+  const scores = Array.isArray(round.scores) ? round.scores.slice(0, 18).map((score) => Number(score)) : [];
+  const total = Number.isFinite(Number(round.total)) ? Number(round.total) : scores.reduce((sum, score) => sum + (Number.isFinite(score) ? score : 0), 0);
+  const toPar = Number.isFinite(Number(round.toPar)) ? Number(round.toPar) : total - coursePars.reduce((sum, par) => sum + Number(par || 0), 0);
+  const date = toFullYearUsDate(round.date || extractEventDate(round.title));
+  const href = getWeeklyResultsHrefForProfileDate(date) || String(round.url || "");
+  return {
+    ...round,
+    date,
+    displayDate: toShortUsDate(date),
+    href,
+    scores,
+    total,
+    toPar,
+    toParLabel: formatToPar(toPar),
+    holes: scores.map((score, index) => ({ hole: index + 1, score, par: Number(coursePars[index] || 3), className: scoreClass(score, coursePars[index] || 3) })),
+  };
+});
 const scoreAverages = yearAverages(allRounds);
 const bestHandicaps = yearlyBest(handicapHistory, "handicap", 2023);
 const bestTags = yearlyBest(tagHistory, "tag", 2023);
@@ -138,6 +166,10 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
     .profile-card-body { padding: 0 20px 18px; }
     .profile-section-title { margin: 0; font-size: 0.9rem; font-weight: 850; letter-spacing: 0.04em; line-height: 1.2; text-transform: uppercase; }
     .profile-mobile-toggle { display: none; }
+    .profile-card.is-collapsed .profile-card-body { display: none; }
+    .profile-card.is-collapsed .profile-mobile-toggle { transform: rotate(-90deg); }
+    .profile-card[data-default-collapsed] .profile-mobile-toggle { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; flex: 0 0 34px; border: 0; background: transparent; color: var(--muted, #6b7280); font-size: 1.1rem; font-weight: 900; line-height: 1; padding: 0; }
+    .profile-card[data-default-collapsed] .profile-card-header { cursor: pointer; }
     .profile-year-stats, .profile-link-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
     .profile-year-stats { grid-template-columns: 1fr; justify-items: start; }
     .profile-year-pill { padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--text, #111827); font-size: 0.93rem; font-weight: 650; text-align: left; }
@@ -149,7 +181,7 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
     .profile-dropped-round td { color: var(--muted, #6b7280); text-decoration: line-through; text-decoration-thickness: 1.5px; }
     .profile-link { color: var(--accent, #2563eb); font-weight: 700; text-decoration: none; }
     .profile-link:hover { text-decoration: underline; }
-    .profile-muted, .profile-course-summary { color: var(--muted, #6b7280); font-size: 0.92rem; font-weight: 650; }
+    .profile-muted, .profile-course-summary, .profile-round-hint { color: var(--muted, #6b7280); font-size: 0.92rem; font-weight: 650; }
     .profile-chart-shell { position: relative; margin-bottom: 12px; padding: 10px; border: 1px solid var(--line-soft, #eef2f7); border-radius: 14px; background: var(--header, #f8fafc); touch-action: pan-y; user-select: none; -webkit-tap-highlight-color: transparent; }
     .profile-chart { display: block; width: 100%; height: 210px; overflow: visible; }
     .profile-chart-grid { stroke: var(--line-soft, #e5e7eb); stroke-width: 1; }
@@ -173,33 +205,50 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
     .profile-course-segment { min-width: 0; position: relative; cursor: help; }
     .profile-course-segment + .profile-course-segment { box-shadow: inset 1px 0 0 rgba(15, 23, 42, 0.1); }
     .profile-course-segment span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 0.72rem; font-weight: 850; line-height: 1; }
-    .profile-course-segment--ace { background: #2f6fb6; color: #fff; }
-    .profile-course-segment--birdie { background: #6c9bd1; color: #fff; }
-    .profile-course-segment--par { background: var(--card, #ffffff); color: var(--text, #111827); }
-    .profile-course-segment--bogey { background: #f2d8c8; color: #2e3440; }
-    .profile-course-segment--double { background: #efb286; color: #2e3440; }
-    .profile-course-segment--triple { background: #eb7b3c; color: #2e3440; }
+    .profile-course-segment--ace, .profile-round-score--ace { background: #2f6fb6; color: #fff; }
+    .profile-course-segment--birdie, .profile-round-score--birdie { background: #6c9bd1; color: #fff; }
+    .profile-course-segment--par, .profile-round-score--par { background: var(--card, #ffffff); color: var(--text, #111827); }
+    .profile-course-segment--bogey, .profile-round-score--bogey { background: #f2d8c8; color: #1f2937; }
+    .profile-course-segment--double, .profile-round-score--double { background: #efb286; color: #1f2937; }
+    .profile-course-segment--triple, .profile-round-score--triple { background: #eb7b3c; color: #1f2937; }
     .profile-course-segment--bogey span, .profile-course-segment--double span, .profile-course-segment--triple span { color: #1f2937 !important; text-shadow: none; }
+    .profile-round-desktop-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .profile-round-table { min-width: 1120px; border-collapse: collapse; width: 100%; }
+    .profile-round-table th, .profile-round-table td { padding: 8px 9px; border-bottom: 1px solid var(--line-soft, #eef2f7); text-align: center; white-space: nowrap; }
+    .profile-round-table th:first-child, .profile-round-table td:first-child { position: sticky; left: 0; z-index: 1; background: var(--card, #fff); text-align: left; }
+    .profile-round-table th { color: var(--muted, #6b7280); font-size: 0.73rem; font-weight: 850; }
+    .profile-round-sort { border: 0; background: transparent; color: inherit; cursor: pointer; font: inherit; font-weight: 850; padding: 0; }
+    .profile-round-score { display: inline-grid; place-items: center; min-width: 28px; height: 28px; padding: 0 7px; border-radius: 999px; font-weight: 850; }
+    .profile-round-mobile { display: none; }
+    .profile-round-mobile-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    .profile-round-mobile-controls .profile-round-sort { border: 1px solid var(--line-soft, #e5e7eb); border-radius: 999px; padding: 7px 10px; background: var(--header, #f8fafc); color: var(--text, #111827); }
+    .profile-round-mobile-list { display: grid; gap: 8px; }
+    .profile-round-card { border: 1px solid var(--line-soft, #eef2f7); border-radius: 14px; background: var(--card, #fff); overflow: hidden; }
+    .profile-round-mobile-summary { display: grid; grid-template-columns: 1fr 72px 72px 22px; gap: 8px; align-items: center; width: 100%; padding: 11px 12px; cursor: pointer; font-weight: 850; }
+    .profile-round-mobile-detail { display: none; padding: 0 12px 12px; }
+    .profile-round-card.is-expanded .profile-round-mobile-detail { display: block; }
+    .profile-round-panels { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+    .profile-round-panel { min-width: 100%; scroll-snap-align: start; }
+    .profile-round-panel-grid { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 5px; align-items: end; }
+    .profile-round-panel-cell { display: grid; gap: 4px; justify-items: center; color: var(--muted, #6b7280); font-size: 0.69rem; font-weight: 800; }
 
-    html[data-theme="dark"] .profile-chart-shell, html[data-theme="dark"] .profile-stat, html[data-theme="dark"] .profile-year-pill { background: var(--header, #111827); }
+    html[data-theme="dark"] .profile-chart-shell, html[data-theme="dark"] .profile-stat, html[data-theme="dark"] .profile-year-pill, html[data-theme="dark"] .profile-round-mobile-controls .profile-round-sort { background: var(--header, #111827); }
     html[data-theme="dark"] .profile-chart-grid { stroke: #334155; }
     html[data-theme="dark"] .profile-chart-axis { fill: var(--muted, #94a3b8); }
     html[data-theme="dark"] .profile-chart-guide { stroke: #cbd5e1; }
     html[data-theme="dark"] .profile-chart-trend { stroke: #cbd5e1; opacity: 0.32; }
     html[data-theme="dark"] .profile-course-bar { border-color: #334155; }
     html[data-theme="dark"] .profile-course-segment + .profile-course-segment { box-shadow: inset 1px 0 0 rgba(248, 250, 252, 0.16); }
-    html[data-theme="dark"] .profile-course-segment--bogey, html[data-theme="dark"] .profile-course-segment--double, html[data-theme="dark"] .profile-course-segment--triple { color: #1f2937; }
-    html[data-theme="dark"] .profile-course-segment--bogey span, html[data-theme="dark"] .profile-course-segment--double span, html[data-theme="dark"] .profile-course-segment--triple span { color: #1f2937 !important; text-shadow: none; }
+    html[data-theme="dark"] .profile-round-table th:first-child, html[data-theme="dark"] .profile-round-table td:first-child { background: var(--card, #0b1220); }
     @media (prefers-color-scheme: dark) {
-      html[data-theme="system"] .profile-chart-shell, html[data-theme="system"] .profile-stat, html[data-theme="system"] .profile-year-pill { background: var(--header, #111827); }
+      html[data-theme="system"] .profile-chart-shell, html[data-theme="system"] .profile-stat, html[data-theme="system"] .profile-year-pill, html[data-theme="system"] .profile-round-mobile-controls .profile-round-sort { background: var(--header, #111827); }
       html[data-theme="system"] .profile-chart-grid { stroke: #334155; }
       html[data-theme="system"] .profile-chart-axis { fill: var(--muted, #94a3b8); }
       html[data-theme="system"] .profile-chart-guide { stroke: #cbd5e1; }
       html[data-theme="system"] .profile-chart-trend { stroke: #cbd5e1; opacity: 0.32; }
       html[data-theme="system"] .profile-course-bar { border-color: #334155; }
       html[data-theme="system"] .profile-course-segment + .profile-course-segment { box-shadow: inset 1px 0 0 rgba(248, 250, 252, 0.16); }
-      html[data-theme="system"] .profile-course-segment--bogey, html[data-theme="system"] .profile-course-segment--double, html[data-theme="system"] .profile-course-segment--triple { color: #1f2937; }
-      html[data-theme="system"] .profile-course-segment--bogey span, html[data-theme="system"] .profile-course-segment--double span, html[data-theme="system"] .profile-course-segment--triple span { color: #1f2937 !important; text-shadow: none; }
+      html[data-theme="system"] .profile-round-table th:first-child, html[data-theme="system"] .profile-round-table td:first-child { background: var(--card, #0b1220); }
     }
 
     @media (max-width: 900px) {
@@ -223,8 +272,8 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
       .profile-course-hole-title span, .profile-course-meta { font-size: 0.72rem; }
       .profile-course-meta { gap: 5px; }
       .profile-mobile-toggle { display: inline-flex; align-items: center; justify-content: center; align-self: center; width: 34px; height: 34px; flex: 0 0 34px; border: 0; background: transparent; color: var(--muted, #6b7280); font-size: 1.1rem; font-weight: 900; line-height: 1; padding: 0; }
-      .profile-card.is-collapsed .profile-card-body { display: none; }
-      .profile-card.is-collapsed .profile-mobile-toggle { transform: rotate(-90deg); }
+      .profile-round-desktop { display: none; }
+      .profile-round-mobile { display: block; }
     }
   </style>
 
@@ -284,6 +333,27 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
     </div>
 
     <div class="profile-stack profile-bottom-stack">
+      <section class="profile-card is-collapsed" data-round-history-card data-mobile-collapse data-default-collapsed>
+        <div class="profile-card-header"><h2 class="profile-section-title">Round History</h2><button class="profile-mobile-toggle" type="button" aria-label="Toggle section">⌄</button></div>
+        <div class="profile-card-body">
+          {roundHistory.length ? <>
+            <p class="profile-round-hint">{formatRounds(roundHistory.length)} • Original Layout • Tap a date to view the weekly result.</p>
+            <div class="profile-round-desktop profile-round-desktop-wrap">
+              <table class="profile-round-table" data-round-table>
+                <thead>
+                  <tr><th><button class="profile-round-sort" type="button" data-round-sort="date">Date</button></th><th><button class="profile-round-sort" type="button" data-round-sort="toPar">Total</button></th>{coursePars.map((_par, index) => <th><button class="profile-round-sort" type="button" data-round-sort={`h${index + 1}`}>{index + 1}</button></th>)}<th><button class="profile-round-sort" type="button" data-round-sort="total">Round</button></th></tr>
+                  <tr><th>Par</th><th>{formatToPar(0)}</th>{coursePars.map((par) => <th>{par}</th>)}<th>{coursePars.reduce((sum, par) => sum + Number(par || 0), 0)}</th></tr>
+                </thead>
+                <tbody data-round-list="desktop">{roundHistory.map((round) => <tr data-round-item data-sort-date={round.dateKey} data-sort-to-par={round.toPar} data-sort-total={round.total} {...Object.fromEntries(round.scores.map((score, index) => [`data-sort-h${index + 1}`, score]))}><td>{round.href ? <a class="profile-link" href={round.href}>{round.displayDate}</a> : round.displayDate}</td><td>{round.toParLabel}</td>{round.holes.map((hole) => <td><span class={`profile-round-score profile-round-score--${hole.className}`}>{hole.score}</span></td>)}<td>{round.total}</td></tr>)}</tbody>
+              </table>
+            </div>
+            <div class="profile-round-mobile">
+              <div class="profile-round-mobile-controls" aria-label="Sort round history"><button class="profile-round-sort" type="button" data-round-sort="date">Date</button><button class="profile-round-sort" type="button" data-round-sort="toPar">Total</button><button class="profile-round-sort" type="button" data-round-sort="total">Round</button></div>
+              <div class="profile-round-mobile-list" data-round-list="mobile">{roundHistory.map((round) => <article class="profile-round-card" data-round-item data-sort-date={round.dateKey} data-sort-to-par={round.toPar} data-sort-total={round.total} {...Object.fromEntries(round.scores.map((score, index) => [`data-sort-h${index + 1}`, score]))}><div class="profile-round-mobile-summary" role="button" tabindex="0" aria-expanded="false"><span>{round.href ? <a class="profile-link" href={round.href}>{round.displayDate}</a> : round.displayDate}</span><span>{round.toParLabel}</span><span>{round.total}</span><span>⌄</span></div><div class="profile-round-mobile-detail"><div class="profile-round-panels"><div class="profile-round-panel"><div class="profile-round-panel-grid">{round.holes.slice(0, 9).map((hole) => <div class="profile-round-panel-cell"><span>H{hole.hole}</span><span>Par {hole.par}</span><span class={`profile-round-score profile-round-score--${hole.className}`}>{hole.score}</span></div>)}</div></div><div class="profile-round-panel"><div class="profile-round-panel-grid">{round.holes.slice(9, 18).map((hole) => <div class="profile-round-panel-cell"><span>H{hole.hole}</span><span>Par {hole.par}</span><span class={`profile-round-score profile-round-score--${hole.className}`}>{hole.score}</span></div>)}</div></div></div></div></article>)}</div>
+            </div>
+          </> : <p class="profile-muted">No UDisc round history found.</p>}
+        </div>
+      </section>
       {courseViews.length ? <section class="profile-card" data-course-stats-card data-mobile-collapse data-default-open><div class="profile-card-header"><h2 class="profile-section-title">Course Stats</h2>{courseViews.length > 1 ? <select class="profile-course-filter" aria-label="Filter player course stats by year">{courseViews.map((view) => <option value={view.value}>{view.label}</option>)}</select> : null}<button class="profile-mobile-toggle" type="button" aria-label="Toggle section">⌄</button></div><div class="profile-card-body">{courseViews.map((view, index) => <div class="profile-course-panel" data-course-panel={view.value} hidden={index !== 0}><p class="profile-course-summary">{formatRounds(view.rounds)} • Original Layout</p><div class="profile-course-grid">{view.holes.map((hole) => <article class="profile-course-hole"><div class="profile-course-hole-header"><h3 class="profile-course-hole-title">Hole {hole.hole} <span>Par {hole.par}</span></h3><div class="profile-course-meta"><span>Diff. <strong>{hole.difficultyRank || "—"}</strong></span><span>Avg <strong>{formatAverage(hole.average)}</strong></span></div></div><div class="profile-course-bar" style={hole.barStyle}>{hole.segments.map((segment) => <div class={`profile-course-segment profile-course-segment--${segment.className}`} data-course-tip={`${segment.label}: ${segment.count} (${segment.pctNumber.toFixed(1)}%)`} title={`${segment.label}: ${segment.count} (${segment.pctNumber.toFixed(1)}%)`}>{segment.pctNumber >= 11 ? <span>{segment.count}</span> : null}</div>)}</div></article>)}</div></div>)}</div></section> : null}
     </div>
     <div class="profile-chart-tooltip" aria-hidden="true"></div>
@@ -300,10 +370,11 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
 
       document.querySelectorAll("[data-mobile-collapse]").forEach((card) => {
         const header = card.querySelector(".profile-card-header");
-        if (isMobile && !card.hasAttribute("data-default-open")) card.classList.add("is-collapsed");
+        if (card.hasAttribute("data-default-collapsed")) card.classList.add("is-collapsed");
+        if (isMobile && !card.hasAttribute("data-default-open") && !card.hasAttribute("data-default-collapsed")) card.classList.add("is-collapsed");
         if (!header) return;
         header.addEventListener("click", (event) => {
-          if (!isMobile) return;
+          if (!isMobile && !card.hasAttribute("data-default-collapsed")) return;
           if (event.target.closest("select")) return;
           const topBefore = header.getBoundingClientRect().top;
           card.classList.toggle("is-collapsed");
@@ -319,6 +390,44 @@ const tagChart = chartHtml(tagHistory.map((row) => ({ value: Number(row.tag), la
         if (!select) return;
         const panels = Array.from(card.querySelectorAll("[data-course-panel]"));
         select.addEventListener("change", () => panels.forEach((panel) => { panel.hidden = panel.dataset.coursePanel !== select.value; }));
+      });
+
+      const roundCard = document.querySelector("[data-round-history-card]");
+      let roundSort = { key: "date", direction: "desc" };
+      function roundValue(item, key) {
+        if (key === "date") return item.dataset.sortDate || "";
+        const attr = key === "toPar" ? "sortToPar" : key === "total" ? "sortTotal" : `sort${key.charAt(0).toUpperCase()}${key.slice(1)}`;
+        const value = Number(item.dataset[attr]);
+        return Number.isFinite(value) ? value : 9999;
+      }
+      function sortRoundList(key) {
+        if (!roundCard) return;
+        roundSort.direction = roundSort.key === key && roundSort.direction === "asc" ? "desc" : "asc";
+        roundSort.key = key;
+        roundCard.querySelectorAll("[data-round-list]").forEach((list) => {
+          const items = Array.from(list.querySelectorAll("[data-round-item]"));
+          items.sort((a, b) => {
+            const av = roundValue(a, key);
+            const bv = roundValue(b, key);
+            const result = typeof av === "string" ? av.localeCompare(bv) : av - bv;
+            return roundSort.direction === "asc" ? result : -result;
+          });
+          items.forEach((item) => list.appendChild(item));
+        });
+      }
+      roundCard?.querySelectorAll("[data-round-sort]").forEach((button) => button.addEventListener("click", (event) => { event.stopPropagation(); sortRoundList(button.dataset.roundSort || "date"); }));
+      roundCard?.querySelectorAll(".profile-round-mobile-summary").forEach((summary) => {
+        summary.addEventListener("click", (event) => {
+          if (event.target.closest("a")) return;
+          const card = summary.closest(".profile-round-card");
+          card?.classList.toggle("is-expanded");
+          summary.setAttribute("aria-expanded", card?.classList.contains("is-expanded") ? "true" : "false");
+        });
+        summary.addEventListener("keydown", (event) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          summary.click();
+        });
       });
 
       const tooltip = document.querySelector(".profile-chart-tooltip");
