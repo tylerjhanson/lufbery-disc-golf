@@ -28,10 +28,16 @@ const COURSE_RECORDS_FIX_STYLE = `
     padding: 14px 16px !important;
     border-bottom: 1px solid var(--line, #e5e7eb) !important;
     text-align: center !important;
+    user-select: none !important;
   }
 
   table[data-leader-table] thead th:first-child {
+    border-top-left-radius: 14px !important;
     text-align: left !important;
+  }
+
+  table[data-leader-table] thead th:last-child {
+    border-top-right-radius: 14px !important;
   }
 
   table[data-leader-table] tbody td {
@@ -57,14 +63,37 @@ const COURSE_RECORDS_FIX_STYLE = `
     word-break: break-word !important;
   }
 
-  table[data-leader-table] a.player-button,
+  table[data-leader-table] a.player-button {
+    appearance: none !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: inherit !important;
+    font: inherit !important;
+    font-weight: inherit !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    cursor: pointer !important;
+    text-align: left !important;
+    text-decoration-line: underline !important;
+    text-decoration-style: dotted !important;
+    text-decoration-thickness: 1px !important;
+    text-decoration-color: color-mix(in srgb, currentColor 24%, transparent) !important;
+    text-underline-offset: 2px !important;
+  }
+
+  table[data-leader-table] a.player-button:hover,
+  table[data-leader-table] a.player-button:focus-visible {
+    color: var(--accent, #2563eb) !important;
+    text-decoration-color: color-mix(in srgb, currentColor 42%, transparent) !important;
+    outline: none !important;
+  }
+
   table[data-leader-table] a.date-link {
     color: var(--accent, #2563eb) !important;
     text-decoration: none !important;
     font-weight: 600 !important;
   }
 
-  table[data-leader-table] a.player-button:hover,
   table[data-leader-table] a.date-link:hover {
     text-decoration: underline !important;
   }
