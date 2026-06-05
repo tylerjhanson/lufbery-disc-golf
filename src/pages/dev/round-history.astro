@@ -1,0 +1,68 @@
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import courseStats from "../../data/course-stats.generated.json";
+
+const DEFAULT_PARS = [3,3,4,3,3,3,3,3,3,3,3,3,3,4,3,3,3,3];
+const players = Object.values(courseStats.players || {}).sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+const player = players.find((p) => /tyler hanson/i.test(String(p.name || ""))) || players[0] || { name: "Player", roundHistory: [] };
+const pars = Array.isArray(courseStats?.source?.holePars) ? courseStats.source.holePars.slice(0, 18) : DEFAULT_PARS;
+const parTotal = pars.reduce((sum, par) => sum + Number(par || 0), 0);
+function shortDate(value) { const m = String(value || "").match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); return m ? `${m[1]}/${m[2]}/${m[3].slice(-2)}` : String(value || ""); }
+function toPar(value) { const n = Number(value); if (!Number.isFinite(n)) return ""; if (n === 0) return "E"; return n > 0 ? `+${n}` : String(n); }
+function scoreClass(score, par) { const d = Number(score) - Number(par); if (d <= -2) return "ace"; if (d === -1) return "birdie"; if (d === 0) return "par"; if (d === 1) return "bogey"; if (d === 2) return "double"; return "triple"; }
+const rows = (Array.isArray(player.roundHistory) ? player.roundHistory : []).map((round) => {
+  const scores = Array.isArray(round.scores) ? round.scores.slice(0, 18).map(Number) : [];
+  const total = Number(round.total || scores.reduce((sum, score) => sum + score, 0));
+  const plusMinus = Number.isFinite(Number(round.toPar)) ? Number(round.toPar) : total - parTotal;
+  return { ...round, year: String(round.year || ""), displayDate: shortDate(round.date), total, plusMinus, plusMinusLabel: toPar(plusMinus), scores, holes: scores.map((score, i) => ({ hole: i + 1, par: Number(pars[i] || 3), score, className: scoreClass(score, pars[i] || 3) })) };
+});
+const years = Array.from(new Set(rows.map((row) => row.year))).filter(Boolean).sort((a, b) => Number(b) - Number(a));
+---
+
+<SiteLayout title="Round History Test" description="Test page for player round history table." noindex={true}>
+  <style is:global>
+    body { padding: 24px; }
+    .rh-card { border: 1px solid var(--line-soft); border-radius: 18px; background: var(--card); box-shadow: var(--shadow); overflow: hidden; }
+    .rh-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px 8px; }
+    .rh-title { margin: 0; font-size: 0.95rem; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; }
+    .rh-filter { min-width: 124px; border: 1px solid var(--line-soft); border-radius: 999px; background: var(--card); color: var(--text); font: inherit; font-size: 0.84rem; font-weight: 850; padding: 7px 28px 7px 12px; }
+    .rh-body { padding: 0 20px 20px; }
+    .rh-note { margin: 12px 0 14px; color: var(--muted); font-size: 0.9rem; font-weight: 750; }
+    .rh-desktop-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .rh-table { width: 100%; min-width: 1120px; border-collapse: collapse; }
+    .rh-table th, .rh-table td { padding: 8px 9px; border-bottom: 1px solid var(--line-soft); text-align: center; white-space: nowrap; }
+    .rh-table th:first-child, .rh-table td:first-child { position: sticky; left: 0; z-index: 1; background: var(--card); text-align: left; }
+    .rh-table thead tr:first-child th, .rh-table thead tr:first-child button { border-bottom: 0; color: var(--text); font-size: 0.78rem; font-weight: 950; }
+    .rh-table thead tr:nth-child(2) th { padding-top: 3px; color: var(--muted); font-size: 0.68rem; font-weight: 700; }
+    .rh-sort { border: 0; background: transparent; color: inherit; cursor: pointer; font: inherit; padding: 0; }
+    .rh-score { display: inline-grid; place-items: center; min-width: 28px; height: 28px; padding: 0 7px; border-radius: 999px; font-weight: 900; }
+    .rh-score--ace { background: #2f6fb6; color: #fff; } .rh-score--birdie { background: #6c9bd1; color: #fff; } .rh-score--par { background: var(--card); color: var(--text); } .rh-score--bogey { background: #f2d8c8; color: #111827; } .rh-score--double { background: #efb286; color: #111827; } .rh-score--triple { background: #eb7b3c; color: #111827; }
+    .rh-mobile { display: none; }
+    .rh-mobile-head, .rh-summary { display: grid; grid-template-columns: 1fr 72px 72px 22px; gap: 8px; align-items: center; }
+    .rh-mobile-head { margin-bottom: 10px; padding: 0 12px; }
+    .rh-mobile-head button { color: var(--text); font-size: 0.82rem; font-weight: 950; justify-self: start; }
+    .rh-mobile-head button:nth-child(2), .rh-mobile-head button:nth-child(3) { justify-self: center; }
+    .rh-list { display: grid; gap: 8px; }
+    .rh-card-row { border: 1px solid var(--line-soft); border-radius: 14px; background: var(--card); overflow: hidden; }
+    .rh-summary { width: 100%; padding: 11px 12px; cursor: pointer; font-weight: 900; }
+    .rh-summary span:nth-child(2), .rh-summary span:nth-child(3), .rh-summary span:nth-child(4) { text-align: center; }
+    .rh-detail { display: none; padding: 0 12px 14px; }
+    .rh-card-row.is-open .rh-detail { display: block; }
+    .rh-panels { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; padding-bottom: 12px; }
+    .rh-panel { min-width: 100%; scroll-snap-align: start; }
+    .rh-grid { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 5px; align-items: end; padding-bottom: 4px; }
+    .rh-hole { display: grid; justify-items: center; gap: 4px; }
+    .rh-hole-num { color: var(--text); font-size: 0.76rem; font-weight: 950; } .rh-hole-par { color: var(--muted); font-size: 0.64rem; font-weight: 650; }
+    html[data-theme="dark"] .rh-score--bogey, html[data-theme="dark"] .rh-score--double, html[data-theme="dark"] .rh-score--triple { color: #111827 !important; }
+    @media (prefers-color-scheme: dark) { html[data-theme="system"] .rh-score--bogey, html[data-theme="system"] .rh-score--double, html[data-theme="system"] .rh-score--triple { color: #111827 !important; } }
+    @media (max-width: 900px) { body { padding: 14px; } .rh-head { padding: 14px 14px 8px; } .rh-body { padding: 0 14px 14px; } .rh-desktop { display: none; } .rh-mobile { display: block; } }
+    @media (max-width: 900px) and (orientation: landscape) { .rh-desktop { display: block; } .rh-mobile { display: none; } .rh-table { min-width: 0; table-layout: fixed; } .rh-table th, .rh-table td { padding: 5px 2px; font-size: 0.66rem; letter-spacing: -0.025em; } .rh-table th:first-child, .rh-table td:first-child { width: 54px; } .rh-table th:nth-child(2), .rh-table td:nth-child(2), .rh-table th:last-child, .rh-table td:last-child { width: 34px; } .rh-table thead tr:first-child th, .rh-table thead tr:first-child button { font-size: 0.68rem; } .rh-table thead tr:nth-child(2) th { font-size: 0.58rem; } .rh-score { min-width: 20px; height: 20px; padding: 0 3px; font-size: 0.66rem; } }
+  </style>
+  <main class="rh-card" data-rh-root>
+    <header class="rh-head"><h1 class="rh-title">Round History — {player.name}</h1>{years.length ? <select class="rh-filter" data-rh-year><option value="all">All years</option>{years.map((year) => <option value={year}>{year}</option>)}</select> : null}</header>
+    <section class="rh-body"><p class="rh-note"><span data-rh-count>{rows.length} rounds</span> • Original Layout</p><div class="rh-desktop rh-desktop-wrap"><table class="rh-table"><thead><tr><th><button class="rh-sort" data-sort="date">Date</button></th><th><button class="rh-sort" data-sort="toPar">Total</button></th>{pars.map((_par, i) => <th><button class="rh-sort" data-sort={`h${i + 1}`}>{i + 1}</button></th>)}<th><button class="rh-sort" data-sort="round">Round</button></th></tr><tr><th></th><th></th>{pars.map((par) => <th>{par}</th>)}<th>{parTotal}</th></tr></thead><tbody data-rh-list="desktop">{rows.map((row) => <tr data-rh-item data-year={row.year} data-date={row.dateKey} data-to-par={row.plusMinus} data-round={row.total} {...Object.fromEntries(row.scores.map((score, i) => [`data-h${i + 1}`, score]))}><td>{row.displayDate}</td><td>{row.plusMinusLabel}</td>{row.holes.map((hole) => <td><span class={`rh-score rh-score--${hole.className}`}>{hole.score}</span></td>)}<td>{row.total}</td></tr>)}</tbody></table></div><div class="rh-mobile"><div class="rh-mobile-head"><button class="rh-sort" data-sort="date">Date</button><button class="rh-sort" data-sort="toPar">Total</button><button class="rh-sort" data-sort="round">Round</button><span></span></div><div class="rh-list" data-rh-list="mobile">{rows.map((row) => <article class="rh-card-row" data-rh-item data-year={row.year} data-date={row.dateKey} data-to-par={row.plusMinus} data-round={row.total} {...Object.fromEntries(row.scores.map((score, i) => [`data-h${i + 1}`, score]))}><div class="rh-summary" role="button" tabindex="0" aria-expanded="false"><span>{row.displayDate}</span><span>{row.plusMinusLabel}</span><span>{row.total}</span><span>⌄</span></div><div class="rh-detail"><div class="rh-panels"><div class="rh-panel"><div class="rh-grid">{row.holes.slice(0,9).map((hole) => <div class="rh-hole"><span class="rh-hole-num">{hole.hole}</span><span class="rh-hole-par">{hole.par}</span><span class={`rh-score rh-score--${hole.className}`}>{hole.score}</span></div>)}</div></div><div class="rh-panel"><div class="rh-grid">{row.holes.slice(9).map((hole) => <div class="rh-hole"><span class="rh-hole-num">{hole.hole}</span><span class="rh-hole-par">{hole.par}</span><span class={`rh-score rh-score--${hole.className}`}>{hole.score}</span></div>)}</div></div></div></div></article>)}</div></div></section>
+  </main>
+  <script is:inline>
+    (() => { const root = document.querySelector("[data-rh-root]"); if (!root) return; let state = { key: "date", dir: "desc" }; const count = root.querySelector("[data-rh-count]"); function val(item, key) { if (key === "date") return item.dataset.date || ""; const n = Number(item.dataset[key]); return Number.isFinite(n) ? n : 9999; } function refresh() { const year = root.querySelector("[data-rh-year]")?.value || "all"; root.querySelectorAll("[data-rh-item]").forEach((item) => { item.hidden = !(year === "all" || item.dataset.year === year); }); const n = Array.from(root.querySelectorAll('[data-rh-list="desktop"] [data-rh-item]')).filter((item) => !item.hidden).length; if (count) count.textContent = `${n.toLocaleString()} round${n === 1 ? "" : "s"}`; } function sort(key) { state.dir = state.key === key && state.dir === "asc" ? "desc" : "asc"; state.key = key; root.querySelectorAll("[data-rh-list]").forEach((list) => { const items = Array.from(list.querySelectorAll("[data-rh-item]")); items.sort((a, b) => { const av = val(a, key); const bv = val(b, key); const primary = typeof av === "string" ? av.localeCompare(bv) : av - bv; const secondary = String(b.dataset.date || "").localeCompare(String(a.dataset.date || "")); const result = primary || secondary; return state.dir === "asc" ? result : -result; }); items.forEach((item) => list.appendChild(item)); }); refresh(); } root.querySelectorAll("[data-sort]").forEach((button) => button.addEventListener("click", () => sort(button.dataset.sort || "date"))); root.querySelector("[data-rh-year]")?.addEventListener("change", refresh); root.querySelectorAll(".rh-summary").forEach((summary) => { const toggle = () => { const card = summary.closest(".rh-card-row"); card?.classList.toggle("is-open"); summary.setAttribute("aria-expanded", card?.classList.contains("is-open") ? "true" : "false"); }; summary.addEventListener("click", toggle); summary.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggle(); } }); }); refresh(); })();
+  </script>
+</SiteLayout>
