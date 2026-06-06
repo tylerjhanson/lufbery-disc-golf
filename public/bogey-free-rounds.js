@@ -87,6 +87,15 @@
         overflow-wrap: anywhere;
         word-break: break-word;
       }
+      #${SECTION_ID} .date-link {
+        color: var(--accent, #2563eb) !important;
+        font-weight: 600 !important;
+        text-decoration: none !important;
+      }
+      #${SECTION_ID} .date-link:hover,
+      #${SECTION_ID} .date-link:focus-visible {
+        text-decoration: underline !important;
+      }
       :is(html[data-theme="dark"], html.dark, body.dark, body[data-theme="dark"]) #${SECTION_ID} tbody tr:nth-child(even) td { background: rgba(255, 255, 255, 0.03); }
       @media (prefers-color-scheme: dark) { html[data-theme="system"] #${SECTION_ID} tbody tr:nth-child(even) td { background: rgba(255, 255, 255, 0.03); } }
       @media (max-width: 700px) {
