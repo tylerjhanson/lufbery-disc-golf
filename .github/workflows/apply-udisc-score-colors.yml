@@ -121,6 +121,25 @@ html[data-theme="dark"] {
   color: var(--udisc-score-orange-text) !important;
 }
 
+/* UDisc uses rounded squares for over-par score chips. */
+.profile-round-score--bogey,
+.profile-round-score--double,
+.profile-round-score--triple,
+.round-score--bogey,
+.round-score--double,
+.round-score--triple,
+.score--bogey,
+.score--double,
+.score--triple,
+.score-cell--bogey,
+.score-cell--double,
+.score-cell--triple,
+[class*="score"][class*="bogey"],
+[class*="score"][class*="double"],
+[class*="score"][class*="triple"] {
+  border-radius: 8px !important;
+}
+
 .segment--bogey span,
 .segment--double span,
 .segment--triple span,
@@ -143,14 +162,17 @@ html[data-theme="dark"] {
 
           layout_path = Path('src/layouts/SiteLayout.astro')
           layout = layout_path.read_text(encoding='utf-8')
-          link = '    <link rel="stylesheet" href="/udisc-score-colors.css?v=20260605" />\n'
+          link = '    <link rel="stylesheet" href="/udisc-score-colors.css?v=20260605b" />\n'
           if 'udisc-score-colors.css' not in layout:
             marker = '    <link rel="manifest" href="/manifest.webmanifest" />\n'
             if marker in layout:
               layout = layout.replace(marker, marker + link, 1)
             else:
               layout = layout.replace('    <meta name="theme-color"', link + '    <meta name="theme-color"', 1)
-            layout_path.write_text(layout, encoding='utf-8')
+          else:
+            import re
+            layout = re.sub(r'href="/udisc-score-colors\.css\?v=[^"]+"', 'href="/udisc-score-colors.css?v=20260605b"', layout)
+          layout_path.write_text(layout, encoding='utf-8')
 
           workflow_path = Path('.github/workflows/apply-udisc-score-colors.yml')
           if workflow_path.exists():
