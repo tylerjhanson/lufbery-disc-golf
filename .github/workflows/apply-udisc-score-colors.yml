@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/apply-udisc-score-colors.yml'
+      - '.github/trigger-udisc-score-colors'
   workflow_dispatch:
 
 permissions:
@@ -162,7 +163,7 @@ html[data-theme="dark"] {
 
           layout_path = Path('src/layouts/SiteLayout.astro')
           layout = layout_path.read_text(encoding='utf-8')
-          link = '    <link rel="stylesheet" href="/udisc-score-colors.css?v=20260605b" />\n'
+          link = '    <link rel="stylesheet" href="/udisc-score-colors.css?v=20260605c" />\n'
           if 'udisc-score-colors.css' not in layout:
             marker = '    <link rel="manifest" href="/manifest.webmanifest" />\n'
             if marker in layout:
@@ -171,19 +172,22 @@ html[data-theme="dark"] {
               layout = layout.replace('    <meta name="theme-color"', link + '    <meta name="theme-color"', 1)
           else:
             import re
-            layout = re.sub(r'href="/udisc-score-colors\.css\?v=[^"]+"', 'href="/udisc-score-colors.css?v=20260605b"', layout)
+            layout = re.sub(r'href="/udisc-score-colors\.css\?v=[^"]+"', 'href="/udisc-score-colors.css?v=20260605c"', layout)
           layout_path.write_text(layout, encoding='utf-8')
 
           workflow_path = Path('.github/workflows/apply-udisc-score-colors.yml')
           if workflow_path.exists():
             workflow_path.unlink()
+          trigger_path = Path('.github/trigger-udisc-score-colors')
+          if trigger_path.exists():
+            trigger_path.unlink()
           PY
 
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/udisc-score-colors.css src/layouts/SiteLayout.astro .github/workflows/apply-udisc-score-colors.yml
+          git add public/udisc-score-colors.css src/layouts/SiteLayout.astro .github/workflows/apply-udisc-score-colors.yml .github/trigger-udisc-score-colors
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
