@@ -9,23 +9,140 @@
     const style = document.createElement("style");
     style.id = STYLE_ID;
     style.textContent = `
-      .bogey-free-name-col { width: 42%; }
-      .bogey-free-score-col { width: 16%; }
-      .bogey-free-birdie-col { width: 16%; }
-      .bogey-free-date-col { width: 26%; }
-      .bogey-free-note {
-        margin: 0 20px 12px;
+      #${SECTION_ID}.records-section {
+        background: var(--card, #ffffff);
+        border: 1px solid var(--line-soft, #eef2f7);
+        border-radius: var(--radius, 22px);
+        box-shadow: var(--shadow, 0 10px 30px rgba(15, 23, 42, 0.08));
+        overflow: hidden;
+        margin-bottom: 18px;
+      }
+
+      #${SECTION_ID}.records-section summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        cursor: pointer;
+        padding: 20px 24px;
+        font-size: 0.95rem;
+        font-weight: 900;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        list-style: none;
+      }
+
+      #${SECTION_ID}.records-section summary::-webkit-details-marker {
+        display: none;
+      }
+
+      #${SECTION_ID}.records-section summary::after {
+        content: "›";
         color: var(--muted, #6b7280);
-        font-size: 0.9rem;
-        font-weight: 650;
+        font-size: 1.4rem;
+        transform: rotate(90deg);
+        transition: transform 0.15s ease;
+      }
+
+      #${SECTION_ID}.records-section:not([open]) summary::after {
+        transform: rotate(0deg);
+      }
+
+      #${SECTION_ID} .table-wrap {
+        padding: 0 20px 10px;
+      }
+
+      #${SECTION_ID} table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        table-layout: fixed;
+      }
+
+      #${SECTION_ID} col.name-col { width: 46%; }
+      #${SECTION_ID} col.score-col { width: 20%; }
+      #${SECTION_ID} col.date-col { width: 34%; }
+
+      #${SECTION_ID} thead th {
+        background: var(--header, #f8fafc);
+        color: var(--muted, #6b7280);
+        font-size: 0.86rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--line, #e5e7eb);
+        text-align: center;
+      }
+
+      #${SECTION_ID} thead th:first-child {
+        border-top-left-radius: 14px;
+        text-align: left;
+      }
+
+      #${SECTION_ID} thead th:last-child {
+        border-top-right-radius: 14px;
+      }
+
+      #${SECTION_ID} tbody td {
+        padding: 15px 16px;
+        border-bottom: 1px solid var(--line-soft, #eef2f7);
+        font-size: 1rem;
+        text-align: center;
+        vertical-align: middle;
+      }
+
+      #${SECTION_ID} tbody tr:nth-child(even) td {
+        background: #fcfdff;
+      }
+
+      #${SECTION_ID} tbody tr:hover td {
+        background: var(--hover, #f9fbff);
+      }
+
+      #${SECTION_ID} tbody td:first-child {
+        text-align: left;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      :is(html[data-theme="dark"], html.dark, body.dark, body[data-theme="dark"]) #${SECTION_ID} tbody tr:nth-child(even) td {
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        html[data-theme="system"] #${SECTION_ID} tbody tr:nth-child(even) td {
+          background: rgba(255, 255, 255, 0.03);
+        }
       }
 
       @media (max-width: 700px) {
-        .bogey-free-name-col { width: 36%; }
-        .bogey-free-score-col { width: 18%; }
-        .bogey-free-birdie-col { width: 18%; }
-        .bogey-free-date-col { width: 28%; }
-        .bogey-free-note { margin: 0 8px 10px; font-size: 0.82rem; }
+        #${SECTION_ID} .table-wrap { padding: 0 8px 8px; }
+        #${SECTION_ID}.records-section summary { padding: 18px 16px; }
+        #${SECTION_ID} col.name-col { width: 42%; }
+        #${SECTION_ID} col.score-col { width: 22%; }
+        #${SECTION_ID} col.date-col { width: 36%; }
+        #${SECTION_ID} thead th {
+          font-size: 0.72rem;
+          letter-spacing: 0.02em;
+          padding: 10px 6px;
+        }
+        #${SECTION_ID} tbody td {
+          font-size: 0.9rem;
+          padding: 10px 6px;
+        }
+      }
+
+      @media (max-width: 420px) {
+        #${SECTION_ID} thead th {
+          font-size: 0.68rem;
+          padding: 9px 4px;
+        }
+        #${SECTION_ID} tbody td {
+          font-size: 0.86rem;
+          padding: 9px 4px;
+        }
       }
     `;
     document.head.append(style);
@@ -127,10 +244,6 @@
             ? Number(round.total)
             : scores.reduce((sum, score) => sum + score, 0);
           const toParValue = Number.isFinite(Number(round?.toPar)) ? Number(round.toPar) : total - parTotal;
-          const birdiesOrBetter = scores.reduce(
-            (count, score, index) => count + (score < Number(pars[index] || 3) ? 1 : 0),
-            0
-          );
           const date = String(round?.date || round?.title || "");
           const dateKey = String(round?.dateKey || getDateKey(date));
 
@@ -143,7 +256,6 @@
             year: getRowYear(date),
             total,
             scoreLabel: `${total} (${toPar(toParValue)})`,
-            birdiesOrBetter,
             url: String(round?.url || ""),
           };
         }).filter(Boolean);
@@ -161,7 +273,6 @@
       <tr data-bogey-free-row data-year="${escapeHtml(row.year)}">
         <td><a class="player-button" href="${escapeHtml(row.playerHref)}">${escapeHtml(row.name)}</a></td>
         <td>${escapeHtml(row.scoreLabel)}</td>
-        <td>${escapeHtml(row.birdiesOrBetter)}</td>
         <td>${renderDate(row)}</td>
       </tr>
     `).join("");
@@ -204,16 +315,14 @@
     section.className = "records-section";
     section.innerHTML = `
       <summary>Bogey-Free Rounds</summary>
-      <p class="bogey-free-note">Rounds with 0 holes over par on the original layout.</p>
       <div class="table-wrap">
         <table data-bogey-free-table>
           <colgroup>
-            <col class="bogey-free-name-col" />
-            <col class="bogey-free-score-col" />
-            <col class="bogey-free-birdie-col" />
-            <col class="bogey-free-date-col" />
+            <col class="name-col" />
+            <col class="score-col" />
+            <col class="date-col" />
           </colgroup>
-          <thead><tr><th>Name</th><th>Score</th><th>Birdies+</th><th>Date</th></tr></thead>
+          <thead><tr><th>Name</th><th>Score</th><th>Date</th></tr></thead>
           <tbody>${renderRows(rows)}</tbody>
         </table>
       </div>
