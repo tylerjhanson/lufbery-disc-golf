@@ -7,6 +7,13 @@ const COURSE_RECORDS_FIX_STYLE = `
     flex-wrap: nowrap !important;
   }
 
+  .date-link,
+  .date-link span,
+  .date-link-inline,
+  .date-link-inline span {
+    color: var(--accent, #2563eb) !important;
+  }
+
   .udisc-icon {
     height: 0.82em !important;
     width: auto !important;
