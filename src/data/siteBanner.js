@@ -4,9 +4,9 @@ export const siteBanner = {
   // Change this ID whenever you want dismissed visitors to see the banner again.
   id: "2026-05-24-player-history-feature-updated-7",
 
-  label: "June 5 Update",
+  label: "Reminder",
   message:
-    "Player profile pages now include a new Round History section with sortable UDisc results, total score, year filters, and hole-by-hole scores for every round on the original layout since 2021. Rotate on mobile to view each full round including sortable columns.",
+    "3rd Annual Lufbery July 4 League. 18 holes on the original layout with a 9 a.m. shotgun start followed by an additional 9 holes on alternate holes with reshuffled cards and 8 cash CTPs",
 
   dismissible: true,
 };
