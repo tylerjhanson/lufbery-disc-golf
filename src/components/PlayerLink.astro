@@ -59,11 +59,18 @@ const linkClass = ["player-button", className].filter(Boolean).join(" ");
 
 <script is:inline>
   (() => {
-    if (document.getElementById("playerModalHomeFixesScript")) return;
-    const script = document.createElement("script");
-    script.id = "playerModalHomeFixesScript";
-    script.src = "/player-modal-home-fixes.js?v=20260602b";
-    script.defer = true;
-    document.head.appendChild(script);
+    const scripts = [
+      { id: "playerModalHomeFixesScript", src: "/player-modal-home-fixes.js?v=20260602b" },
+      { id: "homeUpcomingEventsScript", src: "/home-upcoming-events.js?v=20260624" },
+    ];
+
+    scripts.forEach(({ id, src }) => {
+      if (document.getElementById(id)) return;
+      const script = document.createElement("script");
+      script.id = id;
+      script.src = src;
+      script.defer = true;
+      document.head.appendChild(script);
+    });
   })();
 </script>
