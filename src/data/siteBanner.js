@@ -1,5 +1,5 @@
 export const siteBanner = {
-  enabled: true,
+  enabled: false,
 
   // Change this ID whenever you want dismissed visitors to see the banner again.
   id: "2026-07-02",
