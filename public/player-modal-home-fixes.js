@@ -296,10 +296,43 @@
     return parseScoreNumber(cells[index]?.textContent || "");
   }
 
+  function isTwoRoundResultRow(row, headers) {
+    const card = row.closest(".card");
+    if (card?.getAttribute("data-round-type") === "2-rounds") return true;
+
+    const r1Index = findScoreHeaderIndex(headers, ["r1", "round 1"]);
+    const r2Index = findScoreHeaderIndex(headers, ["r2", "round 2"]);
+    const totalIndex = findScoreHeaderIndex(headers, ["total", "total score"]);
+
+    return (r1Index !== -1 && r2Index !== -1) || totalIndex !== -1;
+  }
+
+  function getCompletedTwoRoundScoreForRow(row, headers, cells) {
+    const r1Index = findScoreHeaderIndex(headers, ["r1", "round 1"]);
+    const r2Index = findScoreHeaderIndex(headers, ["r2", "round 2"]);
+
+    if (r1Index !== -1 || r2Index !== -1) {
+      if (r1Index === -1 || r2Index === -1) return null;
+
+      const r1 = getScoreFromCell(cells, r1Index);
+      const r2 = getScoreFromCell(cells, r2Index);
+
+      if (r1 == null || r2 == null) return null;
+      return r1 + r2;
+    }
+
+    const totalIndex = findScoreHeaderIndex(headers, ["total", "total score"]);
+    return getScoreFromCell(cells, totalIndex);
+  }
+
   function getBestRawScoreForRow(row) {
     const table = row.closest("table");
     const headers = getTableHeaders(table);
     const cells = Array.from(row.cells || []);
+
+    if (isTwoRoundResultRow(row, headers)) {
+      return getCompletedTwoRoundScoreForRow(row, headers, cells);
+    }
 
     const rawIndex = findScoreHeaderIndex(headers, ["raw", "raw score"]);
     const totalIndex = findScoreHeaderIndex(headers, ["total", "total score"]);
