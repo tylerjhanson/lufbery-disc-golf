@@ -75,7 +75,7 @@ const originalYearResolution = `  const anchor = dateColumns[dateColumns.length 
       year -= 1;
     }
 
-    dateMap.set(current.index, \`${current.month}/${current.day}/${String(year).slice(-2)}\`);
+    dateMap.set(current.index, \`\${current.month}/\${current.day}/\${String(year).slice(-2)}\`);
 
     nextMonth = current.month;
     nextDay = current.day;
@@ -110,7 +110,7 @@ const patchedYearResolution = `  const anchor = dateColumns[dateColumns.length -
       year -= 1;
     }
 
-    dateMap.set(current.index, \`${current.month}/${current.day}/${String(year).slice(-2)}\`);
+    dateMap.set(current.index, \`\${current.month}/\${current.day}/\${String(year).slice(-2)}\`);
 
     nextMonth = current.month;
     nextDay = current.day;
