@@ -1424,33 +1424,33 @@ Tom Woodruff,6,5/28/2026,Robbie Massores,53,7/11/2026
 William Elwell,2,5/28/2026,Skyler Phelan,29,7/11/2026
 William Stewart,1,5/28/2026,Tim Breault,41,7/11/2026
 Aidan Cahill,3,6/4/2026,Wesley Krombel,1,7/11/2026
-Bob Kling,7,6/4/2026,,,
-Bryan Smith,3,6/4/2026,,,
-Dave Smith,6,6/4/2026,,,
-David Brewer,7,6/4/2026,,,
-Duncan Farquharson,0,6/4/2026,,,
-Eddie Daniels,8,6/4/2026,,,
-Elyse Scott,9,6/4/2026,,,
-Errol Matthews,9,6/4/2026,,,
-Gary Beaumont,10,6/4/2026,,,
-Ian Davila,4,6/4/2026,,,
-Jack Midkiff,4,6/4/2026,,,
-Jason Cebula,-2,6/4/2026,,,
-Justin Folsom,6,6/4/2026,,,
-Liam Wolfram,1,6/4/2026,,,
-Mark Anschultz,5,6/4/2026,,,
-Mark Blachura,6,6/4/2026,,,
-Matthew Bergeron,7,6/4/2026,,,
-Matthew Dahlmeyer,6,6/4/2026,,,
-Matthew Viens,3,6/4/2026,,,
-Mike Rocco,6,6/4/2026,,,
-Natale DiNatale,8,6/4/2026,,,
-Neuton Matthews,1,6/4/2026,,,
-Peter Zaffina,11,6/4/2026,,,
-PJ Bergeron,1,6/4/2026,,,
-Rick Kenyon,3,6/4/2026,,,
-Ryan Dolan,5,6/4/2026,,,
-Tom Woodruff,9,6/4/2026,,,
+Bob Kling,7,6/4/2026,Aidan Cahill,29,7/16/2026
+Bryan Smith,3,6/4/2026,Bob Kling,40,7/16/2026
+Dave Smith,6,6/4/2026,Dave McHale,27,7/16/2026
+David Brewer,7,6/4/2026,Dave Shaw,37,7/16/2026
+Duncan Farquharson,0,6/4/2026,Dave Smith,24,7/16/2026
+Eddie Daniels,8,6/4/2026,David Brewer,51,7/16/2026
+Elyse Scott,9,6/4/2026,Doug Latham,53,7/16/2026
+Errol Matthews,9,6/4/2026,Duncan Farquharson,5,7/16/2026
+Gary Beaumont,10,6/4/2026,Errol Matthews,46,7/16/2026
+Ian Davila,4,6/4/2026,Jack Midkiff,10,7/16/2026
+Jack Midkiff,4,6/4/2026,Jackson Meyers,13,7/16/2026
+Jason Cebula,-2,6/4/2026,Jason Cebula,1,7/16/2026
+Justin Folsom,6,6/4/2026,Liam Wolfram,18,7/16/2026
+Liam Wolfram,1,6/4/2026,Mark Anschultz,35,7/16/2026
+Mark Anschultz,5,6/4/2026,Mark Blachura,9,7/16/2026
+Mark Blachura,6,6/4/2026,Matthew Viens,28,7/16/2026
+Matthew Bergeron,7,6/4/2026,Mike Conner,15,7/16/2026
+Matthew Dahlmeyer,6,6/4/2026,Mike Rocco,17,7/16/2026
+Matthew Viens,3,6/4/2026,Neuton Matthews,12,7/16/2026
+Mike Rocco,6,6/4/2026,PJ Bergeron,22,7/16/2026
+Natale DiNatale,8,6/4/2026,Robbie Massores,34,7/16/2026
+Neuton Matthews,1,6/4/2026,Ryan Dolan,2,7/16/2026
+Peter Zaffina,11,6/4/2026,Skyler Phelan,41,7/16/2026
+PJ Bergeron,1,6/4/2026,Tim Breault,31,7/16/2026
+Rick Kenyon,3,6/4/2026,Tyler Hanson,20,7/16/2026
+Ryan Dolan,5,6/4/2026,Wesley Krombel,19,7/16/2026
+Tom Woodruff,9,6/4/2026,William Elwell,26,7/16/2026
 Tyler Hanson,-1,6/4/2026,,,
 Wesley Krombel,1,6/4/2026,,,
 William Elwell,2,6/4/2026,,,
@@ -1608,3 +1608,32 @@ Robbie Massores,9,7/11/2026,,,
 Skyler Phelan,2,7/11/2026,,,
 Tim Breault,3,7/11/2026,,,
 Wesley Krombel,0,7/11/2026,,,
+Aidan Cahill,4,7/16/2026,,,
+Bob Kling,5,7/16/2026,,,
+Dave McHale,3,7/16/2026,,,
+Dave Shaw,7,7/16/2026,,,
+Dave Smith,3,7/16/2026,,,
+David Brewer,8,7/16/2026,,,
+Doug Latham,8,7/16/2026,,,
+Duncan Farquharson,-2,7/16/2026,,,
+Errol Matthews,7,7/16/2026,,,
+Jack Midkiff,1,7/16/2026,,,
+Jackson Meyers,-1,7/16/2026,,,
+Jason Cebula,-3,7/16/2026,,,
+Justin Folsom,5,7/16/2026,,,
+Liam Wolfram,1,7/16/2026,,,
+Mark Anschultz,5,7/16/2026,,,
+Mark Blachura,4,7/16/2026,,,
+Matthew Viens,4,7/16/2026,,,
+Mike Conner,2,7/16/2026,,,
+Mike Rocco,3,7/16/2026,,,
+Neuton Matthews,0,7/16/2026,,,
+PJ Bergeron,1,7/16/2026,,,
+Robbie Massores,8,7/16/2026,,,
+Ryan Dolan,0,7/16/2026,,,
+Skyler Phelan,2,7/16/2026,,,
+Tim Breault,4,7/16/2026,,,
+Tyler Hanson,1,7/16/2026,,,
+Wade Smith,7,7/16/2026,,,
+Wesley Krombel,0,7/16/2026,,,
+William Elwell,0,7/16/2026,,,
