@@ -75,8 +75,8 @@ const defaultPanelKey = panels[0]?.key || "total";
               </div>
               <div class="score-bar" style={barStyle(hole.segments)}>
                 {(hole.segments || []).map((segment) => (
-                  <div class={`segment segment--${segment.kind}`} title={`${segment.label}: ${segment.count} (${Number(segment.pct || 0).toFixed(1)}%)`}>
-                    {Number(segment.pct || 0) >= 9 && <span>{segment.count}</span>}
+                  <div class={`segment segment--${segment.kind}`} title={`${segment.label}: ${numberFormatter.format(Number(segment.count || 0))} (${Number(segment.pct || 0).toFixed(1)}%)`}>
+                    {Number(segment.pct || 0) >= 9 && <span>{numberFormatter.format(Number(segment.count || 0))}</span>}
                   </div>
                 ))}
               </div>
