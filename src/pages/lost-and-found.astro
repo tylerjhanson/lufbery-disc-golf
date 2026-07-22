@@ -637,23 +637,21 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       }
 
       if (isLast4Column) {
-        const formatted =
-          cell.f !== null && cell.f !== undefined && cell.f !== ""
-            ? String(cell.f).trim()
-            : "";
+  const value =
+    cell.f !== null && cell.f !== undefined && cell.f !== ""
+      ? String(cell.f).trim()
+      : String(cell.v ?? "").trim();
 
-        if (formatted) return formatted;
+  if (!value) return "";
 
-        const rawText = String(cell.v ?? "").trim();
-        if (!rawText) return "";
+  const digits = value.replace(/\D/g, "");
 
-        const digits = rawText.replace(/\D/g, "");
-        if (/^\d{1,4}$/.test(digits)) {
-          return digits.padStart(4, "0");
-        }
+  if (/^\d{1,4}$/.test(digits)) {
+    return digits.padStart(4, "0");
+  }
 
-        return rawText;
-      }
+  return value;
+}
 
       if (cell.f !== null && cell.f !== undefined && cell.f !== "") return String(cell.f);
       if (cell.v === null || cell.v === undefined) return "";
