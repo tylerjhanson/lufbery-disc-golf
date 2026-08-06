@@ -75,11 +75,14 @@ jobs:
                   "sheet query",
               ),
               (
-                  '''            const cells = Array.isArray(row?.c) ? row.c.slice(0, 7) : [];
-                        while (cells.length < 7) cells.push(null);''',
-                  '''            const cells = Array.isArray(row?.c) ? row.c.slice(0, 8) : [];
-                        while (cells.length < 8) cells.push(null);''',
-                  "row width",
+                  'row.c.slice(0, 7)',
+                  'row.c.slice(0, 8)',
+                  "row slice",
+              ),
+              (
+                  'while (cells.length < 7) cells.push(null);',
+                  'while (cells.length < 8) cells.push(null);',
+                  "row padding",
               ),
           ]
 
