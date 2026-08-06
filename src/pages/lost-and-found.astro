@@ -614,8 +614,41 @@ import SiteLayout from "../layouts/SiteLayout.astro";
       return null;
     }
 
+    function getCellText(cell) {
+      if (!cell) return "";
+
+      if (cell.f !== null && cell.f !== undefined && cell.f !== "") {
+        return String(cell.f).trim();
+      }
+
+      return String(cell.v ?? "").trim();
+    }
+
     function getVisibleCells(row) {
-      return VISIBLE_SOURCE_INDICES.map((sourceIndex) => row[sourceIndex] ?? null);
+      return VISIBLE_SOURCE_INDICES.map((sourceIndex) => {
+        if (sourceIndex !== 4) {
+          return row[sourceIndex] ?? null;
+        }
+
+        const existingLast4 = row[4] ?? null;
+
+        if (getCellText(existingLast4)) {
+          return existingLast4;
+        }
+
+        const phoneDigits = getCellText(row[7]).replace(/\D/g, "");
+
+        if (!phoneDigits) {
+          return null;
+        }
+
+        const last4 = phoneDigits.slice(-4).padStart(4, "0");
+
+        return {
+          v: last4,
+          f: last4,
+        };
+      });
     }
 
     function displayCell(cell, visibleColIndex = -1) {
@@ -826,7 +859,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
 
     async function loadInventory() {
       try {
-        const tq = encodeURIComponent("select A,B,C,D,E,F,G");
+        const tq = encodeURIComponent("select A,B,C,D,E,F,G,H");
         const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?gid=${sheetGid}&tq=${tq}`;
 
         const response = await fetch(url);
@@ -846,8 +879,8 @@ import SiteLayout from "../layouts/SiteLayout.astro";
         const cols = parsed?.table?.cols || [];
         const rows = (parsed?.table?.rows || [])
           .map((row) => {
-            const cells = Array.isArray(row?.c) ? row.c.slice(0, 7) : [];
-            while (cells.length < 7) cells.push(null);
+            const cells = Array.isArray(row?.c) ? row.c.slice(0, 8) : [];
+            while (cells.length < 8) cells.push(null);
             return cells;
           })
           .filter(isDisplayableRow);
