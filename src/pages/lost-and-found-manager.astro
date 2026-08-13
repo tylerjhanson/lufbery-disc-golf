@@ -1419,34 +1419,57 @@ function getViewCount(view) {
             : "listSold";
     }
 
-    async function loadView(view, { retry = true } = {}) {
-      let payload;
+    const viewLoadPromises = {};
+    let backgroundLoadGeneration = 0;
 
+    function sleep(ms) {
+      return new Promise((resolve) => window.setTimeout(resolve, ms));
+    }
+
+    async function requestWithRetry(params, { retry = true } = {}) {
       try {
-        payload = await jsonp({
-          action: getActionForView(view),
-          password: state.password,
-        });
+        return await jsonp(params);
       } catch (error) {
         if (!retry) throw error;
-        await new Promise((resolve) => window.setTimeout(resolve, 1200));
-        payload = await jsonp({
-          action: getActionForView(view),
-          password: state.password,
-        });
+        await sleep(1200);
+        return await jsonp(params);
+      }
+    }
+
+    async function loadView(view, { retry = true } = {}) {
+      if (viewLoadPromises[view]) {
+        return viewLoadPromises[view];
       }
 
-      if (!payload?.ok) {
-        throw new Error(payload?.error || `Unable to load ${view} discs.`);
-      }
+      const loadPromise = (async () => {
+        const payload = await requestWithRetry(
+          {
+            action: getActionForView(view),
+            password: state.password,
+          },
+          { retry }
+        );
 
-      state.records[view] = Array.isArray(payload.records) ? payload.records : [];
-      state.loaded[view] = true;
+        if (!payload?.ok) {
+          throw new Error(payload?.error || `Unable to load ${view} discs.`);
+        }
 
-      if (state.activeView === view) {
-        renderTable();
-      } else {
-        updateFilterButtons();
+        state.records[view] = Array.isArray(payload.records) ? payload.records : [];
+        state.loaded[view] = true;
+
+        if (state.activeView === view) {
+          renderTable();
+        } else {
+          updateFilterButtons();
+        }
+      })();
+
+      viewLoadPromises[view] = loadPromise;
+
+      try {
+        return await loadPromise;
+      } finally {
+        delete viewLoadPromises[view];
       }
     }
 
@@ -1455,14 +1478,37 @@ function getViewCount(view) {
       await loadView(view);
     }
 
+    async function loadRemainingViewsInBackground({ initialDelay = 1500 } = {}) {
+      const generation = ++backgroundLoadGeneration;
+      const views = ["returned", "donated", "sold"];
+
+      await sleep(initialDelay);
+
+      for (const view of views) {
+        if (generation !== backgroundLoadGeneration) return;
+        if (state.loaded[view]) continue;
+
+        try {
+          await loadView(view);
+        } catch (error) {
+          console.warn(`Background load failed for ${view}:`, error);
+        }
+
+        await sleep(900);
+      }
+    }
+
     async function refreshLoadedViews() {
       const activeView = state.activeView || "current";
+
+      backgroundLoadGeneration += 1;
 
       ["current", "returned", "donated", "sold"].forEach((view) => {
         if (view !== activeView) state.loaded[view] = false;
       });
 
       await loadView(activeView);
+      loadRemainingViewsInBackground({ initialDelay: 1400 });
     }
 
     async function unlock(password, { remember = true } = {}) {
@@ -1471,10 +1517,20 @@ function getViewCount(view) {
         throw new Error("Enter the manager password.");
       }
 
+      // Password validation is deliberately separated from the spreadsheet read.
+      // Older GAS deployments return "Unknown action." after validating the
+      // password, which is also accepted here for backward compatibility.
+      const authPayload = await requestWithRetry({
+        action: "auth",
+        password: trimmed,
+      });
+
+      if (!authPayload?.ok && authPayload?.error !== "Unknown action.") {
+        throw new Error(authPayload?.error || "Unable to unlock.");
+      }
+
       state.password = trimmed;
       state.activeView = "current";
-      await loadView("current");
-      renderTable();
 
       if (remember) {
         try {
@@ -1485,9 +1541,21 @@ function getViewCount(view) {
       loginCard.hidden = true;
       appWrap.hidden = false;
       setStatus(loginStatus, "");
-      setStatus(appStatus, "");
-
+      setStatus(appStatus, "Loading current inventory…");
       updateFilterButtons();
+
+      loadView("current")
+        .then(() => {
+          setStatus(appStatus, "");
+          loadRemainingViewsInBackground({ initialDelay: 1200 });
+        })
+        .catch((error) => {
+          setStatus(
+            appStatus,
+            error?.message || "Unable to load current inventory.",
+            "error"
+          );
+        });
     }
 
     function showLogin(message = "", type = "") {
