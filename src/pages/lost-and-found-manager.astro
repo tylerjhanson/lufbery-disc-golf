@@ -56,17 +56,7 @@ const messageText =
       line-height: 1.45;
     }
 
-    .lost-found-manager-page .lfm-login {
-      max-width: 520px;
-      margin: 0 auto;
-    }
 
-    .lost-found-manager-page .lfm-password-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 10px;
-      margin-top: 12px;
-    }
 
     .lost-found-manager-page .lfm-grid { display: grid; gap: 10px; }
     .lost-found-manager-page .lfm-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -680,7 +670,6 @@ const messageText =
 
     @media (max-width: 700px) {
       .lost-found-manager-page .lfm-card { padding: 18px 14px 16px; }
-      .lost-found-manager-page .lfm-password-row,
       .lost-found-manager-page .lfm-grid-4,
       .lost-found-manager-page .lfm-modal-grid { grid-template-columns: 1fr; }
 
@@ -749,27 +738,9 @@ const messageText =
 
   <div class="wrap lost-found-manager-page">
     <div class="lfm-stack">
-      <section id="lfmLoginCard" class="lfm-card lfm-login" hidden>
-        <h1>Lost &amp; Found Manager</h1>
+      <h1>Lost &amp; Found Manager</h1>
 
-        <form id="lfmUnlockForm" class="lfm-password-row" autocomplete="off">
-          <input
-            id="lfmPassword"
-            name="manager_key"
-            type="password"
-            autocomplete="off"
-            autocapitalize="none"
-            spellcheck="false"
-            placeholder="Manager password"
-            required
-          />
-          <button class="lfm-button lfm-button-primary" type="submit">Unlock</button>
-        </form>
-
-        <div id="lfmLoginStatus" class="lfm-status" aria-live="polite"></div>
-      </section>
-
-      <div id="lfmApp" hidden>
+      <div id="lfmApp">
         <section class="lfm-card">
           <div class="lfm-section-head">
             <h2>Add a new disc</h2>
@@ -796,10 +767,10 @@ const messageText =
             <h2 id="lfmTableHeading">Current inventory</h2>
 
             <div class="lfm-filter-wrap" role="tablist" aria-label="Inventory filters">
-              <button id="lfmFilterCurrent" class="lfm-filter-button is-active" type="button" data-view="current">Current (0)</button>
-              <button id="lfmFilterReturned" class="lfm-filter-button" type="button" data-view="returned">Returned (0)</button>
-              <button id="lfmFilterDonated" class="lfm-filter-button" type="button" data-view="donated">Donated (0)</button>
-              <button id="lfmFilterSold" class="lfm-filter-button" type="button" data-view="sold">Sold (0)</button>
+              <button id="lfmFilterCurrent" class="lfm-filter-button is-active" type="button" data-view="current">Current (…)</button>
+              <button id="lfmFilterReturned" class="lfm-filter-button" type="button" data-view="returned">Returned (…)</button>
+              <button id="lfmFilterDonated" class="lfm-filter-button" type="button" data-view="donated">Donated (…)</button>
+              <button id="lfmFilterSold" class="lfm-filter-button" type="button" data-view="sold">Sold (…)</button>
             </div>
           </div>
 
@@ -914,12 +885,6 @@ const messageText =
   </div>
 
   <script define:vars={{ messageText }}>
-    const PASSWORD_KEY = "lufbery-lf-manager-password";
-    const loginCard = document.getElementById("lfmLoginCard");
-    const appWrap = document.getElementById("lfmApp");
-    const unlockForm = document.getElementById("lfmUnlockForm");
-    const passwordInput = document.getElementById("lfmPassword");
-    const loginStatus = document.getElementById("lfmLoginStatus");
     const appStatus = document.getElementById("lfmAppStatus");
     const addForm = document.getElementById("lfmAddForm");
     const tableBody = document.getElementById("lfmTableBody");
@@ -960,7 +925,6 @@ const messageText =
     const busyText = document.getElementById("lfmBusyText");
 
     const state = {
-      password: "",
       records: {
         current: [],
         returned: [],
@@ -1277,7 +1241,6 @@ function getViewCount(view) {
       await runWithBusy(busyMessage, async () => {
         const response = await jsonp({
           action: "bulkUpdate",
-          password: state.password,
           operation,
           rowNumbers: [...state.selectedRows].join(","),
         });
@@ -1287,7 +1250,7 @@ function getViewCount(view) {
         }
 
         state.selectedRows.clear();
-        await refreshLoadedViews();
+        queueInventoryRefresh();
       });
 
       setStatus(appStatus, successMessage, "success");
@@ -1408,19 +1371,6 @@ function getViewCount(view) {
       }
     }
 
-    function getActionForView(view) {
-      return view === "current"
-        ? "list"
-        : view === "returned"
-          ? "listReturned"
-          : view === "donated"
-            ? "listDonated"
-            : "listSold";
-    }
-
-    const viewLoadPromises = {};
-    let backgroundLoadGeneration = 0;
-
     function sleep(ms) {
       return new Promise((resolve) => window.setTimeout(resolve, ms));
     }
@@ -1430,138 +1380,56 @@ function getViewCount(view) {
         return await jsonp(params);
       } catch (error) {
         if (!retry) throw error;
-        await sleep(1200);
+        await sleep(1000);
         return await jsonp(params);
       }
     }
 
-    async function loadView(view, { retry = true } = {}) {
-      if (viewLoadPromises[view]) {
-        return viewLoadPromises[view];
+    async function loadAllViews({ retry = true } = {}) {
+      const payload = await requestWithRetry(
+        { action: "listAll" },
+        { retry }
+      );
+
+      if (!payload?.ok) {
+        throw new Error(payload?.error || "Unable to load lost & found inventory.");
       }
 
-      const loadPromise = (async () => {
-        const payload = await requestWithRetry(
-          {
-            action: getActionForView(view),
-            password: state.password,
-          },
-          { retry }
-        );
+      const views = payload.views || {};
 
-        if (!payload?.ok) {
-          throw new Error(payload?.error || `Unable to load ${view} discs.`);
-        }
-
-        state.records[view] = Array.isArray(payload.records) ? payload.records : [];
+      ["current", "returned", "donated", "sold"].forEach((view) => {
+        state.records[view] = Array.isArray(views[view]) ? views[view] : [];
         state.loaded[view] = true;
+      });
 
-        if (state.activeView === view) {
-          renderTable();
-        } else {
-          updateFilterButtons();
-        }
-      })();
-
-      viewLoadPromises[view] = loadPromise;
-
-      try {
-        return await loadPromise;
-      } finally {
-        delete viewLoadPromises[view];
-      }
+      renderTable();
     }
 
     async function ensureViewLoaded(view) {
       if (state.loaded[view]) return;
-      await loadView(view);
+      await loadAllViews();
     }
 
-    async function loadRemainingViewsInBackground({ initialDelay = 1500 } = {}) {
-      const generation = ++backgroundLoadGeneration;
-      const views = ["returned", "donated", "sold"];
+    let refreshTimer = null;
 
-      await sleep(initialDelay);
-
-      for (const view of views) {
-        if (generation !== backgroundLoadGeneration) return;
-        if (state.loaded[view]) continue;
-
-        try {
-          await loadView(view);
-        } catch (error) {
-          console.warn(`Background load failed for ${view}:`, error);
-        }
-
-        await sleep(900);
-      }
-    }
-
-    async function refreshLoadedViews() {
-      const activeView = state.activeView || "current";
-
-      backgroundLoadGeneration += 1;
-
-      ["current", "returned", "donated", "sold"].forEach((view) => {
-        if (view !== activeView) state.loaded[view] = false;
-      });
-
-      await loadView(activeView);
-      loadRemainingViewsInBackground({ initialDelay: 1400 });
-    }
-
-    async function unlock(password, { remember = true } = {}) {
-      const trimmed = String(password || "");
-      if (!trimmed) {
-        throw new Error("Enter the manager password.");
+    function queueInventoryRefresh() {
+      if (refreshTimer) {
+        window.clearTimeout(refreshTimer);
       }
 
-      // Password validation is deliberately separated from the spreadsheet read.
-      // Older GAS deployments return "Unknown action." after validating the
-      // password, which is also accepted here for backward compatibility.
-      const authPayload = await requestWithRetry({
-        action: "auth",
-        password: trimmed,
-      });
+      refreshTimer = window.setTimeout(() => {
+        refreshTimer = null;
 
-      if (!authPayload?.ok && authPayload?.error !== "Unknown action.") {
-        throw new Error(authPayload?.error || "Unable to unlock.");
-      }
-
-      state.password = trimmed;
-      state.activeView = "current";
-
-      if (remember) {
-        try {
-          localStorage.setItem(PASSWORD_KEY, trimmed);
-        } catch {}
-      }
-
-      loginCard.hidden = true;
-      appWrap.hidden = false;
-      setStatus(loginStatus, "");
-      setStatus(appStatus, "Loading current inventory…");
-      updateFilterButtons();
-
-      loadView("current")
-        .then(() => {
-          setStatus(appStatus, "");
-          loadRemainingViewsInBackground({ initialDelay: 1200 });
-        })
-        .catch((error) => {
-          setStatus(
-            appStatus,
-            error?.message || "Unable to load current inventory.",
-            "error"
-          );
-        });
-    }
-
-    function showLogin(message = "", type = "") {
-      appWrap.hidden = true;
-      loginCard.hidden = false;
-      if (passwordInput) passwordInput.value = "";
-      setStatus(loginStatus, message, type);
+        loadAllViews()
+          .catch((error) => {
+            const message = error?.message || "Unable to refresh inventory.";
+            setStatus(
+              appStatus,
+              `Change saved, but the inventory refresh failed: ${message}`,
+              "error"
+            );
+          });
+      }, 250);
     }
 
     function getRecordByRow(rowNumber) {
@@ -1649,7 +1517,6 @@ function getViewCount(view) {
       await runWithBusy(busyMessage, async () => {
         const payload = {
           action: "update",
-          password: state.password,
           ...getEditPayload(),
         };
 
@@ -1668,7 +1535,7 @@ function getViewCount(view) {
         }
 
         closeEditModal();
-        await refreshLoadedViews();
+        queueInventoryRefresh();
       });
 
       setStatus(appStatus, successMessage, "success");
@@ -1681,7 +1548,6 @@ function getViewCount(view) {
       await runWithBusy("Deleting disc…", async () => {
         const response = await jsonp({
           action: "delete",
-          password: state.password,
           rowNumber: state.editing.rowNumber,
         });
 
@@ -1690,7 +1556,7 @@ function getViewCount(view) {
         }
 
         closeEditModal();
-        await refreshLoadedViews();
+        queueInventoryRefresh();
       });
 
       setStatus(appStatus, "Disc deleted.", "success");
@@ -1706,7 +1572,6 @@ function getViewCount(view) {
         await runWithBusy("Adding disc…", async () => {
           const payload = await jsonp({
             action: "add",
-            password: state.password,
             name: formData.get("name"),
             disc: formData.get("disc"),
             color: formData.get("color"),
@@ -1718,7 +1583,7 @@ function getViewCount(view) {
           }
 
           addForm.reset();
-          await refreshLoadedViews();
+          queueInventoryRefresh();
         });
 
         setStatus(appStatus, "Disc added.", "success");
@@ -1737,20 +1602,6 @@ function getViewCount(view) {
       }
     });
 
-    unlockForm?.addEventListener("submit", async (event) => {
-      event.preventDefault();
-
-      try {
-        setStatus(loginStatus, "Unlocking…");
-        await runWithBusy("Unlocking…", () => unlock(passwordInput?.value || ""));
-      } catch (error) {
-        try {
-          localStorage.removeItem(PASSWORD_KEY);
-        } catch {}
-        state.password = "";
-        showLogin(error?.message || "Unable to unlock.", "error");
-      }
-    });
 
     tableBody?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-edit-row]");
@@ -1790,17 +1641,10 @@ function getViewCount(view) {
         const view = filterButton.getAttribute("data-view");
         if (!view || state.activeView === view) return;
 
-        try {
-          await runWithBusy(`Loading ${view} discs…`, async () => {
-            state.activeView = view;
-            state.selectedRows.clear();
-            await ensureViewLoaded(view);
-            renderTable();
-          });
-          setStatus(appStatus, "");
-        } catch (error) {
-          setStatus(appStatus, error?.message || `Unable to load ${view} discs.`, "error");
-        }
+        state.activeView = view;
+        state.selectedRows.clear();
+        renderTable();
+        setStatus(appStatus, "");
       }
     });
 
@@ -1809,7 +1653,6 @@ function getViewCount(view) {
         await runWithBusy("Saving changes…", async () => {
           const payload = {
             action: "update",
-            password: state.password,
             ...getEditPayload(),
           };
 
@@ -1820,7 +1663,7 @@ function getViewCount(view) {
           }
 
           closeEditModal();
-          await refreshLoadedViews();
+          queueInventoryRefresh();
         });
 
         setStatus(appStatus, "Changes saved.", "success");
@@ -1969,22 +1812,15 @@ function getViewCount(view) {
       field?.addEventListener("change", resetDeleteConfirmation);
     });
 
-    try {
-      const savedPassword = localStorage.getItem(PASSWORD_KEY);
-
-      if (savedPassword) {
-        runWithBusy("Unlocking…", () => unlock(savedPassword, { remember: false })).catch((error) => {
-          try {
-            localStorage.removeItem(PASSWORD_KEY);
-          } catch {}
-          state.password = "";
-          showLogin(error?.message || "Unable to unlock.", "error");
-        });
-      } else {
-        showLogin();
-      }
-    } catch {
-      showLogin();
-    }
+    setStatus(appStatus, "Loading inventory…");
+    runWithBusy("Loading inventory…", () => loadAllViews())
+      .then(() => {
+        setStatus(appStatus, "");
+      })
+      .catch((error) => {
+        const message = error?.message || "Unable to load inventory.";
+        setStatus(appStatus, message, "error");
+        tableBody.innerHTML = `<tr><td class="lfm-empty" colspan="7">${escapeHtml(message)}</td></tr>`;
+      });
   </script>
 </SiteLayout>
