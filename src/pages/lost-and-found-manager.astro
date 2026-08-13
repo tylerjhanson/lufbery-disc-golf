@@ -1281,9 +1281,11 @@ function getViewCount(view) {
         .map((row) => {
           const rowNumber = Number(row.rowNumber);
           const checked = state.selectedRows.has(rowNumber) ? "checked" : "";
-          const hasPhone = String(row.phone ?? "").trim() !== "";
+          const smsPhone = row.fullPhone || row.phone || "";
+          const displayPhone = row.phone || (smsPhone ? String(smsPhone).replace(/[^\d]/g, "").slice(-4) : "");
+          const hasPhone = String(smsPhone).trim() !== "";
           const phoneHtml = hasPhone
-            ? `<a class="lfm-phone-link" href="${escapeHtml(getSmsHref(row.phone))}">${escapeHtml(formatPhone(row.phone))}</a>`
+            ? `<a class="lfm-phone-link" href="${escapeHtml(getSmsHref(smsPhone))}">${escapeHtml(formatPhone(displayPhone))}</a>`
             : "—";
 
           return `
@@ -1413,7 +1415,7 @@ function getViewCount(view) {
       editName.value = row.name || "";
       editDisc.value = row.disc || "";
       editColor.value = row.color || "";
-      editPhone.value = row.phone || "";
+      editPhone.value = row.fullPhone || row.phone || "";
       if (editLoggedDate) {
         editLoggedDate.value = formatDateInputValue(getLoggedDateRaw(row));
       }
