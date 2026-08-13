@@ -1,7 +1,6 @@
 ---
 import SiteLayout from "../layouts/SiteLayout.astro";
 
-const apiUrl = "https://script.google.com/macros/s/AKfycbyOVn9a5mphmeROGJPmHDD4Rpz-SeRpT50Cbk5qbuxn3BBCi1iaiHHU2fUrPg5Ccr9c/exec";
 const messageText =
   "Your disc was returned to the Lufbery lost and found. Please visit https://lufberydiscgolf.com/lost-and-found/ for our current lost disc inventory and pick-up instructions. Discs not picked up within 60 days will be donated.";
 ---
@@ -914,7 +913,7 @@ const messageText =
     </div>
   </div>
 
-  <script define:vars={{ apiUrl, messageText }}>
+  <script define:vars={{ messageText }}>
     const PASSWORD_KEY = "lufbery-lf-manager-password";
     const loginCard = document.getElementById("lfmLoginCard");
     const appWrap = document.getElementById("lfmApp");
@@ -1365,48 +1364,48 @@ function getViewCount(view) {
       renderTable();
     }
 
-    function jsonp(params) {
-      return new Promise((resolve, reject) => {
-        const callbackName = `__lfm_cb_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-        const url = new URL(apiUrl);
+    async function jsonp(params) {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 30000);
 
-        Object.entries(params || {}).forEach(([key, value]) => {
-  if (value !== undefined && value !== null) {
-    url.searchParams.set(key, String(value));
-  }
-});
+      try {
+        const response = await fetch("/api/lost-found-manager", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(params || {}),
+          cache: "no-store",
+          credentials: "same-origin",
+          signal: controller.signal,
+        });
 
-        url.searchParams.set("callback", callbackName);
-
-        const script = document.createElement("script");
-        const timeout = window.setTimeout(() => {
-          cleanup();
-          reject(new Error("Request timed out."));
-        }, 30000);
-
-        function cleanup() {
-          window.clearTimeout(timeout);
-          if (script.parentNode) script.parentNode.removeChild(script);
-          try {
-            delete window[callbackName];
-          } catch {
-            window[callbackName] = undefined;
-          }
+        let payload;
+        try {
+          payload = await response.json();
+        } catch {
+          throw new Error("Manager service returned an invalid response.");
         }
 
-        window[callbackName] = (payload) => {
-          cleanup();
-          resolve(payload);
-        };
+        if (!response.ok) {
+          throw new Error(payload?.error || `Manager service returned ${response.status}.`);
+        }
 
-        script.onerror = () => {
-          cleanup();
-          reject(new Error("Unable to reach the manager service."));
-        };
+        return payload;
+      } catch (error) {
+        if (error?.name === "AbortError") {
+          throw new Error("Request timed out.");
+        }
 
-        script.src = url.toString();
-        document.body.appendChild(script);
-      });
+        if (error instanceof Error && error.message) {
+          throw error;
+        }
+
+        throw new Error("Unable to reach the manager service.");
+      } finally {
+        window.clearTimeout(timeout);
+      }
     }
 
     function getActionForView(view) {
