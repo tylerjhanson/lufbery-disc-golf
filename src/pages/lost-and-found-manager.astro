@@ -1,6 +1,9 @@
 ---
 import SiteLayout from "../layouts/SiteLayout.astro";
 
+const sheetId = "1FlsTEEik9UUMZQmjTOVkP7dOqGho9_GRFDC5PIVgXPo";
+const sheetGid = "0";
+
 const messageText =
   "Your disc was returned to the Lufbery lost and found. Please visit https://lufberydiscgolf.com/lost-and-found/ for our current lost disc inventory and pick-up instructions. Discs not picked up within 60 days will be donated.";
 ---
@@ -884,7 +887,7 @@ const messageText =
     </div>
   </div>
 
-  <script define:vars={{ messageText }}>
+  <script define:vars={{ messageText, sheetId, sheetGid }}>
     const appStatus = document.getElementById("lfmAppStatus");
     const addForm = document.getElementById("lfmAddForm");
     const tableBody = document.getElementById("lfmTableBody");
@@ -1329,7 +1332,7 @@ function getViewCount(view) {
 
     async function jsonp(params) {
       const controller = new AbortController();
-      const timeout = window.setTimeout(() => controller.abort(), 30000);
+      const timeout = window.setTimeout(() => controller.abort(), 95000);
 
       try {
         const response = await fetch("/api/lost-found-manager", {
@@ -1371,38 +1374,98 @@ function getViewCount(view) {
       }
     }
 
-    function sleep(ms) {
-      return new Promise((resolve) => window.setTimeout(resolve, ms));
-    }
+    function getSheetCellText(cell) {
+      if (!cell) return "";
 
-    async function requestWithRetry(params, { retry = true } = {}) {
-      try {
-        return await jsonp(params);
-      } catch (error) {
-        if (!retry) throw error;
-        await sleep(1000);
-        return await jsonp(params);
-      }
-    }
-
-    async function loadAllViews({ retry = true } = {}) {
-      const payload = await requestWithRetry(
-        { action: "listAll" },
-        { retry }
-      );
-
-      if (!payload?.ok) {
-        throw new Error(payload?.error || "Unable to load lost & found inventory.");
+      if (cell.f !== null && cell.f !== undefined && cell.f !== "") {
+        return String(cell.f).trim();
       }
 
-      const views = payload.views || {};
+      return String(cell.v ?? "").trim();
+    }
+
+    function getSheetBool(cell) {
+      if (!cell) return false;
+      if (cell.v === true) return true;
+      return String(cell.v ?? "").trim().toLowerCase() === "true";
+    }
+
+    function buildRecordFromSheetRow(cells, rowNumber) {
+      const record = {
+        rowNumber,
+        date: getSheetCellText(cells[0]),
+        name: getSheetCellText(cells[1]),
+        disc: getSheetCellText(cells[2]),
+        color: getSheetCellText(cells[3]),
+        last4: getSheetCellText(cells[4]),
+        deadline: getSheetCellText(cells[5]),
+        returned: getSheetBool(cells[6]),
+        phone: getSheetCellText(cells[7]),
+        status: getSheetCellText(cells[8]),
+      };
+
+      // The Returned column contains formulas far below the actual inventory.
+      // A real manager record must have a disc value.
+      return record.disc ? record : null;
+    }
+
+    async function loadAllViews() {
+      const tq = encodeURIComponent("select A,B,C,D,E,F,G,H,I");
+      const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?gid=${sheetGid}&tq=${tq}&_=${Date.now()}`;
+
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`Unable to read inventory (${response.status}).`);
+      }
+
+      const text = await response.text();
+      const prefix = "google.visualization.Query.setResponse(";
+      const start = text.indexOf(prefix);
+      const end = text.lastIndexOf(");");
+
+      if (start === -1 || end === -1) {
+        throw new Error("Unable to read sheet response.");
+      }
+
+      const payloadText = text.slice(start + prefix.length, end).trim();
+      const parsed = Function(`"use strict"; return (${payloadText});`)();
+      const sourceRows = parsed?.table?.rows || [];
+
+      const views = {
+        current: [],
+        returned: [],
+        donated: [],
+        sold: [],
+      };
+
+      sourceRows.forEach((sourceRow, index) => {
+        const cells = Array.isArray(sourceRow?.c) ? sourceRow.c.slice(0, 9) : [];
+        while (cells.length < 9) cells.push(null);
+
+        // GViz omits the header row, so index 0 maps to spreadsheet row 2.
+        const record = buildRecordFromSheetRow(cells, index + 2);
+        if (!record) return;
+
+        const status = String(record.status || "").trim().toLowerCase();
+
+        if (status === "donated") {
+          views.donated.push(record);
+        } else if (status === "sold") {
+          views.sold.push(record);
+        } else if (record.returned) {
+          views.returned.push(record);
+        } else {
+          views.current.push(record);
+        }
+      });
 
       ["current", "returned", "donated", "sold"].forEach((view) => {
-        state.records[view] = Array.isArray(views[view]) ? views[view] : [];
+        state.records[view] = views[view];
         state.loaded[view] = true;
       });
 
       renderTable();
+      return views;
     }
 
     async function ensureViewLoaded(view) {
@@ -1420,16 +1483,15 @@ function getViewCount(view) {
       refreshTimer = window.setTimeout(() => {
         refreshTimer = null;
 
-        loadAllViews()
-          .catch((error) => {
-            const message = error?.message || "Unable to refresh inventory.";
-            setStatus(
-              appStatus,
-              `Change saved, but the inventory refresh failed: ${message}`,
-              "error"
-            );
-          });
-      }, 250);
+        loadAllViews().catch((error) => {
+          console.warn("Inventory refresh failed after a saved change:", error);
+          setStatus(
+            appStatus,
+            "Change saved. Inventory will update on the next refresh.",
+            "success"
+          );
+        });
+      }, 700);
     }
 
     function getRecordByRow(rowNumber) {
@@ -1812,8 +1874,11 @@ function getViewCount(view) {
       field?.addEventListener("change", resetDeleteConfirmation);
     });
 
+    // The page renders immediately. Inventory is read directly from the same
+    // Google Sheet source used by the public Lost & Found page, rather than
+    // waiting for Apps Script just to display the manager.
     setStatus(appStatus, "Loading inventory…");
-    runWithBusy("Loading inventory…", () => loadAllViews())
+    loadAllViews()
       .then(() => {
         setStatus(appStatus, "");
       })
