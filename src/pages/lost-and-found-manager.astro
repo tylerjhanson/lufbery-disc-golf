@@ -57,18 +57,6 @@ const messageText =
       line-height: 1.45;
     }
 
-    .lost-found-manager-page .lfm-login {
-      max-width: 520px;
-      margin: 0 auto;
-    }
-
-    .lost-found-manager-page .lfm-password-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 10px;
-      margin-top: 12px;
-    }
-
     .lost-found-manager-page .lfm-grid { display: grid; gap: 10px; }
     .lost-found-manager-page .lfm-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
@@ -681,7 +669,6 @@ const messageText =
 
     @media (max-width: 700px) {
       .lost-found-manager-page .lfm-card { padding: 18px 14px 16px; }
-      .lost-found-manager-page .lfm-password-row,
       .lost-found-manager-page .lfm-grid-4,
       .lost-found-manager-page .lfm-modal-grid { grid-template-columns: 1fr; }
 
@@ -750,27 +737,9 @@ const messageText =
 
   <div class="wrap lost-found-manager-page">
     <div class="lfm-stack">
-      <section id="lfmLoginCard" class="lfm-card lfm-login" hidden>
-        <h1>Lost &amp; Found Manager</h1>
+      <h1>Lost &amp; Found Manager</h1>
 
-        <form id="lfmUnlockForm" class="lfm-password-row" autocomplete="off">
-          <input
-            id="lfmPassword"
-            name="manager_key"
-            type="password"
-            autocomplete="off"
-            autocapitalize="none"
-            spellcheck="false"
-            placeholder="Manager password"
-            required
-          />
-          <button class="lfm-button lfm-button-primary" type="submit">Unlock</button>
-        </form>
-
-        <div id="lfmLoginStatus" class="lfm-status" aria-live="polite"></div>
-      </section>
-
-      <div id="lfmApp" hidden>
+      <div id="lfmApp">
         <section class="lfm-card">
           <div class="lfm-section-head">
             <h2>Add a new disc</h2>
@@ -915,12 +884,6 @@ const messageText =
   </div>
 
   <script define:vars={{ apiUrl, messageText }}>
-    const PASSWORD_KEY = "lufbery-lf-manager-password";
-    const loginCard = document.getElementById("lfmLoginCard");
-    const appWrap = document.getElementById("lfmApp");
-    const unlockForm = document.getElementById("lfmUnlockForm");
-    const passwordInput = document.getElementById("lfmPassword");
-    const loginStatus = document.getElementById("lfmLoginStatus");
     const appStatus = document.getElementById("lfmAppStatus");
     const addForm = document.getElementById("lfmAddForm");
     const tableBody = document.getElementById("lfmTableBody");
@@ -961,7 +924,6 @@ const messageText =
     const busyText = document.getElementById("lfmBusyText");
 
     const state = {
-      password: "",
       records: {
         current: [],
         returned: [],
@@ -1276,7 +1238,6 @@ function getViewCount(view) {
       await runWithBusy(busyMessage, async () => {
         const response = await jsonp({
           action: "bulkUpdate",
-          password: state.password,
           operation,
           rowNumbers: [...state.selectedRows].join(","),
         });
@@ -1380,7 +1341,7 @@ function getViewCount(view) {
         const timeout = window.setTimeout(() => {
           cleanup();
           reject(new Error("Request timed out."));
-        }, 15000);
+        }, 30000);
 
         function cleanup() {
           window.clearTimeout(timeout);
@@ -1407,93 +1368,24 @@ function getViewCount(view) {
       });
     }
 
-    function getActionForView(view) {
-      return view === "current"
-        ? "list"
-        : view === "returned"
-          ? "listReturned"
-          : view === "donated"
-            ? "listDonated"
-            : "listSold";
-    }
-
-    async function loadView(view) {
-      const payload = await jsonp({
-        action: getActionForView(view),
-        password: state.password,
-      });
+    async function loadAllViews() {
+      const payload = await jsonp({ action: "listAll" });
 
       if (!payload?.ok) {
-        throw new Error(payload?.error || `Unable to load ${view} discs.`);
+        throw new Error(payload?.error || "Unable to load lost & found inventory.");
       }
 
-      state.records[view] = Array.isArray(payload.records) ? payload.records : [];
-      state.loaded[view] = true;
+      const views = payload.views || {};
+      ["current", "returned", "donated", "sold"].forEach((view) => {
+        state.records[view] = Array.isArray(views[view]) ? views[view] : [];
+        state.loaded[view] = true;
+      });
 
-      if (state.activeView === view) {
-        renderTable();
-      } else {
-        updateFilterButtons();
-      }
-    }
-
-    async function ensureViewLoaded(view) {
-      if (state.loaded[view]) return;
-      await loadView(view);
+      renderTable();
     }
 
     async function refreshLoadedViews() {
-      const views = ["current", "returned", "donated", "sold"].filter(
-        (view) => state.loaded[view] || view === state.activeView || view === "current"
-      );
-
-      for (const view of views) {
-        await loadView(view);
-      }
-    }
-
-    async function loadRemainingViewsInBackground() {
-      const views = ["returned", "donated", "sold"].filter((view) => !state.loaded[view]);
-
-      for (const view of views) {
-        try {
-          await loadView(view);
-        } catch (error) {
-          console.error(error);
-        }
-      }
-    }
-
-    async function unlock(password, { remember = true } = {}) {
-      const trimmed = String(password || "");
-      if (!trimmed) {
-        throw new Error("Enter the manager password.");
-      }
-
-      state.password = trimmed;
-      state.activeView = "current";
-      await loadView("current");
-      renderTable();
-
-      if (remember) {
-        try {
-          localStorage.setItem(PASSWORD_KEY, trimmed);
-        } catch {}
-      }
-
-      loginCard.hidden = true;
-      appWrap.hidden = false;
-      setStatus(loginStatus, "");
-      setStatus(appStatus, "");
-
-      loadRemainingViewsInBackground();
-    }
-
-    function showLogin(message = "", type = "") {
-      appWrap.hidden = true;
-      loginCard.hidden = false;
-      if (passwordInput) passwordInput.value = "";
-      setStatus(loginStatus, message, type);
+      await loadAllViews();
     }
 
     function getRecordByRow(rowNumber) {
@@ -1581,7 +1473,6 @@ function getViewCount(view) {
       await runWithBusy(busyMessage, async () => {
         const payload = {
           action: "update",
-          password: state.password,
           ...getEditPayload(),
         };
 
@@ -1613,7 +1504,6 @@ function getViewCount(view) {
       await runWithBusy("Deleting disc…", async () => {
         const response = await jsonp({
           action: "delete",
-          password: state.password,
           rowNumber: state.editing.rowNumber,
         });
 
@@ -1638,7 +1528,6 @@ function getViewCount(view) {
         await runWithBusy("Adding disc…", async () => {
           const payload = await jsonp({
             action: "add",
-            password: state.password,
             name: formData.get("name"),
             disc: formData.get("disc"),
             color: formData.get("color"),
@@ -1666,21 +1555,6 @@ function getViewCount(view) {
         }
       } catch (error) {
         setStatus(appStatus, error?.message || "Unable to add disc.", "error");
-      }
-    });
-
-    unlockForm?.addEventListener("submit", async (event) => {
-      event.preventDefault();
-
-      try {
-        setStatus(loginStatus, "Unlocking…");
-        await runWithBusy("Unlocking…", () => unlock(passwordInput?.value || ""));
-      } catch (error) {
-        try {
-          localStorage.removeItem(PASSWORD_KEY);
-        } catch {}
-        state.password = "";
-        showLogin(error?.message || "Unable to unlock.", "error");
       }
     });
 
@@ -1722,17 +1596,10 @@ function getViewCount(view) {
         const view = filterButton.getAttribute("data-view");
         if (!view || state.activeView === view) return;
 
-        try {
-          await runWithBusy(`Loading ${view} discs…`, async () => {
-            state.activeView = view;
-            state.selectedRows.clear();
-            await ensureViewLoaded(view);
-            renderTable();
-          });
-          setStatus(appStatus, "");
-        } catch (error) {
-          setStatus(appStatus, error?.message || `Unable to load ${view} discs.`, "error");
-        }
+        state.activeView = view;
+        state.selectedRows.clear();
+        renderTable();
+        setStatus(appStatus, "");
       }
     });
 
@@ -1741,7 +1608,6 @@ function getViewCount(view) {
         await runWithBusy("Saving changes…", async () => {
           const payload = {
             action: "update",
-            password: state.password,
             ...getEditPayload(),
           };
 
@@ -1901,22 +1767,10 @@ function getViewCount(view) {
       field?.addEventListener("change", resetDeleteConfirmation);
     });
 
-    try {
-      const savedPassword = localStorage.getItem(PASSWORD_KEY);
-
-      if (savedPassword) {
-        runWithBusy("Unlocking…", () => unlock(savedPassword, { remember: false })).catch((error) => {
-          try {
-            localStorage.removeItem(PASSWORD_KEY);
-          } catch {}
-          state.password = "";
-          showLogin(error?.message || "Unable to unlock.", "error");
-        });
-      } else {
-        showLogin();
-      }
-    } catch {
-      showLogin();
-    }
+    runWithBusy("Loading inventory…", () => loadAllViews()).catch((error) => {
+      const message = error?.message || "Unable to load inventory.";
+      setStatus(appStatus, message, "error");
+      tableBody.innerHTML = `<tr><td class="lfm-empty" colspan="7">${escapeHtml(message)}</td></tr>`;
+    });
   </script>
 </SiteLayout>
