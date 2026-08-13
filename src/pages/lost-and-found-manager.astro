@@ -1199,6 +1199,7 @@ const messageText =
       });
     }
 function getViewCount(view) {
+      if (!state.loaded[view]) return null;
       return Array.isArray(state.records[view]) ? state.records[view].length : 0;
     }
 
@@ -1211,11 +1212,12 @@ function getViewCount(view) {
 
     function getViewButtonLabel(view) {
       const count = getViewCount(view);
+      const countText = count === null ? "…" : String(count);
 
-      if (view === "current") return `Current (${count})`;
-      if (view === "returned") return `Returned (${count})`;
-      if (view === "donated") return `Donated (${count})`;
-      return `Sold (${count})`;
+      if (view === "current") return `Current (${countText})`;
+      if (view === "returned") return `Returned (${countText})`;
+      if (view === "donated") return `Donated (${countText})`;
+      return `Sold (${countText})`;
     }
 
     function updateFilterButtons() {
@@ -1380,7 +1382,7 @@ function getViewCount(view) {
         const timeout = window.setTimeout(() => {
           cleanup();
           reject(new Error("Request timed out."));
-        }, 15000);
+        }, 30000);
 
         function cleanup() {
           window.clearTimeout(timeout);
@@ -1417,11 +1419,22 @@ function getViewCount(view) {
             : "listSold";
     }
 
-    async function loadView(view) {
-      const payload = await jsonp({
-        action: getActionForView(view),
-        password: state.password,
-      });
+    async function loadView(view, { retry = true } = {}) {
+      let payload;
+
+      try {
+        payload = await jsonp({
+          action: getActionForView(view),
+          password: state.password,
+        });
+      } catch (error) {
+        if (!retry) throw error;
+        await new Promise((resolve) => window.setTimeout(resolve, 1200));
+        payload = await jsonp({
+          action: getActionForView(view),
+          password: state.password,
+        });
+      }
 
       if (!payload?.ok) {
         throw new Error(payload?.error || `Unable to load ${view} discs.`);
@@ -1443,25 +1456,13 @@ function getViewCount(view) {
     }
 
     async function refreshLoadedViews() {
-      const views = ["current", "returned", "donated", "sold"].filter(
-        (view) => state.loaded[view] || view === state.activeView || view === "current"
-      );
+      const activeView = state.activeView || "current";
 
-      for (const view of views) {
-        await loadView(view);
-      }
-    }
+      ["current", "returned", "donated", "sold"].forEach((view) => {
+        if (view !== activeView) state.loaded[view] = false;
+      });
 
-    async function loadRemainingViewsInBackground() {
-      const views = ["returned", "donated", "sold"].filter((view) => !state.loaded[view]);
-
-      for (const view of views) {
-        try {
-          await loadView(view);
-        } catch (error) {
-          console.error(error);
-        }
-      }
+      await loadView(activeView);
     }
 
     async function unlock(password, { remember = true } = {}) {
@@ -1486,7 +1487,7 @@ function getViewCount(view) {
       setStatus(loginStatus, "");
       setStatus(appStatus, "");
 
-      loadRemainingViewsInBackground();
+      updateFilterButtons();
     }
 
     function showLogin(message = "", type = "") {
