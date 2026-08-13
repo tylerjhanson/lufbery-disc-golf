@@ -1380,7 +1380,7 @@ function getViewCount(view) {
         const timeout = window.setTimeout(() => {
           cleanup();
           reject(new Error("Request timed out."));
-        }, 30000);
+        }, 15000);
 
         function cleanup() {
           window.clearTimeout(timeout);
@@ -1418,19 +1418,10 @@ function getViewCount(view) {
     }
 
     async function loadView(view) {
-      const requestView = () => jsonp({
+      const payload = await jsonp({
         action: getActionForView(view),
         password: state.password,
       });
-
-      let payload;
-      try {
-        payload = await requestView();
-      } catch (firstError) {
-        // Reads are safe to retry once. Write actions are intentionally never retried.
-        await new Promise((resolve) => window.setTimeout(resolve, 1200));
-        payload = await requestView();
-      }
 
       if (!payload?.ok) {
         throw new Error(payload?.error || `Unable to load ${view} discs.`);
@@ -1495,10 +1486,7 @@ function getViewCount(view) {
       setStatus(loginStatus, "");
       setStatus(appStatus, "");
 
-      // Let the current inventory become usable before archive preload begins.
-      window.setTimeout(() => {
-        loadRemainingViewsInBackground();
-      }, 3000);
+      loadRemainingViewsInBackground();
     }
 
     function showLogin(message = "", type = "") {
