@@ -58,7 +58,7 @@ export async function onRequestPost({ request }) {
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 28000);
+  const timeout = setTimeout(() => controller.abort(), 90000);
 
   try {
     const upstream = await fetch(upstreamUrl.toString(), {
