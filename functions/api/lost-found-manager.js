@@ -2,7 +2,7 @@ const APPS_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbyOVn9a5mphmeROGJPmHDD4Rpz-SeRpT50Cbk5qbuxn3BBCi1iaiHHU2fUrPg5Ccr9c/exec";
 
 const ALLOWED_ACTIONS = new Set([
-  "auth",
+  "listAll",
   "list",
   "listReturned",
   "listDonated",
