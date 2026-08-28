@@ -76,50 +76,51 @@ function validateHcp(rows) {
 
 function validateWkres(rows) {
   const titlePattern = /^(\d{1,2}\/\d{1,2}\/\d{2,4})\s+-\s+(Handicap|Monthly|2 Rounds)$/i;
-  let eventCount = 0;
+  const firstIndex = rows.findIndex((row) => !isBlankRow(row || []));
 
-  for (let i = 0; i < rows.length; i += 1) {
-    const row = rows[i] || [];
-    const title = String(row[0] ?? '').trim();
-    const match = title.match(titlePattern);
-    if (!match) continue;
-
-    eventCount += 1;
-    const eventType = match[2].toLowerCase();
-    const url = String(row[1] ?? '').trim();
-
-    if (!/^https:\/\/(www\.)?udisc\.com\//i.test(url)) {
-      fail(`wkres.csv event "${title}" is missing a valid UDisc URL.`);
-    }
-
-    let headerIndex = i + 1;
-    while (headerIndex < rows.length && isBlankRow(rows[headerIndex] || [])) {
-      headerIndex += 1;
-    }
-
-    const header = (rows[headerIndex] || []).map(normalize);
-
-    if (eventType === 'handicap') {
-      const required = ['name', 'raw', 'hcp.', 'net', 'payout', 'ovr', 'ctp'];
-      for (const requiredHeader of required) {
-        if (!header.includes(requiredHeader)) {
-          fail(`wkres.csv Handicap event "${title}" is missing header ${requiredHeader}.`);
-        }
-      }
-    } else {
-      if (!/^a pool$/i.test(String(rows[headerIndex]?.[0] ?? '').trim())) {
-        fail(`wkres.csv ${match[2]} event "${title}" does not begin with an A Pool block.`);
-      }
-    }
+  if (firstIndex === -1) {
+    fail('wkres.csv is empty.');
+    return;
   }
+
+  const title = String(rows[firstIndex]?.[0] ?? '').trim();
+  const match = title.match(titlePattern);
+  if (!match) {
+    fail('wkres.csv must begin with the newest dated event title.');
+    return;
+  }
+
+  const eventType = match[2].toLowerCase();
+  const url = String(rows[firstIndex]?.[1] ?? '').trim();
+
+  if (!/^https:\/\/(www\.)?udisc\.com\//i.test(url)) {
+    fail(`Newest wkres event "${title}" is missing a valid UDisc URL.`);
+  }
+
+  let headerIndex = firstIndex + 1;
+  while (headerIndex < rows.length && isBlankRow(rows[headerIndex] || [])) {
+    headerIndex += 1;
+  }
+
+  const header = (rows[headerIndex] || []).map(normalize);
+
+  if (eventType === 'handicap') {
+    const required = ['name', 'raw', 'hcp.', 'net', 'payout', 'ovr', 'ctp'];
+    for (const requiredHeader of required) {
+      if (!header.includes(requiredHeader)) {
+        fail(`Newest Handicap event "${title}" is missing header ${requiredHeader}.`);
+      }
+    }
+  } else if (!/^a pool$/i.test(String(rows[headerIndex]?.[0] ?? '').trim())) {
+    fail(`Newest ${match[2]} event "${title}" does not begin with an A Pool block.`);
+  }
+
+  const eventCount = rows.filter((row) =>
+    titlePattern.test(String(row?.[0] ?? '').trim())
+  ).length;
 
   if (!eventCount) {
     fail('wkres.csv contains no recognized dated events.');
-  }
-
-  const firstNonBlank = rows.find((row) => !isBlankRow(row || []));
-  if (!firstNonBlank || !titlePattern.test(String(firstNonBlank[0] ?? '').trim())) {
-    fail('wkres.csv must begin with the newest dated event title.');
   }
 }
 
