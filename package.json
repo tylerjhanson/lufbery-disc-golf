@@ -11,6 +11,7 @@
     "apply-handicap-trends": "node scripts/apply-handicap-trends.mjs",
     "fix-udisc-mobile-theme": "node scripts/fix-udisc-mobile-theme.mjs",
     "patch-handicap-dates": "node scripts/patch-handicap-date-parser.mjs",
+    "validate-league-data": "node scripts/validate-league-data.mjs",
     "build": "node scripts/patch-handicap-date-parser.mjs && node scripts/generate-course-stats.mjs && node scripts/apply-handicap-trends.mjs && node scripts/fix-udisc-mobile-theme.mjs && astro build",
     "preview": "astro preview",
     "astro": "astro",
