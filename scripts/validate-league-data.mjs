@@ -48,6 +48,61 @@ function isBlankRow(row) {
   return !row.some((cell) => String(cell ?? '').trim());
 }
 
+function parseEventDateFromTitle(value) {
+  const match = String(value ?? '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if (!match) return null;
+
+  let year = Number(match[3]);
+  if (year < 100) year += 2000;
+
+  return {
+    year,
+    month: Number(match[1]),
+    day: Number(match[2]),
+    key: `${year}-${String(Number(match[1])).padStart(2, '0')}-${String(Number(match[2])).padStart(2, '0')}`,
+  };
+}
+
+function walkXlsx(dir) {
+  if (!fs.existsSync(dir)) return [];
+
+  const files = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name.startsWith('.') || entry.name === '__MACOSX') continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...walkXlsx(full));
+    } else if (/\.xlsx$/i.test(entry.name) && !entry.name.startsWith('._')) {
+      files.push(full);
+    }
+  }
+  return files;
+}
+
+function validateNewestUDiscExport(rows) {
+  const firstNonBlank = rows.find((row) => !isBlankRow(row || []));
+  const title = String(firstNonBlank?.[0] ?? '').trim();
+  const eventDate = parseEventDateFromTitle(title);
+
+  if (!eventDate) {
+    fail('Could not determine the newest wkres event date for UDisc export validation.');
+    return;
+  }
+
+  const yearDir = path.join(DATA_DIR, 'udisc-exports', String(eventDate.year));
+  const matches = walkXlsx(yearDir).filter((file) =>
+    path.basename(file).includes(eventDate.key)
+  );
+
+  if (!matches.length) {
+    fail(
+      `Newest event ${title} is missing its UDisc XLSX export. ` +
+      `Expected a .xlsx file containing ${eventDate.key} under ` +
+      `src/data/udisc-exports/${eventDate.year}.`
+    );
+  }
+}
+
 function validateHcp(rows) {
   if (rows.length < 2) {
     fail('hcp.csv must contain a header and at least one player.');
@@ -159,6 +214,7 @@ const history = readCsv('handicap-tag-history.csv');
 validateHcp(hcp);
 validateWkres(wkres);
 validateHistory(history);
+validateNewestUDiscExport(wkres);
 
 if (process.exitCode) {
   console.error('League data validation failed.');
