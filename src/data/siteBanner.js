@@ -6,7 +6,7 @@ export const siteBanner = {
 
   label: "Reminder",
   message:
-    "Last League night: handicap singles on Thursday, September 3. Ace pot begins at $188.",
+    "Last singles league night on Thursday, September 3 at 5 pm! Ace pot begins at $188.",
 
   dismissible: true,
 };
