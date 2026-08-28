@@ -6,7 +6,7 @@ export const siteBanner = {
 
   label: "Reminder",
   message:
-    "League begins at 5 p.m. for our monthly event on August 27. Last singles league night of 2026 will be a handicap round on Thursday, September 3.",
+    "League begins at 5 p.m. last handicap singles league night of 2026 on Thursday, September 3.",
 
   dismissible: true,
 };
