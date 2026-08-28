@@ -6,7 +6,7 @@ export const siteBanner = {
 
   label: "Reminder",
   message:
-    "League begins at 5 p.m. last handicap singles league night of 2026 on Thursday, September 3.",
+    "Last League night: handicap singles on Thursday, September 3. Ace pot begins at $188.",
 
   dismissible: true,
 };
