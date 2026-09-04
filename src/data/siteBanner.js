@@ -2,11 +2,11 @@ export const siteBanner = {
   enabled: true,
 
   // Change this ID whenever you want dismissed visitors to see the banner again.
-  id: "2026-08-20",
+  id: "2026-09-03",
 
-  label: "Last singles league night",
+  label: "",
   message:
-    "Thursday, September 3 at 5 p.m. Ace pot begins at $188.",
+    "Thank you everyone for a fantastic singles league this season. Doubles will continue as always every Sunday at 9 a.m. Singles league starts again on April 1, 2027!",
 
   dismissible: true,
 };
