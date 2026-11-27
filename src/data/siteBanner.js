@@ -1,12 +1,17 @@
 export const siteBanner = {
   enabled: true,
 
-  // Change this ID whenever you want dismissed visitors to see the banner again.
-  id: "2026-09-03",
+  // Identifier for this announcement; the 2027 pre-order banner stays visible.
+  id: "2027-bag-tag-orders",
 
   label: "",
   message:
-    "Thank you everyone for a fantastic singles league this season. Doubles will continue as always every Sunday at 9 a.m. Singles league starts again on April 1, 2027!",
+    "Lufbery bag tags are now available for pre-order! Tags pre-ordered and paid for by January 1 are just $25.",
+  link: {
+    label: "Order today",
+    href: "/singles/handicaps-tags/order",
+  },
 
-  dismissible: true,
+  // Keep the announcement visible on every visit, including after older dismissals.
+  dismissible: false,
 };
