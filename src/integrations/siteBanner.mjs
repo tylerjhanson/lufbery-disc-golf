@@ -23,7 +23,7 @@ function initSiteBanner() {
   style.textContent = \`
     .site-banner {
       width: 100%;
-      background: #b91c1c;
+      background: #386487;
       color: #ffffff;
       border-bottom: 1px solid rgba(255, 255, 255, 0.18);
       position: relative;
