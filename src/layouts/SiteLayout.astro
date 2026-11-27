@@ -1,4 +1,5 @@
 ---
+import { siteBanner } from "../data/siteBanner.js";
 interface Props {
   title?: string;
   description?: string;
@@ -71,6 +72,99 @@ const doublesLinks = [
     </script>
 
     <style is:global>
+      /* Permanent announcements are rendered before the header, without JavaScript. */
+    .site-banner {
+      width: 100%;
+      background: #b91c1c;
+      color: #ffffff;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+      position: relative;
+      z-index: 70;
+    }
+
+    .site-banner-inner {
+      width: min(100%, 1440px);
+      margin: 0 auto;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .site-banner-copy {
+      min-width: 0;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.95rem;
+      line-height: 1.35;
+    }
+
+    .site-banner-copy strong {
+      flex: 0 0 auto;
+      font-weight: 800;
+    }
+
+    .site-banner-copy span {
+      min-width: 0;
+    }
+
+    .site-banner-copy a {
+      color: #ffffff;
+      font-weight: 700;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .site-banner-copy a:hover,
+    .site-banner-copy a:focus-visible {
+      text-decoration-thickness: 2px;
+    }
+
+    .site-banner-close {
+      width: 32px;
+      height: 32px;
+      flex: 0 0 32px;
+      border: 0;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.16);
+      color: #ffffff;
+      font-size: 1.35rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .site-banner-close:hover,
+    .site-banner-close:focus-visible {
+      background: rgba(255, 255, 255, 0.28);
+    }
+
+    @media (max-width: 700px) {
+      .site-banner-inner {
+        padding: 9px 10px;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .site-banner-copy {
+        display: block;
+        font-size: 0.86rem;
+      }
+
+      .site-banner-copy strong {
+        display: block;
+        margin-bottom: 2px;
+      }
+
+      .site-banner-close {
+        width: 30px;
+        height: 30px;
+        flex-basis: 30px;
+      }
+    }
+  
       :root {
         --bg: #f5f7fb;
         --bg-strong: #eef3f8;
@@ -601,6 +695,23 @@ const doublesLinks = [
 
   <body>
     <div id="site-page-top"></div>
+
+    {siteBanner.enabled && !siteBanner.dismissible && (
+      <div id="siteBanner" class="site-banner">
+        <div class="site-banner-inner">
+          <p class="site-banner-copy">
+            {siteBanner.label && <strong>{siteBanner.label}</strong>}
+            <span>
+              {siteBanner.message || ""}
+              {siteBanner.link?.href && siteBanner.link?.label && (
+                <>{" "}<a href={siteBanner.link.href}>{siteBanner.link.label}</a></>
+              )}
+            </span>
+          </p>
+        </div>
+      </div>
+    )}
+
 
     {showBrandBar && (
       <header class="site-header">
