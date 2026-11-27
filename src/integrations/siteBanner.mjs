@@ -59,6 +59,18 @@ function initSiteBanner() {
       min-width: 0;
     }
 
+    .site-banner-copy a {
+      color: #ffffff;
+      font-weight: 700;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .site-banner-copy a:hover,
+    .site-banner-copy a:focus-visible {
+      text-decoration-thickness: 2px;
+    }
+
     .site-banner-close {
       width: 32px;
       height: 32px;
@@ -120,6 +132,15 @@ function initSiteBanner() {
 
   const message = document.createElement("span");
   message.textContent = siteBanner.message || "";
+
+  if (siteBanner.link?.href && siteBanner.link?.label) {
+    message.append(document.createTextNode(" "));
+    const link = document.createElement("a");
+    link.href = siteBanner.link.href;
+    link.textContent = siteBanner.link.label;
+    message.append(link);
+  }
+
   copy.append(message);
 
   inner.append(copy);
