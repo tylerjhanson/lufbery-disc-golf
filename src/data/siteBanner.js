@@ -6,7 +6,7 @@ export const siteBanner = {
 
   label: "",
   message:
-    "Lufbery bag tags are now available for pre-order! Tags pre-ordered and paid for by January 1 are just $25.",
+    "2027 Lufbery bag tags are now available for pre-order! Tags purchased by January 1 are $25. Purchases after January 1 are $30.",
   link: {
     label: "Order today",
     href: "/singles/handicaps-tags/order",
