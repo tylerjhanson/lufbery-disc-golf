@@ -1,0 +1,201 @@
+---
+import SiteLayout from "../../../layouts/SiteLayout.astro";
+
+const venmoUrl = "https://clicks.udisc.com/f/a/OFik6y1e7mDNWhxeYZAxAw~~/AAQRxRA~/D-zRPCdG-xPASSTVoNwsVWJoW5QL87QrlpIzUJWZUQ55kx7lTNxjGdyOIR9g_B3DIldmxWNVk1pzQFPmMpjEkRQoBmVII9GM99X23UaAzB44HvH6hVZgJhk-yDi-IFEdjC6ciR1L_G28y_i4rr_fG19BPt0vzPKiuzUOho9CBrU~";
+const paypalUrl = "https://clicks.udisc.com/f/a/UVwMXAHFOSbcPeK2KkH2GA~~/AAQRxRA~/2OtVxxlrPoYZzm51ErxPAZguHUCdSVK6fdz8wyjtIpHkvKF-G7fyjlZpkCx8Y6FutyAfFH_FSwBkFuG3ar0JqRfIsUoMtnGx3AmAZRHpgNK2wmbz1f9_LF66RFewhvf_";
+---
+
+<SiteLayout
+  title="2027 Bag Tag Pre-Orders | Lufbery Disc Golf"
+  description="Pre-order your 2027 Lufbery bag tag for $25 by January 1, or $30 starting January 2. Find payment options and league details."
+  showBrandBar={true}
+>
+  <div class="bag-tag-order-page">
+    <a class="back-link" href="/singles/handicaps-tags/">← Handicaps &amp; Tags</a>
+
+    <article class="order-card">
+      <h1>2027 Bag Tag Pre-Orders</h1>
+
+      <p>
+        Lufbery bag tags are now available for pre-order! Tags are $30 for the
+        2027 season, but <strong>tags pre-ordered and paid for by January 1
+        are just $25.</strong> Tag sales contribute significantly to our course
+        fund, which has helped pay for tee pad upgrades (with more to come soon!),
+        course signage, benches, and other improvements over the past few years.
+      </p>
+
+      <div class="pricing" aria-label="Bag tag prices">
+        <strong>$25 if paid by Jan. 1</strong>
+        <span>$30 starting Jan. 2</span>
+      </div>
+
+      <div class="payment-options" aria-label="Payment options">
+        <div class="payment-method">
+          <a href={venmoUrl} target="_blank" rel="noopener noreferrer">Venmo</a>
+          <span class="payment-note">(last 4: 2916)</span>
+        </div>
+        <div class="payment-method">
+          <a href={paypalUrl} target="_blank" rel="noopener noreferrer">PayPal</a>
+        </div>
+      </div>
+
+      <div class="order-details">
+        <p>
+          Your tag will be reserved regardless of when you first attend singles
+          league, but it won't be distributed until your first league round. If
+          you'd like to purchase a tag to support the course but don't plan to
+          play singles league, please contact me to make arrangements
+          (<a href="mailto:tylerjhanson@gmail.com">tylerjhanson@gmail.com</a>).
+          Once you've purchased a tag, I'll put a "1" in the tag column on our
+          <a href="/singles/handicaps-tags/">handicap page</a> to confirm that
+          yours is reserved.
+        </p>
+
+        <p>
+          Singles league opens Thursday, April 1, and will run every Thursday
+          evening through early September. Bag tags are independent of our
+          regular handicap payouts, are awarded based on raw scores, and give
+          bragging rights to players holding the lowest-numbered tags.
+        </p>
+      </div>
+    </article>
+  </div>
+
+  <style>
+    .bag-tag-order-page {
+      width: 100%;
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 4px 0 32px;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin: 0 0 16px;
+      color: var(--accent);
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .back-link:hover,
+    .back-link:focus-visible,
+    .order-card p a:hover,
+    .order-card p a:focus-visible {
+      text-decoration: underline;
+    }
+
+    .order-card {
+      background: var(--card);
+      border: 1px solid var(--line-soft);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding: clamp(22px, 4vw, 36px);
+    }
+
+    .order-card h1 {
+      margin: 0 0 20px;
+      color: var(--text);
+    }
+
+    .order-card p {
+      margin: 0 0 20px;
+      color: var(--text);
+      font-size: 1rem;
+      line-height: 1.65;
+    }
+
+    .order-card p a {
+      color: var(--accent);
+      text-decoration: none;
+      overflow-wrap: anywhere;
+    }
+
+    .pricing {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 18px 20px;
+      margin: 22px 0 18px;
+      border: 1px solid var(--line-soft);
+      border-radius: 10px;
+      background: var(--button-bg);
+      color: var(--text);
+    }
+
+    .pricing strong {
+      font-size: 1.35rem;
+      font-weight: 800;
+      line-height: 1.3;
+    }
+
+    .pricing span {
+      font-size: 0.98rem;
+      color: var(--muted);
+    }
+
+    .payment-options {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      margin: 0 0 28px;
+    }
+
+    .payment-method {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .payment-method a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 106px;
+      min-height: 42px;
+      padding: 10px 18px;
+      border-radius: 9px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--text);
+      font-size: 0.98rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .payment-method a:hover,
+    .payment-method a:focus-visible {
+      background: var(--button-bg-hover);
+      border-color: var(--accent);
+    }
+
+    .payment-note {
+      color: var(--muted);
+      font-size: 0.88rem;
+      white-space: nowrap;
+    }
+
+    .order-details {
+      border-top: 1px solid var(--line-soft);
+      padding-top: 24px;
+    }
+
+    .order-details p:last-child {
+      margin-bottom: 0;
+    }
+
+    @media (max-width: 560px) {
+      .order-card {
+        padding: 22px 18px;
+      }
+
+      .payment-options {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 12px;
+      }
+    }
+  </style>
+</SiteLayout>
